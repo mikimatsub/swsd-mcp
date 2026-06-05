@@ -34,10 +34,7 @@ function flattenHtmlOutput(): Plugin {
         const match = oldKey.match(/(?:^|\/)([^/]+)\/index\.html$/);
         if (!match) continue;
         const entryName = match[1];
-        const newKey = `${entryName}.html`;
-        delete bundle[oldKey];
-        asset.fileName = newKey;
-        bundle[newKey] = asset;
+        asset.fileName = `${entryName}.html`;
       }
     },
   };
