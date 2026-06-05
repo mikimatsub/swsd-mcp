@@ -78,7 +78,7 @@ Every published artifact is cryptographically tied to a specific source commit a
 | Layer | Mitigation |
 |---|---|
 | **npm package** | OIDC trusted publishing (no long-lived `NPM_TOKEN` exists); SLSA provenance attestations on every release; verifiable with `npm audit signatures` |
-| **Direct dependencies** | All pinned to exact versions in `package-lock.json`; Renovate weekly updates; `npm audit` in CI; small surface (5 direct production deps: `@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, `express`, `express-rate-limit`, `zod`) |
+| **Direct dependencies** | All pinned to exact versions in `package-lock.json`; Renovate weekly updates; `npm audit` in CI; small surface (7 direct production deps: `@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, `dompurify`, `express`, `express-rate-limit`, `helmet`, `zod`) |
 | **GitHub Actions** | All pinned to commit SHAs (not version tags); Renovate auto-PRs new SHAs |
 | **Docker base image** | `node:24-alpine` pinned by SHA256 digest in `Dockerfile`; Renovate tracks new digests |
 
@@ -112,7 +112,7 @@ Reference frameworks we've drawn from. **We don't claim formal certification aga
 | [SLSA](https://slsa.dev) Build Level 3 | npm publish via OIDC + signed provenance attestations + reproducible builds |
 | [NIST SSDF](https://csrc.nist.gov/Projects/ssdf) | PW.4 (review code), PW.7 (review and analyze software design), PW.8 (reuse vetted software), PS.2 (provenance), RV.1 (vulnerability disclosure) |
 | [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) | V13 (API and Web Service): authentication, rate limiting, input validation, output encoding |
-| [npm package signing](https://docs.npmjs.com/about-package-signatures) | All releases signed; users verify with `npm audit signatures` |
+| [npm audit signatures](https://docs.npmjs.com/cli/v11/commands/npm-audit/#audit-signatures) | All releases signed; users verify with `npm audit signatures` |
 
 ## Threat model
 

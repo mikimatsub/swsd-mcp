@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>swsd-mcp</title>
+  <rect width="64" height="64" rx="14" fill="#101820"/>
+  <path d="M15 20h34M15 32h24M15 44h30" fill="none" stroke="#64d2ff" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="49" cy="44" r="5" fill="#9cff6a"/>
+</svg>

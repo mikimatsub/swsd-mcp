@@ -52,7 +52,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/healthz').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
 
-LABEL org.opencontainers.image.source="https://github.com/mikimatsub/MCP-SWSD"
+LABEL org.opencontainers.image.source="https://github.com/mikimatsub/swsd-mcp"
 LABEL org.opencontainers.image.description="MCP server for SolarWinds Service Desk (SWSD / Samanage). Stdio + Streamable HTTP transports."
 LABEL org.opencontainers.image.licenses="MIT"
 

@@ -21,7 +21,7 @@ name: Publish to npm
 #      (npmjs.com/package/swsd-mcp) -> Settings -> Trusted Publisher
 #      -> Add GitHub Actions publisher with:
 #        * Organization or user: mikimatsub
-#        * Repository: MCP-SWSD
+#        * Repository: swsd-mcp
 #        * Workflow filename: publish-npm.yml
 #        * Environment: (leave empty)
 #   6. Future releases: just `npm version <bump> && git push --tags`
