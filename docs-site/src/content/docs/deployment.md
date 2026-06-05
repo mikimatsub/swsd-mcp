@@ -64,7 +64,7 @@ Image tags:
 - `:latest` — the latest main-branch commit
 - `:sha-XXXXXXX` — pinned to a specific commit (recommended for production)
 
-Browse all tags at [GitHub Packages](https://github.com/mikimatsub/swsd-mcp/pkgs/container/mcp-swsd).
+Browse all tags at [GitHub Packages](https://github.com/mikimatsub/swsd-mcp/pkgs/container/swsd-mcp).
 
 ---
 

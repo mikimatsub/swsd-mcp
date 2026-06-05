@@ -62,14 +62,14 @@ The repo uses `husky` + `lint-staged` to run `eslint --fix` on staged TS/JS file
 - Hardcoded tenant data in tests or fixtures (use synthetic names like `Alice`, `Office One`, `example.com`)
 - Logging of API tokens or response bodies
 - New install scripts (`postinstall`, etc.)
-- Pinning dependencies to ranges (`^1.x.y`); pin to exact versions
+- New dependencies that do not follow the repo's `package.json` plus lockfile convention
 - Lockfile changes that look unrelated to your stated change
 
 ## Local development
 
 ```bash
 git clone https://github.com/mikimatsub/swsd-mcp.git
-cd MCP-SWSD
+cd swsd-mcp
 npm install
 
 npm run build         # compile TypeScript to dist/
