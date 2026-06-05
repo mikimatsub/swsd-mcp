@@ -1,10 +1,10 @@
-# syntax=docker/dockerfile:1.23@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
+# syntax=docker/dockerfile:1.24@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
 
 # Base image pinned by digest for supply-chain safety. To update: pull the
 # latest node:24-alpine, copy its sha256 digest from `docker inspect`, and
 # replace below. Renovate's docker manager (via the central config in
 # mikimatsub/.github) will also propose digest bumps automatically.
-ARG NODE_IMAGE=node:24-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f
+ARG NODE_IMAGE=node:24-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14
 
 # === Builder stage ===
 FROM ${NODE_IMAGE} AS builder
