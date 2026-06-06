@@ -78,7 +78,7 @@ This gives you the `triage` profile **plus** solution lookups — handy when fir
 **HTTP mode** prints a single startup line on stderr (no token leakage):
 
 ```
-swsd-mcp 2.1.0 HTTP transport listening on :3000 (POST /mcp, GET /healthz; rate limit 100/60s, request timeout 30s)
+swsd-mcp 2.1.1 HTTP transport listening on :3000 (POST /mcp, GET /healthz; rate limit 100/60s, request timeout 30s)
 ```
 
 In HTTP mode, hit `GET /healthz` for `{"ok":true}` (deliberately minimal — no version disclosure to anonymous callers) or call `swsd_get_server_info` through an authenticated MCP client for full configuration details.

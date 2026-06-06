@@ -1,11 +1,12 @@
-name: Publish to npm
+name: Publish release artifacts
 
 # Triggers on git tag matching v* (e.g., v1.0.0, v1.0.1). After the
 # initial publish (see "Chicken-and-egg" below), the release flow is:
-#   1. `npm version major|minor|patch` (bumps package.json + creates tag)
-#   2. `git push && git push --tags`
-#   3. This workflow runs automatically — OIDC mints a short-lived token,
-#      no NPM_TOKEN secret required.
+#   1. Bump package.json, package-lock.json, server.json, and CHANGELOG.md
+#   2. Merge the release-prep PR
+#   3. `git tag vX.Y.Z && git push origin vX.Y.Z`
+#   4. This workflow runs automatically — OIDC mints short-lived tokens for
+#      npm trusted publishing and MCP Registry publishing.
 #
 # Chicken-and-egg for the FIRST publish:
 #   npm trusted publishing is configured PER PACKAGE on npmjs.com — the
@@ -24,8 +25,8 @@ name: Publish to npm
 #        * Repository: swsd-mcp
 #        * Workflow filename: publish-npm.yml
 #        * Environment: (leave empty)
-#   6. Future releases: just `npm version <bump> && git push --tags`
-#      and this workflow handles the rest via OIDC.
+#   6. Future releases: bump versions, merge, tag, and this workflow handles
+#      npm plus MCP Registry publishing via OIDC.
 
 on:
   push:
@@ -46,9 +47,11 @@ concurrency:
 
 jobs:
   publish:
-    name: Build, verify, publish to npm
+    name: Build, verify, publish release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      MCP_PUBLISHER_VERSION: v1.7.9
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
@@ -75,6 +78,10 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify release metadata versions
+        run: |
+          node -e "const fs=require('node:fs'); const tag=process.env.GITHUB_REF_NAME.replace(/^v/, ''); const pkg=JSON.parse(fs.readFileSync('package.json', 'utf8')); const server=JSON.parse(fs.readFileSync('server.json', 'utf8')); if (pkg.version !== tag) throw new Error('package.json version ' + pkg.version + ' does not match ' + tag); if (server.version !== tag) throw new Error('server.json version ' + server.version + ' does not match ' + tag); for (const p of server.packages || []) { if (p.version !== tag) throw new Error('server.json package version ' + p.version + ' does not match ' + tag); }"
+
       - name: Verify package contents (dry run)
         # Lists what would be included in the published tarball. If anything
         # surprising shows up here, the build fails. Compare to package.json `files`.
@@ -86,4 +93,44 @@ jobs:
         # Users can verify with `npm view <pkg> --json | jq .dist.attestations`.
         # --access public required for first publish of unscoped packages and
         # is harmless on subsequent publishes.
-        run: npm publish --provenance --access public
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if npm view "swsd-mcp@${VERSION}" version >/dev/null 2>&1; then
+            echo "swsd-mcp@${VERSION} is already published; skipping npm publish."
+          else
+            npm publish --provenance --access public
+          fi
+
+      - name: Wait for npm package availability
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          for attempt in {1..18}; do
+            if npm view "swsd-mcp@${VERSION}" version >/dev/null 2>&1; then
+              echo "swsd-mcp@${VERSION} is visible on npm."
+              exit 0
+            fi
+            echo "Waiting for swsd-mcp@${VERSION} to appear on npm (attempt ${attempt}/18)..."
+            sleep 10
+          done
+          echo "swsd-mcp@${VERSION} did not appear on npm in time." >&2
+          exit 1
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSLO "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          curl -fsSLO "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/registry_${MCP_PUBLISHER_VERSION#v}_checksums.txt"
+          grep "  mcp-publisher_linux_amd64.tar.gz$" "registry_${MCP_PUBLISHER_VERSION#v}_checksums.txt" | sha256sum -c -
+          tar xzf mcp-publisher_linux_amd64.tar.gz mcp-publisher
+          chmod +x mcp-publisher
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if VERSION="${VERSION}" node --input-type=module -e "const version=process.env.VERSION; const res=await fetch('https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.mikimatsub/swsd'); if (!res.ok) process.exit(1); const data=await res.json(); const exists=data.servers?.some(({server}) => server?.name === 'io.github.mikimatsub/swsd' && server?.version === version); process.exit(exists ? 0 : 1);"; then
+            echo "io.github.mikimatsub/swsd ${VERSION} is already published; skipping MCP Registry publish."
+          else
+            ./mcp-publisher publish
+          fi
