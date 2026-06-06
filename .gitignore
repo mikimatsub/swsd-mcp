@@ -65,3 +65,6 @@ docs-site/public/d2/
 
 # Temporary release-note staging (do not commit; one-off content for gh release create)
 .release-notes-temp/
+
+# Local stakeholder video workspace and renders
+stakeholder-video/
