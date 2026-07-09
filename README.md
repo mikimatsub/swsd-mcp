@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Provenance](https://img.shields.io/badge/Provenance-SLSA-blue.svg)](https://www.npmjs.com/package/swsd-mcp)
 
-**MCP server for SolarWinds Service Desk (SWSD / Samanage).** Works with any [Model Context Protocol](https://modelcontextprotocol.io) client to read and modify SWSD tickets, comments, knowledge-base articles, and more, using each user's own SWSD API token. See the [client compatibility matrix](https://mcp-swsd.pages.dev/compatibility/) for the tested list.
+**MCP server for SolarWinds Service Desk (SWSD / Samanage).** Works with any [Model Context Protocol](https://modelcontextprotocol.io) client to handle tickets, service requests, knowledge-base work, change/release workflows, assets/CMDB context, procurement records, risks, time entries, and attachments using each user's own SWSD API token. See the [client compatibility matrix](https://mcp-swsd.pages.dev/compatibility/) for the tested list.
 
 📖 **Full docs:** [mcp-swsd.pages.dev](https://mcp-swsd.pages.dev)
 
@@ -133,6 +133,7 @@ Most users only need `SWSD_TOKEN` and `SWSD_BASE_URL`:
 | `SWSD_TOKEN` | — | Required. Your SWSD admin token (JWT). |
 | `SWSD_BASE_URL` | `https://api.samanage.com` | EU tenant: `https://apieu.samanage.com` |
 | `SWSD_PROFILE` | `agent` | `triage`, `agent`, `knowledge`, `operations`, or `full` — see [Profiles](https://mcp-swsd.pages.dev/configuration/#profiles) |
+| `SWSD_WRITE_MODE` | `live` | `live`, `dry-run`, or `disabled` — preview or block write tools without changing profiles |
 
 For the full env-var reference (HTTP transport, retries, rate limits, allowlists), see [Configuration](https://mcp-swsd.pages.dev/configuration/).
 

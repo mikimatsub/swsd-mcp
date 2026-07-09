@@ -67,7 +67,8 @@ az containerapp create \
     SWSD_TRANSPORT=http \
     SWSD_BASE_URL=https://api.samanage.com \
     SWSD_TRUST_PROXY=1 \
-    SWSD_PROFILE=full \
+    SWSD_PROFILE=operations \
+    SWSD_WRITE_MODE=live \
     SWSD_RATE_LIMIT_MAX=200 \
   --min-replicas 0 \
   --max-replicas 3 \
@@ -83,7 +84,8 @@ Key flags explained:
 | `--ingress external` | Accept traffic from the public internet (required for Copilot Studio) |
 | `--env-vars SWSD_TRANSPORT=http` | Tell swsd-mcp to use HTTP transport, not stdio |
 | `--env-vars SWSD_TRUST_PROXY=1` | Tell Express to trust Container Apps' reverse proxy so `req.ip` shows the real client |
-| `--env-vars SWSD_PROFILE=full` | Register all 66 tools (or pick `agent`, `triage`, `knowledge`, `operations`) |
+| `--env-vars SWSD_PROFILE=operations` | Register the 64-tool ITSM operations profile; use `full` only when the deployment also needs every KB write tool |
+| `--env-vars SWSD_WRITE_MODE=live` | Allow writes. Use `dry-run` for payload previews or `disabled` for read-only hosted deployments |
 | `--env-vars SWSD_RATE_LIMIT_MAX=200` | Slightly higher than default since this is a shared instance |
 | `--min-replicas 0` | Scale to zero when idle (the magic that makes this nearly free) |
 | `--max-replicas 3` | Cap concurrent instances to control cost spikes |
@@ -120,7 +122,7 @@ If both responses match, the deployment is healthy.
 
 ## Step 7: Connect Microsoft Copilot Studio
 
-1. Open one of the Swagger files in [`copilot-studio/`](../../copilot-studio/) — pick the one matching your `SWSD_PROFILE` (we set `full` above, so use `full.swagger.yaml`).
+1. Open one of the Swagger files in [`copilot-studio/`](../../copilot-studio/) — pick the one matching your `SWSD_PROFILE` (we set `operations` above, so use `operations.swagger.yaml`).
 2. Edit the `host:` line:
    ```yaml
    host: REPLACE_WITH_YOUR_HOST.example.com
