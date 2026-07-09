@@ -15,7 +15,7 @@ export default defineConfig({
     starlight({
       title: 'swsd-mcp',
       description:
-        'MCP server for SolarWinds Service Desk (SWSD / Samanage). Lets AI assistants read and modify tickets, comments, and KB articles.',
+        'MCP server for SolarWinds Service Desk (SWSD / Samanage). Lets AI assistants work with tickets, service catalog, KB articles, changes, releases, assets, CMDB, procurement, risk, time tracking, and attachments.',
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/mikimatsub/swsd-mcp' },
         { icon: 'npm', label: 'npm', href: 'https://www.npmjs.com/package/swsd-mcp' },

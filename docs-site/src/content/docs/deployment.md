@@ -123,7 +123,8 @@ az containerapp create \
     SWSD_TRANSPORT=http \
     SWSD_BASE_URL=https://api.samanage.com \
     SWSD_TRUST_PROXY=1 \
-    SWSD_PROFILE=full \
+    SWSD_PROFILE=operations \
+    SWSD_WRITE_MODE=live \
     SWSD_RATE_LIMIT_MAX=200 \
   --min-replicas 0 \
   --max-replicas 3 \
@@ -138,7 +139,8 @@ Key flags:
 | `--target-port 3000` | The container's internal listen port (matches the Dockerfile's EXPOSE) |
 | `--ingress external` | Accept traffic from the public internet (required for Copilot Studio) |
 | `SWSD_TRUST_PROXY=1` | Tell Express to trust Container Apps' reverse proxy so `req.ip` shows the real client (rate-limit accuracy) |
-| `SWSD_PROFILE=full` | Register all 66 tools (or pick `agent`, `triage`, `knowledge`, `operations`) |
+| `SWSD_PROFILE=operations` | Register the 64-tool ITSM operations profile; use `full` only when the deployment also needs every KB write tool |
+| `SWSD_WRITE_MODE=live` | Allow writes. Use `dry-run` for payload previews or `disabled` for read-only hosted deployments |
 | `SWSD_RATE_LIMIT_MAX=200` | Slightly higher than default since this is a shared instance |
 | `--min-replicas 0` | Scale to zero when idle (the magic that makes this nearly free) |
 | `--max-replicas 3` | Cap concurrent instances to control cost spikes |
@@ -252,7 +254,7 @@ Per-profile Swagger files live in [`copilot-studio/`](https://github.com/mikimat
 
 ### Import steps
 
-1. Pick the file matching your `SWSD_PROFILE`. Edit the `host:` line:
+1. Pick the file matching your `SWSD_PROFILE` (`operations.swagger.yaml` for the deployment example above). Edit the `host:` line:
    ```yaml
    host: REPLACE_WITH_YOUR_HOST.example.com
    ```

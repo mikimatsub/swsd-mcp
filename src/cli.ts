@@ -21,7 +21,8 @@ function parseArgs(argv: string[]): { transport?: TransportName } {
           '  SWSD_TOKEN          (required for stdio)\n' +
           '  SWSD_BASE_URL       (default https://api.samanage.com)\n' +
           '  SWSD_TRANSPORT      stdio | http (default stdio)\n' +
-          '  SWSD_PROFILE        triage | agent | knowledge | full (default agent)\n' +
+          '  SWSD_PROFILE        triage | agent | knowledge | operations | full (default agent)\n' +
+          '  SWSD_WRITE_MODE     live | dry-run | disabled (default live)\n' +
           '  PORT                (http transport, default 3000)\n',
       );
       process.exit(0);

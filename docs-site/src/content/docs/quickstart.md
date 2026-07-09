@@ -55,6 +55,8 @@ Any variable from the [Configuration](/configuration/) page goes into this same 
   "SWSD_PROFILE": "full"
 }
 ```
+
+When testing write-heavy workflows, add `SWSD_WRITE_MODE: "dry-run"` to preview create/update payloads without sending write requests to SWSD. Set it to `disabled` when a deployment should remain read-only even if a write tool is present in the profile.
 :::
 
 ## Find the right config file
@@ -102,6 +104,8 @@ Try asking the agent things like:
 - _"What services can I request through the catalog?"_ → calls `swsd_list_catalog_items`.
 - _"Submit a Software Request for Adobe Acrobat Pro."_ → calls `swsd_get_catalog_item` to read the form schema; in MCP Apps-capable hosts the catalog-item-form widget submits via `swsd_create_service_request` directly.
 - _"What custom fields are available on incidents?"_ → calls `swsd_describe_custom_fields` (with a searchable explorer UI in capable hosts).
+- _"Show changes planned this week and the affected configuration items."_ → use the `operations` profile to expose change/release plus CMDB tools.
+- _"Preview creating a change for the weekend firewall update without writing it."_ → set `SWSD_WRITE_MODE=dry-run`, then call `swsd_create_change` to inspect the payload.
 
 The full tool catalog is in [Tools reference](/tools/).
 

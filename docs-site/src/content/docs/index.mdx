@@ -1,6 +1,6 @@
 ---
 title: swsd-mcp
-description: MCP server for SolarWinds Service Desk (SWSD / Samanage). Lets AI assistants read and modify tickets, comments, and KB articles.
+description: MCP server for SolarWinds Service Desk (SWSD / Samanage). Lets AI assistants work with tickets, service catalog, KB articles, changes, releases, assets, CMDB, procurement, risk, time tracking, and attachments.
 template: splash
 hero:
   tagline: Plug SolarWinds Service Desk into any Model Context Protocol client. Zero credentials at rest.
@@ -26,6 +26,12 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
   </Card>
   <Card title="Profile-scoped tools" icon="setting">
     Pick `triage`, `agent`, `knowledge`, `operations`, or `full` to control which of the 66 tools across 15 categories each deployment exposes.
+  </Card>
+  <Card title="Operations workflow" icon="seti:config">
+    The `operations` profile adds change/release management, ITAM, CMDB lookup, procurement context, risk lookup, work logs, and attachments without enabling every tool.
+  </Card>
+  <Card title="Write safety controls" icon="seti:lock">
+    Set `SWSD_WRITE_MODE` to `dry-run` to preview write payloads or `disabled` to block write tools while keeping read-only context available.
   </Card>
   <Card title="MCP Apps UI" icon="laptop">
     Seven read tools ship rich UI bundles for capable hosts — incident detail, solution detail, incident list, comment thread, audit timeline, catalog-item form, custom-field explorer. Text-only clients are unaffected.

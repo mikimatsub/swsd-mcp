@@ -145,7 +145,7 @@ Reference frameworks we've drawn from. **We don't claim formal certification aga
 
 Every claim above includes a path to verification. The general approach:
 
-1. **Source code claims** — clone the repo, navigate to the cited file, read the implementation. The codebase is small (~3000 lines not counting tests).
+1. **Source code claims** — clone the repo, navigate to the cited file, read the implementation. The TypeScript source under `src/` is about 9,400 lines not counting tests.
 2. **Dependency claims** — `cat package.json package-lock.json` shows exact pinned versions; `cat .github/workflows/*.yml` shows pinned action SHAs.
 3. **Provenance claims** — `npm view swsd-mcp --json | jq .dist.attestations` shows SLSA attestations; `npm audit signatures` verifies.
 4. **CI claims** — workflow runs are public at [Actions tab](https://github.com/mikimatsub/swsd-mcp/actions); logs are inspectable.

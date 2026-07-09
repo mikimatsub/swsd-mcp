@@ -48,7 +48,7 @@ verified.
 | DoS via hung outbound calls | Medium → Mitigated | 30-second per-request timeout via `AbortSignal.timeout` in [`src/swsd/client.ts`](../src/swsd/client.ts) |
 | DNS rebinding attack | Medium → Mitigated | `Origin` header validation hook on `/mcp` requests |
 | Compromised maintainer account → malicious release | High → Mitigated | npm OIDC trusted publishing (no long-lived `NPM_TOKEN` exists); hardware 2FA on npm + GitHub accounts; SLSA provenance attestations on every release |
-| Compromised dependency (transitive supply chain) | Medium → Mitigated | All direct dependencies pinned to exact versions in `package-lock.json`; Renovate weekly updates; `npm audit` in CI; small dependency surface (5 direct production deps: `@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, `express`, `express-rate-limit`, `zod`) |
+| Compromised dependency (transitive supply chain) | Medium → Mitigated | All direct dependencies pinned to exact versions in `package-lock.json`; Renovate weekly updates; `npm audit` in CI; small dependency surface (7 direct production deps: `@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, `dompurify`, `express`, `express-rate-limit`, `helmet`, `zod`) |
 | Compromised GitHub Action | Medium → Mitigated | All actions in CI pinned to commit SHAs (not version tags); Renovate auto-PRs new SHAs |
 | Compromised Docker base image | Medium → Mitigated | `node:24-alpine` pinned by SHA256 digest in `Dockerfile`; Renovate tracks new digests |
 | Tenant data leakage in error responses | Medium → Mitigated | Error mapper in [`src/swsd/errors.ts`](../src/swsd/errors.ts) sanitizes upstream error bodies; never includes tokens; structured tool errors return only the field-level validation failures, not raw responses |
@@ -114,7 +114,7 @@ shouldn't see and minimizes context window cost.
 
 | Layer | Pinning strategy | Verification |
 |---|---|---|
-| Direct npm dependencies | Exact versions (no `^` ranges) | `cat package.json \| jq '.dependencies'` |
+| Direct npm dependencies | Declared in `package.json`; exact resolved versions pinned in `package-lock.json` | `cat package.json package-lock.json \| jq` |
 | Transitive npm dependencies | Locked via `package-lock.json` | Committed to repo |
 | GitHub Actions | Commit SHAs, not version tags | `grep -E 'uses:.+@[a-f0-9]{40}' .github/workflows/` |
 | Docker base image | SHA256 digest, not version tag | `head -10 Dockerfile` |
@@ -166,7 +166,7 @@ The build is deterministic — same source + same lockfile produces
 byte-identical published tarball:
 
 ```bash
-git checkout v1.0.0
+git checkout vX.Y.Z
 npm ci
 npm run build
 npm pack --dry-run
@@ -265,10 +265,10 @@ Every push to `main` and every PR runs:
 1. Install dependencies (`npm ci` against locked versions)
 2. Lint (`eslint .`)
 3. Typecheck (`tsc --noEmit`)
-4. Unit tests (`vitest run` — currently 146 tests across 10 files)
+4. Unit tests (`vitest run` — 668 tests passed in the v2.2.0 release run)
 5. Docker build (multi-stage, Alpine base)
 6. Container smoke test (boot, `/healthz` 200, `/mcp` 401-on-no-auth)
-7. (On push to main only) Image push to `ghcr.io` — private visibility
+7. (On push to main only) Image push to the public `ghcr.io/mikimatsub/swsd-mcp` package
 
 See [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
@@ -391,8 +391,8 @@ reference frameworks we've drawn from, not audits we've passed.
 Every claim above includes a path to verification. The general approach:
 
 1. **For source code claims**: clone the repo, navigate to the cited
-   file, read the implementation. The codebase is small (~3000 lines
-   not counting tests).
+   file, read the implementation. The TypeScript source under `src/` is
+   about 9,400 lines not counting tests.
 2. **For dependency claims**: `cat package.json package-lock.json`
    shows exact pinned versions; `cat .github/workflows/*.yml` shows
    pinned action SHAs.

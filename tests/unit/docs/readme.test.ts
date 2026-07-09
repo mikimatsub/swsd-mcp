@@ -9,11 +9,11 @@
  *
  * **Scope split (changed in the v2.1 docs overhaul):**
  *
- * The README intentionally documents only the three essential env vars
- * (SWSD_TOKEN, SWSD_BASE_URL, SWSD_PROFILE) — everything else lives in
+ * The README intentionally documents only the high-signal env vars
+ * (SWSD_TOKEN, SWSD_BASE_URL, SWSD_PROFILE, SWSD_WRITE_MODE) — everything else lives in
  * `docs-site/src/content/docs/configuration.md`, which is the canonical
  * full env-var reference. The Configuration-tables tests below enforce:
- *   - The README's three essential rows match EnvSchema defaults.
+ *   - The README's high-signal rows match EnvSchema defaults.
  *   - Every other EnvSchema key (minus SKIP) is documented in the docs-site
  *     configuration.md with a default that matches EnvSchema.
  * This keeps the no-drift guarantee while letting the README stay focused.
@@ -35,8 +35,8 @@ const CONFIG_DOC = readFileSync(
   'utf-8',
 );
 
-/** Vars that the README's slim "essentials" table is responsible for. */
-const README_ESSENTIALS = new Set(['SWSD_BASE_URL', 'SWSD_PROFILE']);
+/** Vars that the README's slim configuration table is responsible for. */
+const README_ESSENTIALS = new Set(['SWSD_BASE_URL', 'SWSD_PROFILE', 'SWSD_WRITE_MODE']);
 
 describe('README documentation contract', () => {
   describe('Profiles table', () => {
@@ -119,7 +119,7 @@ describe('README documentation contract', () => {
     }
 
     describe('README essentials', () => {
-      // The README only documents the three essential vars; the rest live in
+      // The README only documents the highest-signal vars; the rest live in
       // the docs-site configuration page (asserted in the next describe).
       for (const key of README_ESSENTIALS) {
         if (SKIP.has(key)) continue;

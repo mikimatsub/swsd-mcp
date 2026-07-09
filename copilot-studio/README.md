@@ -20,7 +20,7 @@ Re-run after any profile change.
 | `operations.swagger.yaml` | `operations` | 64 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context. |
 | `full.swagger.yaml` | `full` | 66 | Every tool. |
 
-The four files differ only in `info.title` and `info.description`. The
+The five files differ only in `info.title` and `info.description`. The
 endpoint, auth, and protocol declarations are identical. Pick the file
 whose label matches the `SWSD_PROFILE` your deployed MCP server is
 configured with.

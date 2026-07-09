@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.mikimatsub/swsd",
-  "description": "MCP server for SolarWinds Service Desk: tickets, knowledge base, and the service catalog.",
+  "description": "MCP server for SolarWinds Service Desk: tickets, service catalog, knowledge base, change/release workflows, assets/CMDB, procurement, and risk context.",
   "version": "2.2.0",
   "websiteUrl": "https://mcp-swsd.pages.dev",
   "repository": {
