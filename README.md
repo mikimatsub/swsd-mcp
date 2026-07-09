@@ -78,7 +78,7 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 
 ---
 
-## Tools (35 across 10 categories)
+## Tools (66 across 15 categories)
 
 | Category | Tools |
 |---|---|
@@ -87,6 +87,11 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 | **Comments** | `swsd_list_incident_comments`, `swsd_add_incident_comment`, `swsd_update_comment` |
 | **Tasks** | `swsd_list_incident_tasks`, `swsd_create_incident_task`, `swsd_update_task_state` |
 | **Problems** | `swsd_list_problems`, `swsd_get_problem`, `swsd_create_problem` |
+| **Change & Release** | `swsd_list_changes`, `swsd_get_change`, `swsd_create_change`, `swsd_update_change`, `swsd_list_releases`, `swsd_get_release`, `swsd_create_release`, `swsd_update_release` |
+| **Assets & CMDB** | `swsd_list_hardware_assets`, `swsd_get_hardware_asset`, `swsd_list_mobile_devices`, `swsd_get_mobile_device`, `swsd_list_printers`, `swsd_get_printer`, `swsd_list_software_assets`, `swsd_get_software_asset`, `swsd_list_other_assets`, `swsd_get_other_asset`, `swsd_list_configuration_items`, `swsd_get_configuration_item` |
+| **Procurement & Risk** | `swsd_list_contracts`, `swsd_get_contract`, `swsd_list_purchase_orders`, `swsd_get_purchase_order`, `swsd_list_vendors`, `swsd_get_vendor`, `swsd_list_risks` |
+| **Time tracking** | `swsd_list_time_tracks`, `swsd_log_time`, `swsd_update_time_track` |
+| **Attachments** | `swsd_upload_attachment` |
 | **Solutions / KB** | `swsd_search_solutions`, `swsd_get_solution`, `swsd_create_solution`, `swsd_update_solution` |
 | **Service Catalog** | `swsd_list_catalog_items`, `swsd_get_catalog_item`, `swsd_create_service_request` |
 | **Lookups** | `swsd_list_categories`, `swsd_list_sites`, `swsd_list_departments`, `swsd_list_users`, `swsd_list_groups`, `swsd_list_roles` |
@@ -127,7 +132,7 @@ Most users only need `SWSD_TOKEN` and `SWSD_BASE_URL`:
 |---|---|---|
 | `SWSD_TOKEN` | — | Required. Your SWSD admin token (JWT). |
 | `SWSD_BASE_URL` | `https://api.samanage.com` | EU tenant: `https://apieu.samanage.com` |
-| `SWSD_PROFILE` | `agent` | `triage`, `agent`, `knowledge`, or `full` — see [Profiles](https://mcp-swsd.pages.dev/configuration/#profiles) |
+| `SWSD_PROFILE` | `agent` | `triage`, `agent`, `knowledge`, `operations`, or `full` — see [Profiles](https://mcp-swsd.pages.dev/configuration/#profiles) |
 
 For the full env-var reference (HTTP transport, retries, rate limits, allowlists), see [Configuration](https://mcp-swsd.pages.dev/configuration/).
 
@@ -140,9 +145,10 @@ Profiles control which tools are registered at startup. Cannot be changed mid-se
 | Profile | Intent | Tool count |
 |---|---|---|
 | `triage` | Read-heavy first-line support + commenting | 14 |
-| `agent` | Full ticket-handler workflow (default) | 33 |
+| `agent` | Full ticket-handler workflow (default) | 37 |
 | `knowledge` | KB-author workflow + incident reads | 15 |
-| `full` | Every tool | 35 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 64 |
+| `full` | Every tool | 66 |
 
 Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a profile.
 

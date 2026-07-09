@@ -91,12 +91,22 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
     const method = (init.method ?? 'GET').toUpperCase();
     const isRetryable = method === 'GET' || method === 'HEAD';
 
+    const isMultipart =
+      typeof FormData !== 'undefined' && init.body instanceof FormData;
+    const headers = buildHeaders(env, token, init.headers);
+    if (isMultipart) {
+      delete headers['Content-Type'];
+    }
+
     const requestInit: RequestInit = {
       method,
-      headers: buildHeaders(env, token, init.headers),
+      headers,
     };
     if (init.body !== undefined) {
-      requestInit.body = typeof init.body === 'string' ? init.body : JSON.stringify(init.body);
+      requestInit.body =
+        typeof init.body === 'string' || isMultipart
+          ? (init.body as RequestInit['body'])
+          : JSON.stringify(init.body);
     }
 
     const res = await fetchWithRetry(url, requestInit, isRetryable);

@@ -47,6 +47,41 @@ import { registerGetRecordAudits } from '../tools/audits/getRecordAudits.js';
 import { registerListCatalogItems } from '../tools/catalog/listCatalogItems.js';
 import { registerGetCatalogItem } from '../tools/catalog/getCatalogItem.js';
 import { registerCreateServiceRequest } from '../tools/catalog/createServiceRequest.js';
+import {
+  registerCreateChange,
+  registerCreateRelease,
+  registerGetChange,
+  registerGetConfigurationItem,
+  registerGetContract,
+  registerGetHardwareAsset,
+  registerGetMobileDevice,
+  registerGetOtherAsset,
+  registerGetPrinter,
+  registerGetPurchaseOrder,
+  registerGetRelease,
+  registerGetSoftwareAsset,
+  registerGetVendor,
+  registerListChanges,
+  registerListConfigurationItems,
+  registerListContracts,
+  registerListHardwareAssets,
+  registerListMobileDevices,
+  registerListOtherAssets,
+  registerListPrinters,
+  registerListPurchaseOrders,
+  registerListReleases,
+  registerListRisks,
+  registerListSoftwareAssets,
+  registerListVendors,
+  registerUpdateChange,
+  registerUpdateRelease,
+} from '../tools/records/recordTools.js';
+import {
+  registerListTimeTracks,
+  registerLogTime,
+  registerUpdateTimeTrack,
+} from '../tools/timeTracks/timeTrackTools.js';
+import { registerUploadAttachment } from '../tools/attachments/uploadAttachment.js';
 
 export interface ToolContext {
   env: Env;
@@ -103,6 +138,40 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_list_catalog_items: registerListCatalogItems,
   swsd_get_catalog_item: registerGetCatalogItem,
   swsd_create_service_request: registerCreateServiceRequest,
+
+  swsd_list_changes: registerListChanges,
+  swsd_get_change: registerGetChange,
+  swsd_create_change: registerCreateChange,
+  swsd_update_change: registerUpdateChange,
+  swsd_list_releases: registerListReleases,
+  swsd_get_release: registerGetRelease,
+  swsd_create_release: registerCreateRelease,
+  swsd_update_release: registerUpdateRelease,
+
+  swsd_list_hardware_assets: registerListHardwareAssets,
+  swsd_get_hardware_asset: registerGetHardwareAsset,
+  swsd_list_mobile_devices: registerListMobileDevices,
+  swsd_get_mobile_device: registerGetMobileDevice,
+  swsd_list_printers: registerListPrinters,
+  swsd_get_printer: registerGetPrinter,
+  swsd_list_software_assets: registerListSoftwareAssets,
+  swsd_get_software_asset: registerGetSoftwareAsset,
+  swsd_list_other_assets: registerListOtherAssets,
+  swsd_get_other_asset: registerGetOtherAsset,
+  swsd_list_configuration_items: registerListConfigurationItems,
+  swsd_get_configuration_item: registerGetConfigurationItem,
+  swsd_list_contracts: registerListContracts,
+  swsd_get_contract: registerGetContract,
+  swsd_list_purchase_orders: registerListPurchaseOrders,
+  swsd_get_purchase_order: registerGetPurchaseOrder,
+  swsd_list_vendors: registerListVendors,
+  swsd_get_vendor: registerGetVendor,
+  swsd_list_risks: registerListRisks,
+
+  swsd_list_time_tracks: registerListTimeTracks,
+  swsd_log_time: registerLogTime,
+  swsd_update_time_track: registerUpdateTimeTrack,
+  swsd_upload_attachment: registerUploadAttachment,
 };
 
 export function registerTools(server: McpServer, ctx: ToolContext): void {

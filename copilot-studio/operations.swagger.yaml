@@ -1,10 +1,10 @@
 swagger: '2.0'
 info:
-  title: SWSD MCP — agent profile
+  title: SWSD MCP — operations profile
   description: |
-    SolarWinds Service Desk MCP server, agent profile (37 tools).
+    SolarWinds Service Desk MCP server, operations profile (64 tools).
 
-    Full ticket-handler workflow: incident reads, writes (create / update / assign / state-transition / link-solution), comment reads and writes (public, private, edit), all six lookup tools (categories, sites, departments, users, groups, roles), solution reads (search + get) for KB lookups while triaging, plus custom-field schema introspection.
+    ITSM operations workflow: the default agent ticket-handler tool set plus change/release management, asset and CMDB lookups, procurement context, risk lookup, work logs, and attachments.
 
     Tools are discovered at runtime via MCP `tools/list` after the
     Copilot connector establishes a session. This Swagger only declares

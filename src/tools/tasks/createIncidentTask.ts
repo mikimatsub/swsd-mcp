@@ -5,6 +5,7 @@ import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
 import { buildTaskWritePayload, toTask } from '../../swsd/mappers/task.js';
 import { resolveIncidentRef } from '../../utils/idResolver.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 export function registerCreateIncidentTask(server: McpServer, ctx: ToolContext): void {
@@ -28,10 +29,15 @@ export function registerCreateIncidentTask(server: McpServer, ctx: ToolContext):
           due_at,
           assignee_email,
         });
-        const { body: respBody } = await ctx.client.post<unknown>(
-          `/incidents/${String(resolvedIncidentId)}/tasks.json`,
-          payload,
-        );
+        const path = `/incidents/${String(resolvedIncidentId)}/tasks.json`;
+        const gated = checkWriteMode(ctx, {
+          method: 'POST',
+          path,
+          body: payload,
+          action: `create task on incident ${String(resolvedIncidentId)}`,
+        });
+        if (gated) return gated;
+        const { body: respBody } = await ctx.client.post<unknown>(path, payload);
         const task = toTask(respBody);
         if (!task) {
           return toolError('Could not parse created-task response from SWSD.');

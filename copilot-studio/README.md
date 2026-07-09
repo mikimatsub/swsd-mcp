@@ -15,9 +15,10 @@ Re-run after any profile change.
 | File | Profile | Tools | When to use |
 |---|---|---|---|
 | `triage.swagger.yaml` | `triage` | 14 | First-line support agents who read tickets and post comments but don't reassign or close. |
-| `agent.swagger.yaml` | `agent` | 33 | Full ticket-handler workflow (default). |
+| `agent.swagger.yaml` | `agent` | 37 | Full ticket-handler workflow (default). |
 | `knowledge.swagger.yaml` | `knowledge` | 15 | KB authors browsing incident context plus full solution CRUD. |
-| `full.swagger.yaml` | `full` | 35 | Every tool. |
+| `operations.swagger.yaml` | `operations` | 64 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context. |
+| `full.swagger.yaml` | `full` | 66 | Every tool. |
 
 The four files differ only in `info.title` and `info.description`. The
 endpoint, auth, and protocol declarations are identical. Pick the file
@@ -96,7 +97,7 @@ In Copilot Studio's connector test pane:
 ```
 
 A successful test returns a JSON-RPC response with the tools array
-containing the entries for your selected profile (e.g. 16 for `agent`).
+containing the entries for your selected profile (e.g. 37 for `agent`).
 
 ---
 

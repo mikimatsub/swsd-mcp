@@ -5,6 +5,7 @@ import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
 import { toCommentSummary } from '../../swsd/mappers/comment.js';
 import { resolveIncidentRef } from '../../utils/idResolver.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 export function registerAddIncidentComment(server: McpServer, ctx: ToolContext): void {
@@ -22,10 +23,15 @@ export function registerAddIncidentComment(server: McpServer, ctx: ToolContext):
       try {
         const { id: resolvedIncidentId } = await resolveIncidentRef(incident_id, ctx.client);
         const payload = { comment: { body, is_private } };
-        const { body: respBody } = await ctx.client.post<unknown>(
-          `/incidents/${String(resolvedIncidentId)}/comments.json`,
-          payload,
-        );
+        const path = `/incidents/${String(resolvedIncidentId)}/comments.json`;
+        const gated = checkWriteMode(ctx, {
+          method: 'POST',
+          path,
+          body: payload,
+          action: `add comment to incident ${String(resolvedIncidentId)}`,
+        });
+        if (gated) return gated;
+        const { body: respBody } = await ctx.client.post<unknown>(path, payload);
         const comment = toCommentSummary(respBody);
         if (!comment) {
           return toolError('Could not parse new-comment response from SWSD.');

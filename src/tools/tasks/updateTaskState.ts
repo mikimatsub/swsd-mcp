@@ -5,6 +5,7 @@ import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
 import { buildTaskWritePayload, toTask } from '../../swsd/mappers/task.js';
 import { resolveIncidentRef } from '../../utils/idResolver.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 export function registerUpdateTaskState(server: McpServer, ctx: ToolContext): void {
@@ -25,10 +26,15 @@ export function registerUpdateTaskState(server: McpServer, ctx: ToolContext): vo
         const { id: resolvedIncidentId } = await resolveIncidentRef(incident_id, ctx.client);
         const state = completed ? 'Completed' : 'New';
         const payload = buildTaskWritePayload({ state });
-        const { body: respBody } = await ctx.client.put<unknown>(
-          `/incidents/${String(resolvedIncidentId)}/tasks/${String(task_id)}.json`,
-          payload,
-        );
+        const path = `/incidents/${String(resolvedIncidentId)}/tasks/${String(task_id)}.json`;
+        const gated = checkWriteMode(ctx, {
+          method: 'PUT',
+          path,
+          body: payload,
+          action: `set task ${String(task_id)} on incident ${String(resolvedIncidentId)} to ${state}`,
+        });
+        if (gated) return gated;
+        const { body: respBody } = await ctx.client.put<unknown>(path, payload);
         const task = toTask(respBody);
         if (!task) {
           return toolError('Could not parse updated-task response from SWSD.');

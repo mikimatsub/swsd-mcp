@@ -47,11 +47,16 @@ const DESCRIPTIONS: Record<keyof typeof PROFILE_TOOLS, string> = {
     'KB-author workflow: incident reads (for context), category/user lookups, ' +
     'full solution CRUD (search, get, create, update), and custom-field schema ' +
     'introspection.',
+  operations:
+    'ITSM operations workflow: the default agent ticket-handler tool set plus ' +
+    'change/release management, asset and CMDB lookups, procurement context, ' +
+    'risk lookup, work logs, and attachments.',
   full:
     'Every non-destructive tool that has been validated against the live SWSD ' +
     'tenant. Includes incident CRUD + solution-linking, comment CRU (create/' +
-    'read/update), all lookups, solution CRUD, and custom-field schema ' +
-    'introspection.',
+    'read/update), all lookups, solution CRUD, change/release management, ' +
+    'ITAM/CMDB/procurement reads, time tracking, attachments, and custom-field ' +
+    'schema introspection.',
 };
 
 const PROFILES: Record<string, ProfileMeta> = Object.fromEntries(

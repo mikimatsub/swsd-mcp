@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 export const SERVER_NAME = 'swsd-mcp';
-export const SERVER_VERSION = '2.1.1';
+export const SERVER_VERSION = '2.2.0';
 
 const INSTRUCTIONS = [
   'Tools wrap the SolarWinds Service Desk (SWSD / Samanage) API.',
