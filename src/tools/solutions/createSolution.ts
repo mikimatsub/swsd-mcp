@@ -7,6 +7,7 @@ import {
   buildSolutionWritePayload,
   toSolutionDetail,
 } from '../../swsd/mappers/solution.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 export function registerCreateSolution(server: McpServer, ctx: ToolContext): void {
@@ -26,7 +27,15 @@ export function registerCreateSolution(server: McpServer, ctx: ToolContext): voi
     async (input) => {
       try {
         const payload = buildSolutionWritePayload(input);
-        const { body } = await ctx.client.post<unknown>('/solutions.json', payload);
+        const path = '/solutions.json';
+        const gated = checkWriteMode(ctx, {
+          method: 'POST',
+          path,
+          body: payload,
+          action: 'create solution',
+        });
+        if (gated) return gated;
+        const { body } = await ctx.client.post<unknown>(path, payload);
         const solution = toSolutionDetail(body);
         if (!solution) {
           return toolError('Could not parse created-solution response from SWSD.');

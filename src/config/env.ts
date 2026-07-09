@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
-const PROFILES = ['triage', 'agent', 'knowledge', 'full'] as const;
+const PROFILES = ['triage', 'agent', 'knowledge', 'operations', 'full'] as const;
 const TRANSPORTS = ['stdio', 'http'] as const;
+const WRITE_MODES = ['live', 'dry-run', 'disabled'] as const;
 
 const csv = (raw: string | undefined): string[] =>
   raw
@@ -53,6 +54,12 @@ export const EnvSchema = z.object({
   SWSD_API_VERSION: z.string().min(1).default('v2.1'),
   SWSD_TRANSPORT: z.enum(TRANSPORTS).default('stdio'),
   SWSD_PROFILE: z.enum(PROFILES).default('agent'),
+  SWSD_WRITE_MODE: z
+    .enum(WRITE_MODES)
+    .default('live')
+    .describe(
+      'Write safety mode. live = call SWSD normally; dry-run = return the request that would be sent; disabled = reject all write tools.',
+    ),
   SWSD_ENABLE_EXTRAS: z
     .string()
     .optional()
@@ -78,8 +85,10 @@ export const EnvSchema = z.object({
 export type Env = z.infer<typeof EnvSchema>;
 export type ProfileName = (typeof PROFILES)[number];
 export type TransportName = (typeof TRANSPORTS)[number];
+export type WriteMode = (typeof WRITE_MODES)[number];
 export const KNOWN_PROFILES = PROFILES;
 export const KNOWN_TRANSPORTS = TRANSPORTS;
+export const KNOWN_WRITE_MODES = WRITE_MODES;
 
 export function parseEnv(raw: NodeJS.ProcessEnv): Env {
   const result = EnvSchema.safeParse(raw);

@@ -1,9 +1,14 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolContext } from '../../../../src/config/toolRegistry.js';
 import type {
+  Env,
+} from '../../../../src/config/env.js';
+import type {
   SwsdClient,
   SwsdGetResult,
   SwsdMutationResult,
+  SwsdRawResult,
+  SwsdRequestInit,
 } from '../../../../src/swsd/client.js';
 
 /**
@@ -60,7 +65,13 @@ export interface CapturedPut {
   body: unknown;
 }
 
-export type CapturedCall = CapturedGet | CapturedPost | CapturedPut;
+export interface CapturedRaw {
+  type: 'raw';
+  path: string;
+  init: SwsdRequestInit;
+}
+
+export type CapturedCall = CapturedGet | CapturedPost | CapturedPut | CapturedRaw;
 
 export interface FakeClient extends SwsdClient {
   /** Every captured call, in order. */
@@ -78,6 +89,8 @@ export interface FakeClient extends SwsdClient {
   setPostResponse: (body: unknown) => void;
   /** Set the response body for any PUT call. */
   setPutResponse: (body: unknown) => void;
+  /** Set the response body/status for any rawRequest call. */
+  setRawResponse: (body: unknown, status?: number) => void;
 }
 
 /**
@@ -85,7 +98,7 @@ export interface FakeClient extends SwsdClient {
  *   - GET returns `[]` unless `setLookupBody` or `setBodyForPath` overrides
  *   - POST returns `null` (override with `setPostResponse`)
  *   - PUT returns `null` (override with `setPutResponse`)
- *   - `rawRequest` is unimplemented (no current tool needs it under test)
+ *   - rawRequest returns `null` (override with `setRawResponse`)
  *
  * `setBodyForPath` matchers take precedence over `setLookupBody` — when a
  * matcher returns true for the requested path, that body is used; otherwise
@@ -99,6 +112,8 @@ export function makeFakeClient(): FakeClient {
   let defaultGetBody: unknown = [];
   let postResponse: unknown = null;
   let putResponse: unknown = null;
+  let rawResponse: unknown = null;
+  let rawStatus = 200;
 
   const get = async <T>(
     path: string,
@@ -144,8 +159,16 @@ export function makeFakeClient(): FakeClient {
     };
   };
 
-  const notImpl = async <T>(): Promise<T> => {
-    throw new Error('not implemented in fake');
+  const rawRequest = async (
+    path: string,
+    init: SwsdRequestInit,
+  ): Promise<SwsdRawResult> => {
+    calls.push({ type: 'raw', path, init });
+    return {
+      body: rawResponse,
+      headers: new Headers(),
+      status: rawStatus,
+    };
   };
 
   return {
@@ -162,10 +185,14 @@ export function makeFakeClient(): FakeClient {
     setPutResponse: (body: unknown) => {
       putResponse = body;
     },
+    setRawResponse: (body: unknown, status = 200) => {
+      rawResponse = body;
+      rawStatus = status;
+    },
     get,
     post,
     put,
-    rawRequest: notImpl,
+    rawRequest,
   } as unknown as FakeClient;
 }
 
@@ -174,11 +201,15 @@ export function makeFakeClient(): FakeClient {
  * are stubbed because no tool handler under test reads them — they exist on
  * ToolContext for the registry's bookkeeping, not for the handler itself.
  */
-export function makeCtx(client: SwsdClient): ToolContext {
+export function makeCtx(client: SwsdClient, env: Partial<Env> = {}): ToolContext {
   return {
     client,
     profile: 'agent',
-    env: {} as never,
+    env: {
+      SWSD_WRITE_MODE: 'live',
+      SWSD_TRANSPORT: 'stdio',
+      ...env,
+    } as Env,
     enabledTools: [],
     token: '',
   } satisfies ToolContext;

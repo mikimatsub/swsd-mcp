@@ -5,6 +5,7 @@ import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
 import { toCommentSummary } from '../../swsd/mappers/comment.js';
 import { resolveIncidentRef } from '../../utils/idResolver.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 export function registerUpdateComment(server: McpServer, ctx: ToolContext): void {
@@ -23,10 +24,15 @@ export function registerUpdateComment(server: McpServer, ctx: ToolContext): void
       try {
         const { id: resolvedIncidentId } = await resolveIncidentRef(incident_id, ctx.client);
         const payload = { comment: { body } };
-        const { body: respBody } = await ctx.client.put<unknown>(
-          `/incidents/${String(resolvedIncidentId)}/comments/${String(comment_id)}.json`,
-          payload,
-        );
+        const path = `/incidents/${String(resolvedIncidentId)}/comments/${String(comment_id)}.json`;
+        const gated = checkWriteMode(ctx, {
+          method: 'PUT',
+          path,
+          body: payload,
+          action: `update comment ${String(comment_id)} on incident ${String(resolvedIncidentId)}`,
+        });
+        if (gated) return gated;
+        const { body: respBody } = await ctx.client.put<unknown>(path, payload);
         const comment = toCommentSummary(respBody);
         if (!comment) {
           return toolError('Could not parse updated-comment response from SWSD.');

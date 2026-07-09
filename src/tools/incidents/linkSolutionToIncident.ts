@@ -8,6 +8,7 @@ import {
   toIncidentDetail,
 } from '../../swsd/mappers/incident.js';
 import { resolveIncidentRef, resolveSolutionRef } from '../../utils/idResolver.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -85,10 +86,15 @@ export function registerLinkSolutionToIncident(
 
         const merged = [...existingIds, resolvedSolutionId];
         const payload = buildIncidentWritePayload({ solution_ids: merged });
-        const { body } = await ctx.client.put<unknown>(
-          `/incidents/${String(resolvedIncidentId)}.json`,
-          payload,
-        );
+        const path = `/incidents/${String(resolvedIncidentId)}.json`;
+        const gated = checkWriteMode(ctx, {
+          method: 'PUT',
+          path,
+          body: payload,
+          action: `link solution ${String(resolvedSolutionId)} to incident ${String(resolvedIncidentId)}`,
+        });
+        if (gated) return gated;
+        const { body } = await ctx.client.put<unknown>(path, payload);
         const updated = toIncidentDetail(body);
         if (!updated) {
           return toolError('Could not parse update response after linking solution.');
