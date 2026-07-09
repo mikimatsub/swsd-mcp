@@ -6,6 +6,7 @@ import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
 import { decodeJwtPayload, getUserIdFromJwtClaims } from '../../swsd/jwt.js';
 import { toUserMeRecord } from '../../swsd/mappers/me.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 const IncidentResponseOutput = z.object({
@@ -115,9 +116,15 @@ export function registerCreateServiceRequest(
         }
 
         const path = `/catalog_items/${String(input.catalog_item_id)}/service_requests.json`;
-        const { body: response } = await ctx.client.post<unknown>(path, {
-          incident,
+        const payload = { incident };
+        const gated = checkWriteMode(ctx, {
+          method: 'POST',
+          path,
+          body: payload,
+          action: `create service request from catalog item ${String(input.catalog_item_id)}`,
         });
+        if (gated) return gated;
+        const { body: response } = await ctx.client.post<unknown>(path, payload);
 
         // Step 3: Validate + map the response.
         if (typeof response !== 'object' || response === null) {

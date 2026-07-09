@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-07-08
+
+### Added
+
+- Added an `operations` profile for ITSM lifecycle work, with 64 tools: the
+  default agent workflow plus change/release management, asset/CMDB lookup,
+  procurement context, risk lookup, time tracking, and attachments.
+- Added change and release read/write tools:
+  `swsd_list_changes`, `swsd_get_change`, `swsd_create_change`,
+  `swsd_update_change`, `swsd_list_releases`, `swsd_get_release`,
+  `swsd_create_release`, and `swsd_update_release`.
+- Added read-only asset, CMDB, procurement, and risk tools for hardware,
+  mobile devices, printers, software, other assets, configuration items,
+  contracts, purchase orders, vendors, and risks.
+- Added time tracking tools for incidents, problems, changes, and releases:
+  `swsd_list_time_tracks`, `swsd_log_time`, and
+  `swsd_update_time_track`.
+- Added `swsd_upload_attachment` with base64 input for hosted/HTTP clients
+  and stdio-only local `file_path` support.
+- Added `SWSD_WRITE_MODE=live|dry-run|disabled` and applied it to all write
+  tools so operators can preview or block mutations without changing
+  profiles.
+
+### Changed
+
+- The default `agent` profile now includes time tracking and attachment
+  workflow tools, increasing from 33 to 37 tools.
+- The `full` profile now exposes 66 tools across 15 categories.
+- Copilot Studio Swagger artifacts now include the new `operations` profile.
+
 ## [2.1.1] - 2026-06-05
 
 Patch release for public package metadata only. No API behavior changes.
@@ -508,7 +538,8 @@ Detailed history available via `git log`.
 * **2026-05-03** — `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/mikimatsub/swsd-mcp/compare/v2.0.1...v2.0.2

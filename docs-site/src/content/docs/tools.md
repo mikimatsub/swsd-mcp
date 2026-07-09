@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 35 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 66 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **35 tools** across 10 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime — ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **66 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime — ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
@@ -39,7 +39,7 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 | Symbol | Meaning |
 |---|---|
 | ✓ | Tool is registered in this profile |
-| W | Write tool — modifies SWSD state. Does not retry on transient failure (avoids duplicate writes). |
+| W | Write tool — modifies SWSD state. Does not retry on transient failure (avoids duplicate writes). Honors `SWSD_WRITE_MODE`. |
 | R | Read tool — safe to retry; auto-retries up to `SWSD_RETRY_MAX_ATTEMPTS` on 5xx/network errors. |
 | UI | Ships an [MCP Apps](#mcp-apps-ui-bundles) UI bundle (SEP-1865). Capable hosts render a rich interactive view; text-only clients are unaffected. |
 
@@ -47,11 +47,11 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 
 ## Utility (3)
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_get_server_info` | R | ✓ | ✓ | ✓ | ✓ |
-| `swsd_health_check` | R | ✓ | ✓ | ✓ | ✓ |
-| `swsd_get_me` | R | ✓ | ✓ | ✓ | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_get_server_info` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_health_check` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_get_me` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 `swsd_get_server_info` returns version, profile, transport, base URL, and the list of enabled tools — useful for verifying server configuration from inside the MCP client. Also includes documented SWSD upstream rate limits (`upstream_rate_limit`: 1000 calls/min on Advanced, 1500 on Premier; signal: `429 + Retry-After` only — SWSD does not return `X-RateLimit-*` headers) so the model can reference these without guessing.
 
@@ -63,16 +63,16 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 
 ## Incidents (8)
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_list_incidents` | R, UI | ✓ | ✓ | ✓ | ✓ |
-| `swsd_list_my_incidents` | R, UI | ✓ | ✓ | ✓ | ✓ |
-| `swsd_get_incident` | R, UI | ✓ | ✓ | ✓ | ✓ |
-| `swsd_create_incident` | W |   | ✓ |   | ✓ |
-| `swsd_update_incident` | W |   | ✓ |   | ✓ |
-| `swsd_assign_incident` | W |   | ✓ |   | ✓ |
-| `swsd_update_incident_state` | W |   | ✓ |   | ✓ |
-| `swsd_link_solution_to_incident` | W |   | ✓ |   | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_incidents` | R, UI | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_list_my_incidents` | R, UI | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_get_incident` | R, UI | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_create_incident` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_update_incident` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_assign_incident` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_update_incident_state` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_link_solution_to_incident` | W |   | ✓ |   | ✓ | ✓ |
 
 - **`swsd_list_incidents`** — paginated list with structured filters using SWSD repeated-key array semantics (multiple values within a filter are OR-ed). Filters: `states`, `priorities`, `categories`, `assignee_email`, `requester_email`, `sites`, `departments`, `assigned_to_group` (group ID, not user ID), `created_from`/`created_to`, `updated_from`/`updated_to`, `updated_within` (date-natural-language alias — `"24h"`, `"7d"`, `"1w"`, `"30d"`, etc.), `state_is_not` (negative state filter — e.g. `["Resolved", "Closed"]` to see only open work), `sort_by` (`created_at`, `updated_at`, `priority`, `name`, `due_at`), `sort_order` (`ASC`/`DESC`), `query` (free-text across title and description). Returns compact summaries (id, name, state, priority, assignee_email, requester_email, category, updated_at) — call `swsd_get_incident` for full detail of any one row.
 - **`swsd_list_my_incidents`** — thin wrapper over `swsd_list_incidents` that auto-resolves the authenticated user's email (via JWT decode + `/users/{user_ic}.json`) and applies it as `assignee_email`. One round-trip instead of two for first-person queries ("my tickets", "tickets assigned to me"). Same input shape as `swsd_list_incidents` minus `assignee_email`. Renders the same `incident-list` widget as `swsd_list_incidents` in MCP Apps-capable hosts. For tenant-wide queries use `swsd_list_incidents` with explicit filters.
@@ -91,11 +91,11 @@ As of v2, `swsd_list_incidents` and `swsd_list_my_incidents` return an `applied_
 
 ## Service Catalog (3)
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_list_catalog_items` | R | ✓ | ✓ | ✓ | ✓ |
-| `swsd_get_catalog_item` | R, UI | ✓ | ✓ | ✓ | ✓ |
-| `swsd_create_service_request` | W |   | ✓ |   | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_catalog_items` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_get_catalog_item` | R, UI | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_create_service_request` | W |   | ✓ |   | ✓ | ✓ |
 
 Use the catalog flow when the user asks to **request** something — new hardware, software access, an account, a file restore — instead of `swsd_create_incident`. SWSD's catalog items carry pre-defined approval routing, request variables (form fields), category/subcategory defaults, and SLA targets that a free-form incident misses. The server `instructions` advertise this preference order so capable agents pick the catalog flow automatically.
 
@@ -111,11 +111,11 @@ A "list my service requests" wrapper is not shipped. The SAManage REST API has n
 
 ## Comments (3)
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_list_incident_comments` | R, UI | ✓ | ✓ |   | ✓ |
-| `swsd_add_incident_comment` | W | ✓ | ✓ |   | ✓ |
-| `swsd_update_comment` | W |   | ✓ |   | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_incident_comments` | R, UI | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_add_incident_comment` | W | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_update_comment` | W |   | ✓ |   | ✓ | ✓ |
 
 - **`swsd_list_incident_comments`** — paginated comment thread for an incident, including private/internal comments if your token has permission. Accepts the incident's `id` or human-facing `number`. Renders the `comment-thread` widget in MCP Apps-capable hosts (vertical conversation with author chips, timestamps, public/private badges, sanitized HTML bodies).
 - **`swsd_add_incident_comment`** — post a new comment. Set `is_private: true` for internal-only comments (default `false` = visible to the requester). Accepts the incident's `id` or human-facing `number`. To edit later, use `swsd_update_comment`.
@@ -125,11 +125,11 @@ A "list my service requests" wrapper is not shipped. The SAManage REST API has n
 
 ## Tasks (3)
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_list_incident_tasks` | R | ✓ | ✓ |   | ✓ |
-| `swsd_create_incident_task` | W |   | ✓ |   | ✓ |
-| `swsd_update_task_state` | W |   | ✓ |   | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_incident_tasks` | R | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_create_incident_task` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_update_task_state` | W |   | ✓ |   | ✓ | ✓ |
 
 SWSD incident sub-tasks are inline-only — they exist as ordered children of a parent incident, not as first-class records, so every tool here takes an `incident_id_or_number`.
 
@@ -139,13 +139,39 @@ SWSD incident sub-tasks are inline-only — they exist as ordered children of a 
 
 ---
 
+## Time Tracking (3)
+
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_time_tracks` | R |   | ✓ |   | ✓ | ✓ |
+| `swsd_log_time` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_update_time_track` | W |   | ✓ |   | ✓ | ✓ |
+
+Time entries are scoped to a parent `incident`, `problem`, `change`, or `release`.
+
+- **`swsd_list_time_tracks`** — paginated work-log lookup for a parent record.
+- **`swsd_log_time`** — add a time entry with a description and `minutes_parsed`.
+- **`swsd_update_time_track`** — update an existing time entry's description and/or minutes.
+
+---
+
+## Attachments (1)
+
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_upload_attachment` | W |   | ✓ |   | ✓ | ✓ |
+
+- **`swsd_upload_attachment`** — upload evidence to incidents, problems, changes, releases, solutions, hardware assets, other assets, or configuration items. Use `content_base64` for HTTP/hosted clients; `file_path` is allowed only in stdio mode.
+
+---
+
 ## Problems (3)
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_list_problems` | R | ✓ | ✓ |   | ✓ |
-| `swsd_get_problem` | R |   | ✓ |   | ✓ |
-| `swsd_create_problem` | W |   | ✓ |   | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_problems` | R | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_get_problem` | R |   | ✓ |   | ✓ | ✓ |
+| `swsd_create_problem` | W |   | ✓ |   | ✓ | ✓ |
 
 ITIL problem records — separate from incidents, scoped to root-cause investigation across recurring incidents. Read-only visibility ships in the `triage` profile so first-line support can see open root-cause work without granting promote/create rights.
 
@@ -155,14 +181,79 @@ ITIL problem records — separate from incidents, scoped to root-cause investiga
 
 ---
 
+## Change & Release (8)
+
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_changes` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_change` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_change` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_change` | W |   |   |   | ✓ | ✓ |
+| `swsd_list_releases` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_release` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_release` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_release` | W |   |   |   | ✓ | ✓ |
+
+Use these for ITSM lifecycle work that needs change/release records instead of free-form incidents.
+
+- **`swsd_list_changes` / `swsd_get_change`** — browse and inspect SWSD change records. `detail_level: "long"` maps to SWSD `layout=long` where documented.
+- **`swsd_create_change` / `swsd_update_change`** — create or update change records with plans, rollback/test plans, CI links, tags, and custom fields.
+- **`swsd_list_releases` / `swsd_get_release`** — browse and inspect release records.
+- **`swsd_create_release` / `swsd_update_release`** — create or update release plans, build/deploy notes, linked changes, CIs, tags, and custom fields.
+
+---
+
+## Assets & CMDB (12)
+
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_hardware_assets` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_hardware_asset` | R |   |   |   | ✓ | ✓ |
+| `swsd_list_mobile_devices` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_mobile_device` | R |   |   |   | ✓ | ✓ |
+| `swsd_list_printers` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_printer` | R |   |   |   | ✓ | ✓ |
+| `swsd_list_software_assets` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_software_asset` | R |   |   |   | ✓ | ✓ |
+| `swsd_list_other_assets` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_other_asset` | R |   |   |   | ✓ | ✓ |
+| `swsd_list_configuration_items` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_configuration_item` | R |   |   |   | ✓ | ✓ |
+
+These read tools expose asset and CMDB context without adding asset mutation risk.
+
+- **Hardware, mobile, printer, software, and other asset tools** — compact list views plus single-record passthrough detail for asset investigation.
+- **Configuration item tools** — CMDB lookup for change planning and dependency review.
+
+---
+
+## Procurement & Risk (7)
+
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_contracts` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_contract` | R |   |   |   | ✓ | ✓ |
+| `swsd_list_purchase_orders` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_purchase_order` | R |   |   |   | ✓ | ✓ |
+| `swsd_list_vendors` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_vendor` | R |   |   |   | ✓ | ✓ |
+| `swsd_list_risks` | R |   |   |   | ✓ | ✓ |
+
+Procurement context helps agents answer warranty, vendor, and purchase-history questions without opening a separate system.
+
+- **Contract, purchase order, and vendor tools** — list and inspect procurement records tied to operational work.
+- **`swsd_list_risks`** — browse documented SWSD risk records.
+
+---
+
 ## Solutions / Knowledge Base (4)
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_search_solutions` | R |   | ✓ | ✓ | ✓ |
-| `swsd_get_solution` | R, UI |   | ✓ | ✓ | ✓ |
-| `swsd_create_solution` | W |   |   | ✓ | ✓ |
-| `swsd_update_solution` | W |   |   | ✓ | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_search_solutions` | R |   | ✓ | ✓ | ✓ | ✓ |
+| `swsd_get_solution` | R, UI |   | ✓ | ✓ | ✓ | ✓ |
+| `swsd_create_solution` | W |   |   | ✓ |   | ✓ |
+| `swsd_update_solution` | W |   |   | ✓ |   | ✓ |
 
 - **`swsd_search_solutions`** — full-text search across titles and descriptions. Pass `category` to filter to a specific KB section.
 - **`swsd_get_solution`** — full solution as returned by SWSD (passthrough), including both `description` (HTML) and `description_no_html` (plain text), custom-field values, comments count, and attachment metadata. Accepts the solution's `id` or human-facing `number`. Pass `detail_level: "long"` to include attachments, audits, tags, and full statistics in one call. Default `"short"` is faster. Renders the `solution-detail` widget in MCP Apps-capable hosts (full sanitized HTML body, not just an excerpt — the whole point of opening a KB article).
@@ -175,14 +266,14 @@ ITIL problem records — separate from incidents, scoped to root-cause investiga
 
 All lookup tools are read-only. They exist to validate IDs/names before passing to write tools (e.g., look up a site name before creating an incident with `site_name`).
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_list_categories` | R | ✓ | ✓ | ✓ | ✓ |
-| `swsd_list_sites` | R |   | ✓ |   | ✓ |
-| `swsd_list_departments` | R |   | ✓ |   | ✓ |
-| `swsd_list_users` | R | ✓ | ✓ | ✓ | ✓ |
-| `swsd_list_groups` | R |   | ✓ |   | ✓ |
-| `swsd_list_roles` | R |   | ✓ |   | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_list_categories` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_list_sites` | R |   | ✓ |   | ✓ | ✓ |
+| `swsd_list_departments` | R |   | ✓ |   | ✓ | ✓ |
+| `swsd_list_users` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_list_groups` | R |   | ✓ |   | ✓ | ✓ |
+| `swsd_list_roles` | R |   | ✓ |   | ✓ | ✓ |
 
 Each returns `id`, `name`, plus type-specific fields (e.g., `time_zone` for sites, `disabled` for groups).
 
@@ -190,9 +281,9 @@ Each returns `id`, `name`, plus type-specific fields (e.g., `time_zone` for site
 
 ## Custom fields (1)
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_describe_custom_fields` | R, UI |   | ✓ | ✓ | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_describe_custom_fields` | R, UI |   | ✓ | ✓ | ✓ | ✓ |
 
 - **`swsd_describe_custom_fields`** — schema introspection for custom fields defined in your tenant. Returns each field's `name`, `type`, `category`, allowed values (for picklists), and which entity types it applies to.
 
@@ -204,9 +295,9 @@ As of v2, the four write tools (`swsd_create_incident`, `swsd_update_incident`, 
 
 ## Audits (1)
 
-| Tool | Type | triage | agent | knowledge | full |
-|---|---|---|---|---|---|
-| `swsd_get_record_audits` | R, UI |   | ✓ |   | ✓ |
+| Tool | Type | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_get_record_audits` | R, UI |   | ✓ |   | ✓ | ✓ |
 
 - **`swsd_get_record_audits`** — list the audit log for a SWSD record. Wraps `GET /{type}/{id}/audits.json`. Each audit entry captures one change: action (`"Update"`/`"Create"`/`"Delete"`), message (e.g. `"State changed from New to Assigned"`), the user who performed it, and the timestamp. Use this to answer "who changed this ticket?" or "what happened since I last looked?". Cheaper than `swsd_get_incident` with `detail_level=long` when you only need the audit history. `object_type` accepts `incidents`, `problems`, `changes`, `releases`, `solutions`, `hardwares`, `other_assets`. When `object_type` is `incidents` or `solutions`, `id` accepts either the internal id or the human-facing number; other types remain id-only. Renders the `audit-timeline` widget in MCP Apps-capable hosts (vertical timeline grouped by day with action chips and field-level diffs).
 

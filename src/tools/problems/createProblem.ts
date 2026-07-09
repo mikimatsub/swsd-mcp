@@ -7,6 +7,7 @@ import {
   buildProblemWritePayload,
   toProblemDetail,
 } from '../../swsd/mappers/problem.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 export function registerCreateProblem(server: McpServer, ctx: ToolContext): void {
@@ -27,7 +28,15 @@ export function registerCreateProblem(server: McpServer, ctx: ToolContext): void
     async (input) => {
       try {
         const payload = buildProblemWritePayload(input);
-        const { body } = await ctx.client.post<unknown>('/problems.json', payload);
+        const path = '/problems.json';
+        const gated = checkWriteMode(ctx, {
+          method: 'POST',
+          path,
+          body: payload,
+          action: 'create problem',
+        });
+        if (gated) return gated;
+        const { body } = await ctx.client.post<unknown>(path, payload);
         const problem = toProblemDetail(body);
         if (!problem) {
           return toolError('Could not parse created-problem response from SWSD.');

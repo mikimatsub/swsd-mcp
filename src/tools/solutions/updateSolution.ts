@@ -8,6 +8,7 @@ import {
   toSolutionDetail,
 } from '../../swsd/mappers/solution.js';
 import { resolveSolutionRef } from '../../utils/idResolver.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 export function registerUpdateSolution(server: McpServer, ctx: ToolContext): void {
@@ -34,10 +35,15 @@ export function registerUpdateSolution(server: McpServer, ctx: ToolContext): voi
           );
         }
         const { id: resolvedId } = await resolveSolutionRef(id, ctx.client);
-        const { body } = await ctx.client.put<unknown>(
-          `/solutions/${String(resolvedId)}.json`,
-          payload,
-        );
+        const path = `/solutions/${String(resolvedId)}.json`;
+        const gated = checkWriteMode(ctx, {
+          method: 'PUT',
+          path,
+          body: payload,
+          action: `update solution ${String(resolvedId)}`,
+        });
+        if (gated) return gated;
+        const { body } = await ctx.client.put<unknown>(path, payload);
         const solution = toSolutionDetail(body);
         if (!solution) {
           return toolError('Could not parse updated-solution response from SWSD.');

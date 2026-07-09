@@ -7,6 +7,7 @@ import {
   buildIncidentWritePayload,
   toIncidentDetail,
 } from '../../swsd/mappers/incident.js';
+import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 export function registerCreateIncident(server: McpServer, ctx: ToolContext): void {
@@ -25,7 +26,15 @@ export function registerCreateIncident(server: McpServer, ctx: ToolContext): voi
     async (input) => {
       try {
         const payload = buildIncidentWritePayload(input);
-        const { body } = await ctx.client.post<unknown>('/incidents.json', payload);
+        const path = '/incidents.json';
+        const gated = checkWriteMode(ctx, {
+          method: 'POST',
+          path,
+          body: payload,
+          action: 'create incident',
+        });
+        if (gated) return gated;
+        const { body } = await ctx.client.post<unknown>(path, payload);
         const incident = toIncidentDetail(body);
         if (!incident) {
           return toolError('Could not parse created-incident response from SWSD.');

@@ -46,7 +46,7 @@ Every stdio-capable MCP client uses the same JSON shape. Add this block under `m
 Replace `your-jwt-here` with the token from the previous step. **EU tenants** use `https://apieu.samanage.com` instead.
 
 :::tip[Customize behavior]
-Any variable from the [Configuration](/configuration/) page goes into this same `env` block. The most common one to add is `SWSD_PROFILE` to switch from the default `agent` profile (33 tools) to `triage` (14), `knowledge` (15), or `full` (35):
+Any variable from the [Configuration](/configuration/) page goes into this same `env` block. The most common one to add is `SWSD_PROFILE` to switch from the default `agent` profile (37 tools) to `triage` (14), `knowledge` (15), `operations` (64), or `full` (66):
 
 ```json
 "env": {
@@ -107,6 +107,6 @@ The full tool catalog is in [Tools reference](/tools/).
 
 ## Next steps
 
-- **Tighten the tool set** — see [Configuration](/configuration/#profiles) to switch from the default `agent` profile to `triage` (read-heavy) or `knowledge` (KB authoring)
+- **Tighten or expand the tool set** — see [Configuration](/configuration/#profiles) to switch from the default `agent` profile to `triage` (read-heavy), `knowledge` (KB authoring), `operations`, or `full`
 - **Hosting for a team** — see [Deployment](/deployment/) for the HTTP-transport setup
 - **Microsoft Copilot Studio integration** — see [Deployment → Microsoft Copilot Studio](/deployment/#microsoft-copilot-studio)
