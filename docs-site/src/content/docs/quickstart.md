@@ -5,6 +5,10 @@ description: Install and configure swsd-mcp in any MCP client in under five minu
 
 This guide gets swsd-mcp running locally via `npx`. For Microsoft Copilot Studio, see [Deployment → Copilot Studio](/deployment/#microsoft-copilot-studio) — it uses HTTP transport, which is a different setup.
 
+:::tip[Using VS Code?]
+VS Code uses a native `servers` configuration shape and can store the SWSD token through a secure input prompt. Follow the dedicated [VS Code installation guide](/vscode/) instead of copying the generic `mcpServers` block below.
+:::
+
 ## What you need
 
 - An MCP client installed — any MCP-compatible client works ([client compatibility matrix](/compatibility/))
@@ -26,7 +30,7 @@ Only users with a Service Desk administrator license can generate tokens. If you
 
 ## Add the MCP config
 
-Every stdio-capable MCP client uses the same JSON shape. Add this block under `mcpServers` in your client's config file:
+The non-VS-Code clients listed below use this common JSON shape. Add it under `mcpServers` in your client's config file:
 
 ```json
 {
