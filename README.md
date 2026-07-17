@@ -24,28 +24,20 @@ You need:
 
 ### VS Code
 
-> Last verified **July 17, 2026** with VS Code **1.124.0**. VS Code calls this the **Command Palette** (there is no separate MCP “Dev menu”). See the [complete VS Code guide](https://mcp-swsd.pages.dev/vscode/) for secure token inputs, Global vs Workspace scope, Docker, and hosted HTTP examples.
-
 1. Open the Command Palette: **Ctrl+Shift+P** on Windows/Linux or **Shift+Command+P** on macOS.
 2. Run **MCP: Add Server...**.
 
-<img src="./docs-site/public/vscode/vscode-command-palette-add-server.png" alt="VS Code Command Palette filtered to MCP: Add Server" width="602">
+<img src="./docs-site/public/vscode/vscode-command-palette-add-server.png" alt="MCP: Add Server in the VS Code Command Palette" width="600">
 
-3. Choose an install format. For the normal local install, select **Command (stdio)**, enter `npx -y swsd-mcp`, name it `swsd`, and choose **Global** (all workspaces in the current VS Code profile) or **Workspace** (`.vscode/mcp.json` in the current project).
+3. Install with either supported local option:
 
-<img src="./docs-site/public/vscode/vscode-add-server-formats.png" alt="VS Code MCP Add Server picker showing all seven available formats" width="602">
+   - **Command (stdio)** — enter `npx -y swsd-mcp`.
+   - **NPM Package** — enter `swsd-mcp`, confirm that the publisher is **`mikimatsub`**, then select **Allow**.
 
-| Add Server format | Use it for swsd-mcp? | What to enter |
-|---|---|---|
-| **Command (stdio)** | **Yes — recommended** | `npx -y swsd-mcp` |
-| **HTTP (HTTP or Server-Sent Events)** | Only for an already-deployed HTTP instance | Its full `/mcp` URL, for example `https://swsd-mcp.example.com/mcp` |
-| **NPM Package** | Yes — model-assisted alternative | `swsd-mcp`; verify publisher `mikimatsub` before allowing it |
-| **Pip Package** | No | This project is not a Python/PyPI package |
-| **Docker Image** | Not directly | The published image defaults to HTTP; use the [documented Command or HTTP route](https://mcp-swsd.pages.dev/vscode/#docker-image) instead |
-| **Add from another application...** | Yes, if swsd-mcp is already configured in a detected app | Import `swsd`, then review the generated config and credential handling |
-| **Browse MCP Servers...** | Yes | Search for `swsd-mcp` or `io.github.mikimatsub/swsd` |
+<img src="./docs-site/public/vscode/vscode-stdio-command.png" alt="The swsd-mcp stdio command entered in VS Code" width="600">
 
-4. Run **MCP: Open User Configuration** (Global) or **MCP: Open Workspace Folder MCP Configuration** (Workspace), then use the [known-good secure configuration](https://mcp-swsd.pages.dev/vscode/#secure-vs-code-configuration). It stores the JWT through VS Code's password input instead of committing it to JSON.
+4. Name the server `swsd`, then choose **Global** for your VS Code profile or **Workspace** for the current project.
+5. [Add the SWSD token securely and verify the connection](https://mcp-swsd.pages.dev/quickstart/#secure-vs-code-token-configuration).
 
 ### Other stdio clients
 

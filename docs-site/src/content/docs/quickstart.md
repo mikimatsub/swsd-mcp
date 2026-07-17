@@ -5,10 +5,6 @@ description: Install and configure swsd-mcp in any MCP client in under five minu
 
 This guide gets swsd-mcp running locally via `npx`. For Microsoft Copilot Studio, see [Deployment → Copilot Studio](/deployment/#microsoft-copilot-studio) — it uses HTTP transport, which is a different setup.
 
-:::tip[Using VS Code?]
-VS Code uses a native `servers` configuration shape and can store the SWSD token through a secure input prompt. Follow the dedicated [VS Code installation guide](/vscode/) instead of copying the generic `mcpServers` block below.
-:::
-
 ## What you need
 
 - An MCP client installed — any MCP-compatible client works ([client compatibility matrix](/compatibility/))
@@ -28,9 +24,112 @@ In the SWSD web UI, navigate:
 Only users with a Service Desk administrator license can generate tokens. If you don't have admin rights, your administrator needs to generate one for you. The token inherits *your* permissions — when your role changes, the token's permissions change with it.
 :::
 
-## Add the MCP config
+## Install in VS Code
 
-The non-VS-Code clients listed below use this common JSON shape. Add it under `mcpServers` in your client's config file:
+1. Open the Command Palette with **Ctrl+Shift+P** on Windows/Linux or **Shift+Command+P** on macOS.
+2. Run **MCP: Add Server...**.
+
+<img src="/vscode/vscode-command-palette-add-server.png" alt="MCP: Add Server in the VS Code Command Palette" width="600" height="85" loading="lazy" />
+
+Choose one of these four routes.
+
+### Command (stdio)
+
+This is the recommended local install.
+
+1. Select **Command (stdio)**.
+2. Enter `npx -y swsd-mcp`.
+
+   <img src="/vscode/vscode-stdio-command.png" alt="The swsd-mcp stdio command entered in VS Code" width="600" height="91" loading="lazy" />
+
+3. Enter `swsd` as the server name.
+4. Choose **Global** to use it throughout the current VS Code profile, or **Workspace** to add it to the current project's `.vscode/mcp.json`.
+5. Apply the [secure token configuration](#secure-vs-code-token-configuration) below.
+
+### NPM Package
+
+1. Select **NPM Package**.
+2. Enter `swsd-mcp`.
+3. Check the confirmation carefully: the package must be **`swsd-mcp`** and the publisher must be **`mikimatsub`**. Select **Allow** only when both match.
+4. Follow the prompts, choose **Global** or **Workspace**, and review the generated configuration before starting the server.
+5. Make sure the token is handled as a password input, as shown below, rather than stored directly in JSON.
+
+### HTTP
+
+Use this only for an swsd-mcp instance that has already been deployed with HTTP transport. Select **HTTP (HTTP or Server-Sent Events)** and enter its full MCP endpoint, including `/mcp`, such as `https://swsd-mcp.example.com/mcp`. Do not enter this documentation site, the GitHub repository, the npm page, or the deployment's `/healthz` URL.
+
+After choosing a name and scope, add the per-user token as an authorization header:
+
+```json
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "swsd-token",
+      "description": "SolarWinds Service Desk admin JWT",
+      "password": true
+    }
+  ],
+  "servers": {
+    "swsd": {
+      "type": "http",
+      "url": "https://swsd-mcp.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:swsd-token}"
+      }
+    }
+  }
+}
+```
+
+The deployment supplies `SWSD_BASE_URL`, `SWSD_PROFILE`, and the other server-side settings. See [Deployment](/deployment/) for the HTTP setup.
+
+### Add from another application
+
+Select **Add from another application...** to open the `chat.mcp.discovery.enabled` setting. Enable the source that already contains your working `swsd` server:
+
+- Claude Desktop
+- Windsurf
+- Cursor global configuration
+- Cursor workspace configuration
+
+VS Code then discovers and reuses MCP server configurations from the selected source. Discovery is off by default. Review the discovered server before starting it, especially if the original configuration contains a token directly.
+
+### Secure VS Code token configuration
+
+For a Global install, run **MCP: Open User Configuration**. For a Workspace install, open `.vscode/mcp.json`. Replace the generated `swsd` entry with this configuration so VS Code requests the JWT as a password input instead of storing it in the file:
+
+```json
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "swsd-token",
+      "description": "SolarWinds Service Desk admin JWT",
+      "password": true
+    }
+  ],
+  "servers": {
+    "swsd": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "swsd-mcp"],
+      "env": {
+        "SWSD_TOKEN": "${input:swsd-token}",
+        "SWSD_BASE_URL": "https://api.samanage.com"
+      }
+    }
+  }
+}
+```
+
+EU tenants should use `https://apieu.samanage.com` for `SWSD_BASE_URL`. A Workspace file containing this placeholder is safe to commit because the JWT itself is not in the JSON.
+
+## Other MCP clients
+
+### Add the MCP config
+
+The clients listed below use this common JSON shape. Add it under `mcpServers` in your client's config file:
 
 ```json
 {
@@ -63,7 +162,7 @@ Any variable from the [Configuration](/configuration/) page goes into this same 
 When testing write-heavy workflows, add `SWSD_WRITE_MODE: "dry-run"` to preview create/update payloads without sending write requests to SWSD. Set it to `disabled` when a deployment should remain read-only even if a write tool is present in the profile.
 :::
 
-## Find the right config file
+### Find the right config file
 
 | Client | Config file path |
 |---|---|
@@ -76,7 +175,7 @@ When testing write-heavy workflows, add `SWSD_WRITE_MODE: "dry-run"` to preview 
 
 Create the file if it doesn't exist. Then **restart your client** so it picks up the new server.
 
-## Claude Code shortcut
+### Claude Code shortcut
 
 Skip editing the file manually. This single line pastes verbatim into any shell (bash, zsh, PowerShell, cmd):
 
