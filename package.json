@@ -78,6 +78,9 @@
     "helmet": "^8.1.0",
     "zod": "4.4.3"
   },
+  "overrides": {
+    "@hono/node-server": "2.0.10"
+  },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/express": "5.0.6",
