@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@astrojs/starlight": "0.41.3",
-    "astro": "7.1.0",
+    "astro": "7.1.1",
     "astro-d2": "0.13.0"
   },
   "overrides": {
