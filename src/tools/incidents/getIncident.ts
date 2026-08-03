@@ -30,7 +30,7 @@ export function registerGetIncident(server: McpServer, ctx: ToolContext): void {
       outputSchema: z.object({
         incident: z.record(z.string(), z.unknown()),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },
     async (input) => {

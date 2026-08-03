@@ -42,7 +42,7 @@ export function registerGetMe(server: McpServer, ctx: ToolContext): void {
           'All claims found in the JWT payload. SWSD typically includes user_id (modern; observed in 2026 production tokens) or user_ic (legacy; cited in older API docs samples), plus generated_at. ESM tenants may include service_provider_id or similar.',
         ),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async () => {
       try {

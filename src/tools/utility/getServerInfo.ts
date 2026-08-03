@@ -27,7 +27,7 @@ export function registerGetServerInfo(server: McpServer, ctx: ToolContext): void
           client_behavior: z.string(),
         }),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },
     },
     () => {
       const baseUrlHost = safeUrlHost(ctx.env.SWSD_BASE_URL);

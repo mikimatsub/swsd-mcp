@@ -55,6 +55,7 @@ export function registerGetCatalogItem(
       }).shape,
       annotations: {
         readOnlyHint: true,
+        destructiveHint: false,
         openWorldHint: true,
         idempotentHint: true,
       },

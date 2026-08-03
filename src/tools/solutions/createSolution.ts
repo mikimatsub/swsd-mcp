@@ -22,7 +22,7 @@ export function registerCreateSolution(server: McpServer, ctx: ToolContext): voi
         'WRITE — does not retry on transient failure; verify with swsd_get_solution before retrying.' +
         ' To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Solutions require `name` keying (custom_field_id alone is rejected with HTTP 400). Validated for Text, Dropdown, Number, Checkbox, and Date types.',
       inputSchema: CreateSolutionInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async (input) => {
       try {

@@ -50,7 +50,7 @@ export function registerListTimeTracks(server: McpServer, ctx: ToolContext): voi
           pagination: PaginationOutput,
         })
         .shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async ({ object_type, id, page, per_page }) => {
       try {
@@ -79,7 +79,7 @@ export function registerLogTime(server: McpServer, ctx: ToolContext): void {
         'Log time against a SWSD incident, problem, change, or release. Required: object_type, id, name, minutes_parsed. ' +
         'WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.',
       inputSchema: LogTimeInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async ({ object_type, id, name, minutes_parsed }) => {
       try {
@@ -115,7 +115,7 @@ export function registerUpdateTimeTrack(server: McpServer, ctx: ToolContext): vo
         'Update an existing SWSD time entry on an incident, problem, change, or release. ' +
         'Pass name and/or minutes_parsed. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.',
       inputSchema: UpdateTimeTrackInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async ({ object_type, id, time_track_id, name, minutes_parsed }) => {
       try {

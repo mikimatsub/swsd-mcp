@@ -22,7 +22,7 @@ export function registerUpdateIncidentState(server: McpServer, ctx: ToolContext)
         '"Awaiting Input", "Resolved", "Closed". Call swsd_get_incident first to see the current state. ' +
         'WRITE — does not retry on transient failure.',
       inputSchema: UpdateIncidentStateInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async ({ id, state }) => {
       try {

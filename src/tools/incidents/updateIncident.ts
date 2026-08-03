@@ -22,7 +22,7 @@ export function registerUpdateIncident(server: McpServer, ctx: ToolContext): voi
         'WRITE — does not retry on transient failure.' +
         ' To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.',
       inputSchema: UpdateIncidentInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async (input) => {
       try {

@@ -23,7 +23,7 @@ import DOMPurify from 'dompurify';
  * `target="_blank" rel="noopener noreferrer"`. The hook is registered once
  * (idempotent) so repeated calls do not stack handlers.
  *
- * Verified DOMPurify@3.4.2 (published 2026-04-30) — `addHook` signatures and
+ * Verified DOMPurify@3.4.13 — `addHook` signatures and
  * `Config` shape come from the bundled `.d.ts`. No `@types/dompurify` is
  * needed; that types package is deprecated for DOMPurify 3.x.
  */

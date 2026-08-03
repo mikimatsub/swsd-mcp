@@ -18,7 +18,7 @@ export function registerCreateIncidentTask(server: McpServer, ctx: ToolContext):
         '`assignee_email`. The created task is returned for follow-up calls. ' +
         'WRITE — does not retry on transient failure.',
       inputSchema: CreateIncidentTaskInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async ({ incident_id, name, description, due_at, assignee_email }) => {
       try {

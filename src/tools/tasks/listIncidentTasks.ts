@@ -43,7 +43,7 @@ export function registerListIncidentTasks(server: McpServer, ctx: ToolContext): 
         count: z.number().int(),
         incident_id: z.number().int(),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async ({ incident_id }) => {
       try {

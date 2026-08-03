@@ -26,7 +26,7 @@ export function registerListDepartments(server: McpServer, ctx: ToolContext): vo
         departments: z.array(DepartmentSummaryOutput),
         pagination: PaginationOutput,
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
       try {

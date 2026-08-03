@@ -40,7 +40,7 @@ export function registerSearchSolutions(server: McpServer, ctx: ToolContext): vo
         solutions: z.array(SolutionSummaryOutput),
         pagination: PaginationOutput,
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
       try {

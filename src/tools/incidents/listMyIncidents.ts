@@ -80,7 +80,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
           })
           .describe('Honest accounting of the client-side filter: what was scanned vs matched.'),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },
     async (rawInput) => {
