@@ -28,7 +28,7 @@ export function registerListSites(server: McpServer, ctx: ToolContext): void {
         sites: z.array(SiteSummaryOutput),
         pagination: PaginationOutput,
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
       try {

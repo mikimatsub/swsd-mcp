@@ -17,7 +17,7 @@ export function registerHealthCheck(server: McpServer, ctx: ToolContext): void {
         base_url: z.string(),
         api_version: z.string(),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async () => {
       try {

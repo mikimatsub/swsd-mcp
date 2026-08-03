@@ -21,7 +21,7 @@ export function registerAssignIncident(server: McpServer, ctx: ToolContext): voi
         'available_for_assignment_only=true to find valid assignees first. ' +
         'WRITE — does not retry on transient failure.',
       inputSchema: AssignIncidentInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async ({ id, assignee_email }) => {
       try {

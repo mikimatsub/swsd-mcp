@@ -40,7 +40,7 @@ export function registerListIncidentComments(server: McpServer, ctx: ToolContext
         pagination: PaginationOutput,
         incident_id: z.number().int(),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },
     async ({ incident_id, page, per_page }) => {

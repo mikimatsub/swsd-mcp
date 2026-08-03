@@ -76,7 +76,7 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
           })
           .describe('Honest accounting of what was scanned vs matched.'),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },
     async (rawInput) => {

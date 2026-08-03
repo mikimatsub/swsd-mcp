@@ -222,7 +222,7 @@ function registerListTool(server: McpServer, ctx: ToolContext, cfg: ReadConfig):
         [cfg.summaryKey]: z.array(GenericSummaryOutput),
         pagination: PaginationOutput,
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
       try {
@@ -265,7 +265,7 @@ function registerGetTool(server: McpServer, ctx: ToolContext, cfg: ReadConfig): 
       outputSchema: z.object({
         [detailKey]: z.record(z.string(), z.unknown()),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
       try {
@@ -303,7 +303,7 @@ function registerCreateTool(
       description:
         `Create a SWSD ${cfg.labelSingular}. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.`,
       inputSchema: cfg.input.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async (input: z.infer<typeof CreateChangeInput> | z.infer<typeof CreateReleaseInput>) => {
       try {
@@ -342,7 +342,7 @@ function registerUpdateTool(
       description:
         `Update a SWSD ${cfg.labelSingular}. Pass only fields to change. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.`,
       inputSchema: cfg.input.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async (input: z.infer<typeof UpdateChangeInput> | z.infer<typeof UpdateReleaseInput>) => {
       try {

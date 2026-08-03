@@ -23,7 +23,7 @@ export function registerCreateProblem(server: McpServer, ctx: ToolContext): void
         'WRITE — does not retry on transient failure; the agent should verify with ' +
         'swsd_get_problem before retrying.',
       inputSchema: CreateProblemInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async (input) => {
       try {

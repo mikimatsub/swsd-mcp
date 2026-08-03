@@ -17,7 +17,7 @@ export function registerAddIncidentComment(server: McpServer, ctx: ToolContext):
         'internal-only (default false = visible to the requester). To edit a comment ' +
         'after posting, use `swsd_update_comment`. WRITE — does not retry on transient failure.',
       inputSchema: AddIncidentCommentInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async ({ incident_id, body, is_private }) => {
       try {

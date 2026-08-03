@@ -51,7 +51,7 @@ export function registerLinkSolutionToIncident(
         'returns success without modifying the record. WRITE — does not retry on ' +
         'transient failure.',
       inputSchema: LinkSolutionToIncidentInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async ({ incident_id, solution_id }) => {
       try {

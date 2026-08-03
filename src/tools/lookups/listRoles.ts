@@ -26,7 +26,7 @@ export function registerListRoles(server: McpServer, ctx: ToolContext): void {
         roles: z.array(RoleSummaryOutput),
         pagination: PaginationOutput,
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
       try {

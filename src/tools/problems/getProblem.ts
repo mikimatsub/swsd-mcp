@@ -22,7 +22,7 @@ export function registerGetProblem(server: McpServer, ctx: ToolContext): void {
       outputSchema: z.object({
         problem: z.record(z.string(), z.unknown()),
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
       try {

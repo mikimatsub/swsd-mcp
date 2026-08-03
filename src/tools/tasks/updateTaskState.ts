@@ -19,7 +19,7 @@ export function registerUpdateTaskState(server: McpServer, ctx: ToolContext): vo
         'is the safer wrapper for the common done/not-done transition. ' +
         'WRITE — idempotent: re-applying the same value is a no-op on SWSD.',
       inputSchema: UpdateTaskStateInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: true },
     },
     async ({ incident_id, task_id, completed }) => {
       try {

@@ -18,7 +18,7 @@ export function registerUpdateComment(server: McpServer, ctx: ToolContext): void
         'this tool — to change visibility, delete and re-create. ' +
         'WRITE — does not retry on transient failure.',
       inputSchema: UpdateCommentInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async ({ incident_id, comment_id, body }) => {
       try {

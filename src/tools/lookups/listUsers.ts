@@ -33,7 +33,7 @@ export function registerListUsers(server: McpServer, ctx: ToolContext): void {
         users: z.array(UserSummaryOutput),
         pagination: PaginationOutput,
       }).shape,
-      annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
       try {

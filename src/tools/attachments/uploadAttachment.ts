@@ -27,7 +27,7 @@ export function registerUploadAttachment(server: McpServer, ctx: ToolContext): v
         'Upload an attachment to a SWSD incident, problem, change, release, solution, hardware asset, other asset, or configuration item. ' +
         'Use content_base64 for hosted/HTTP clients; file_path is allowed only on stdio. WRITE — honors SWSD_WRITE_MODE.',
       inputSchema: UploadAttachmentInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async ({ parent_type, parent_id, file_name, content_base64, file_path }) => {
       try {

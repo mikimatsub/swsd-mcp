@@ -21,7 +21,7 @@ export function registerCreateIncident(server: McpServer, ctx: ToolContext): voi
         'WRITE — does not retry on transient failure; the agent should verify with swsd_get_incident before retrying.' +
         ' To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.',
       inputSchema: CreateIncidentInput.shape,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async (input) => {
       try {
