@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Enforced MCP Registry metadata limits in tests and made partially completed
+  release workflows safely resumable without moving an existing release tag.
+
 ## [2.2.1] - 2026-08-03
 
 ### Security
