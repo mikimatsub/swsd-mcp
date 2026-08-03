@@ -278,11 +278,17 @@ The `prepublishOnly` script in `package.json` runs the full quality
 gate (lint + typecheck + test + build) before any `npm publish`,
 even manual ones. Catches accidental broken-build releases.
 
-### Tag-triggered publishing
+### Tag-triggered publishing and recovery
 
-The npm publish workflow only runs on git tag pushes matching `v*`.
-Tags are immutable in git and require maintainer access to push,
-adding another gate against accidental publishes.
+Normal publishing only runs on git tag pushes matching `v*`. Tags are
+immutable in git and require maintainer access to push, adding another gate
+against accidental publishes.
+
+Maintainers can also manually resume a partially completed release by supplying
+its existing version to the same workflow. The workflow requires that version
+to match `package.json`, `server.json`, and every registry package entry, and it
+skips npm or MCP Registry artifacts that already exist. This supports recovery
+without moving a release tag or republishing an immutable artifact.
 
 ### Container hardening
 

@@ -32,6 +32,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing release version to resume (for example, 2.2.1)
+        required: true
+        type: string
 
 # id-token: write enables OIDC trusted publishing to npm — no long-lived
 # NPM_TOKEN secret required. The OIDC token is short-lived (minutes).
@@ -39,10 +45,10 @@ permissions:
   contents: read
   id-token: write
 
-# Only one publish job at a time per tag. Prevents race conditions if a tag
-# is force-pushed (which is bad practice but possible).
+# Only one publish job at a time per release version. This also prevents a
+# manual recovery run from racing the original tag-triggered run.
 concurrency:
-  group: publish-${{ github.ref }}
+  group: publish-${{ inputs.version || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -52,6 +58,7 @@ jobs:
     timeout-minutes: 15
     env:
       MCP_PUBLISHER_VERSION: v1.7.9
+      RELEASE_REF: ${{ inputs.version || github.ref_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -80,7 +87,7 @@ jobs:
 
       - name: Verify release metadata versions
         run: |
-          node -e "const fs=require('node:fs'); const tag=process.env.GITHUB_REF_NAME.replace(/^v/, ''); const pkg=JSON.parse(fs.readFileSync('package.json', 'utf8')); const server=JSON.parse(fs.readFileSync('server.json', 'utf8')); if (pkg.version !== tag) throw new Error('package.json version ' + pkg.version + ' does not match ' + tag); if (server.version !== tag) throw new Error('server.json version ' + server.version + ' does not match ' + tag); for (const p of server.packages || []) { if (p.version !== tag) throw new Error('server.json package version ' + p.version + ' does not match ' + tag); }"
+          node -e "const fs=require('node:fs'); const tag=process.env.RELEASE_REF.replace(/^v/, ''); const pkg=JSON.parse(fs.readFileSync('package.json', 'utf8')); const server=JSON.parse(fs.readFileSync('server.json', 'utf8')); if (pkg.version !== tag) throw new Error('package.json version ' + pkg.version + ' does not match ' + tag); if (server.version !== tag) throw new Error('server.json version ' + server.version + ' does not match ' + tag); for (const p of server.packages || []) { if (p.version !== tag) throw new Error('server.json package version ' + p.version + ' does not match ' + tag); }"
 
       - name: Verify package contents (dry run)
         # Lists what would be included in the published tarball. If anything
@@ -94,7 +101,7 @@ jobs:
         # --access public required for first publish of unscoped packages and
         # is harmless on subsequent publishes.
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${RELEASE_REF#v}"
           if npm view "swsd-mcp@${VERSION}" version >/dev/null 2>&1; then
             echo "swsd-mcp@${VERSION} is already published; skipping npm publish."
           else
@@ -103,7 +110,7 @@ jobs:
 
       - name: Wait for npm package availability
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${RELEASE_REF#v}"
           for attempt in {1..18}; do
             if npm view "swsd-mcp@${VERSION}" version >/dev/null 2>&1; then
               echo "swsd-mcp@${VERSION} is visible on npm."
@@ -128,7 +135,7 @@ jobs:
 
       - name: Publish to MCP Registry
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${RELEASE_REF#v}"
           if VERSION="${VERSION}" node --input-type=module -e "const version=process.env.VERSION; const res=await fetch('https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.mikimatsub/swsd'); if (!res.ok) process.exit(1); const data=await res.json(); const exists=data.servers?.some(({server}) => server?.name === 'io.github.mikimatsub/swsd' && server?.version === version); process.exit(exists ? 0 : 1);"; then
             echo "io.github.mikimatsub/swsd ${VERSION} is already published; skipping MCP Registry publish."
           else
