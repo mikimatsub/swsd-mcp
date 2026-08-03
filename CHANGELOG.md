@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-08-03
+
 ### Security
 
 - Raised the minimum DOMPurify version to 3.4.13 so downstream installs cannot
@@ -16,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Completed all four MCP tool annotation hints explicitly for every tool and
   added a registry-wide regression test for annotation completeness.
+- Refreshed runtime and development dependency locks, including
+  `@hono/node-server` 2.0.12 and `brace-expansion` 5.0.9.
 
 ## [2.2.0] - 2026-07-09
 
@@ -548,7 +552,8 @@ Detailed history available via `git log`.
 * **2026-05-03** — `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.1...HEAD
+[2.2.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.0.2...v2.1.0
