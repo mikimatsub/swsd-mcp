@@ -37,7 +37,7 @@ PRs are welcome. Before submitting:
    ```bash
    npm install
    npm run typecheck
-   npm test
+   npm run test:coverage
    npm run lint
    ```
 3. **Add tests** for new behavior. The existing test suite is hermetic (no live API calls); follow that pattern.
@@ -74,6 +74,7 @@ npm install
 
 npm run build         # compile TypeScript to dist/
 npm test              # run unit tests (vitest)
+npm run test:coverage # run tests and enforce the measured coverage baseline
 npm run lint          # eslint
 npm run typecheck     # tsc --noEmit
 

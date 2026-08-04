@@ -1,31 +1,38 @@
 import { z } from 'zod';
+import {
+  EmailInput,
+  MAX_FILTER_ITEMS,
+  MAX_LABEL_CHARS,
+  MAX_LONG_TEXT_CHARS,
+  MAX_QUERY_CHARS,
+} from './limits.js';
 
 export const ListProblemsInput = z.object({
   state: z
-    .array(z.string().min(1))
+    .array(z.string().min(1).max(MAX_LABEL_CHARS))
+    .max(MAX_FILTER_ITEMS)
     .optional()
     .describe('Filter to problems matching ANY of these states (e.g. ["New", "In Progress"]).'),
   state_is_not: z
-    .array(z.string().min(1))
+    .array(z.string().min(1).max(MAX_LABEL_CHARS))
+    .max(MAX_FILTER_ITEMS)
     .optional()
     .describe('Negative state filter: exclude problems in any of these states (e.g. ["Resolved", "Closed"]).'),
   priority: z
-    .array(z.string().min(1))
+    .array(z.string().min(1).max(MAX_LABEL_CHARS))
+    .max(MAX_FILTER_ITEMS)
     .optional()
     .describe('Filter to problems matching ANY of these priorities (e.g. ["High", "Medium"]).'),
-  assignee_email: z
-    .string()
-    .email()
+  assignee_email: EmailInput
     .optional()
     .describe('Filter to problems assigned to this email.'),
-  requester_email: z
-    .string()
-    .email()
+  requester_email: EmailInput
     .optional()
     .describe('Filter to problems requested by this email.'),
   query: z
     .string()
     .min(1)
+    .max(MAX_QUERY_CHARS)
     .optional()
     .describe('Free-text search on name + description.'),
   per_page: z
@@ -68,28 +75,28 @@ export const CreateProblemInput = z.object({
     .describe('Problem title (required).'),
   description: z
     .string()
+    .max(MAX_LONG_TEXT_CHARS)
     .optional()
     .describe('Description (HTML or plain text).'),
   priority: z
     .string()
+    .max(MAX_LABEL_CHARS)
     .optional()
     .describe('Priority name (e.g. High, Medium, Low). Tenant-specific values.'),
   category: z
     .string()
+    .max(MAX_LABEL_CHARS)
     .optional()
     .describe('Category name (must match an existing SWSD category — see swsd_list_categories).'),
   subcategory: z
     .string()
+    .max(MAX_LABEL_CHARS)
     .optional()
     .describe('Subcategory name (nested under category).'),
-  assignee_email: z
-    .string()
-    .email()
+  assignee_email: EmailInput
     .optional()
     .describe('Email of the agent to assign the problem to.'),
-  requester_email: z
-    .string()
-    .email()
+  requester_email: EmailInput
     .optional()
     .describe('Email of the user the problem is for. Defaults to the token owner if omitted.'),
 });

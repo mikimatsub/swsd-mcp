@@ -153,6 +153,7 @@ Most users only need `SWSD_TOKEN` and `SWSD_BASE_URL`:
 | `SWSD_BASE_URL` | `https://api.samanage.com` | EU tenant: `https://apieu.samanage.com` |
 | `SWSD_PROFILE` | `agent` | `triage`, `agent`, `knowledge`, `operations`, or `full` — see [Profiles](https://mcp-swsd.pages.dev/configuration/#profiles) |
 | `SWSD_WRITE_MODE` | `live` | `live`, `dry-run`, or `disabled` — preview or block write tools without changing profiles |
+| `SWSD_ATTACHMENT_ROOT` | — | Optional real-path boundary for local `file_path` uploads in stdio mode |
 
 For the full env-var reference (HTTP transport, retries, rate limits, allowlists), see [Configuration](https://mcp-swsd.pages.dev/configuration/).
 

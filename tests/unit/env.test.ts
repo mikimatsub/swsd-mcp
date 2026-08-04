@@ -96,3 +96,19 @@ describe('EnvSchema rate limit + timeout defaults', () => {
     expect(r.success).toBe(false);
   });
 });
+
+describe('EnvSchema SWSD_ATTACHMENT_ROOT', () => {
+  it('is optional and trims a configured root', () => {
+    const unset = EnvSchema.safeParse({});
+    const configured = EnvSchema.safeParse({ SWSD_ATTACHMENT_ROOT: '  C:\\safe-attachments  ' });
+
+    expect(unset.success && unset.data.SWSD_ATTACHMENT_ROOT).toBeUndefined();
+    expect(configured.success && configured.data.SWSD_ATTACHMENT_ROOT).toBe('C:\\safe-attachments');
+  });
+
+  it('treats an explicitly empty root as unset and rejects an oversized root', () => {
+    const empty = EnvSchema.safeParse({ SWSD_ATTACHMENT_ROOT: '   ' });
+    expect(empty.success && empty.data.SWSD_ATTACHMENT_ROOT).toBeUndefined();
+    expect(EnvSchema.safeParse({ SWSD_ATTACHMENT_ROOT: 'x'.repeat(4_097) }).success).toBe(false);
+  });
+});

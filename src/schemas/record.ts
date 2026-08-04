@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { PaginationParams } from './common.js';
 import { CustomFieldsArray } from './customFieldWrite.js';
+import {
+  EmailInput,
+  IsoDateOrDateTimeInput,
+  MAX_FILTER_ITEMS,
+  MAX_LABEL_CHARS,
+  MAX_LONG_TEXT_CHARS,
+  MAX_RELATION_IDS,
+} from './limits.js';
 
 export const DetailLevelInput = z
   .enum(['short', 'long'])
@@ -16,39 +24,37 @@ export const GetRecordInput = z.object({
   detail_level: DetailLevelInput,
 });
 
-const PersonEmailInput = z
-  .string()
-  .email()
+const PersonEmailInput = EmailInput
   .optional()
   .describe('Email address SWSD should resolve to a user.');
 
 const CommonLifecycleWriteFields = {
   name: z.string().min(1).max(200).optional(),
-  description: z.string().optional(),
-  state: z.string().optional(),
-  priority: z.string().optional(),
+  description: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
+  state: z.string().max(MAX_LABEL_CHARS).optional(),
+  priority: z.string().max(MAX_LABEL_CHARS).optional(),
   requester_email: PersonEmailInput,
   assignee_email: PersonEmailInput,
   group_assignee_id: z.number().int().positive().optional(),
   site_id: z.number().int().positive().optional(),
   department_id: z.number().int().positive().optional(),
-  planned_start_at: z.string().optional(),
-  planned_end_at: z.string().optional(),
-  configuration_item_ids: z.array(z.number().int().positive()).optional(),
-  tag_list: z.array(z.string().min(1)).optional(),
+  planned_start_at: IsoDateOrDateTimeInput.optional(),
+  planned_end_at: IsoDateOrDateTimeInput.optional(),
+  configuration_item_ids: z.array(z.number().int().positive()).max(MAX_RELATION_IDS).optional(),
+  tag_list: z.array(z.string().min(1).max(MAX_LABEL_CHARS)).max(MAX_FILTER_ITEMS).optional(),
   custom_fields: CustomFieldsArray,
 } as const;
 
 export const CreateChangeInput = z.object({
   ...CommonLifecycleWriteFields,
   name: z.string().min(1).max(200).describe('Change title (required).'),
-  change_type: z.string().optional(),
-  change_plan: z.string().optional(),
-  rollback_plan: z.string().optional(),
-  test_plan: z.string().optional(),
-  incident_ids: z.array(z.number().int().positive()).optional(),
-  problem_ids: z.array(z.number().int().positive()).optional(),
-  release_ids: z.array(z.number().int().positive()).optional(),
+  change_type: z.string().max(MAX_LABEL_CHARS).optional(),
+  change_plan: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
+  rollback_plan: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
+  test_plan: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
+  incident_ids: z.array(z.number().int().positive()).max(MAX_RELATION_IDS).optional(),
+  problem_ids: z.array(z.number().int().positive()).max(MAX_RELATION_IDS).optional(),
+  release_ids: z.array(z.number().int().positive()).max(MAX_RELATION_IDS).optional(),
 });
 
 export const UpdateChangeInput = CreateChangeInput.partial().extend({
@@ -58,10 +64,10 @@ export const UpdateChangeInput = CreateChangeInput.partial().extend({
 export const CreateReleaseInput = z.object({
   ...CommonLifecycleWriteFields,
   name: z.string().min(1).max(200).describe('Release title (required).'),
-  plan: z.string().optional(),
-  build: z.string().optional(),
-  deploy: z.string().optional(),
-  itsm_change_ids: z.array(z.number().int().positive()).optional(),
+  plan: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
+  build: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
+  deploy: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
+  itsm_change_ids: z.array(z.number().int().positive()).max(MAX_RELATION_IDS).optional(),
 });
 
 export const UpdateReleaseInput = CreateReleaseInput.partial().extend({
