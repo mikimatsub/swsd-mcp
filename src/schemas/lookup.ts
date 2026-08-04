@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { EmailInput, MAX_QUERY_CHARS } from './limits.js';
 
 const PaginationFields = {
   page: z
@@ -21,6 +22,7 @@ export const ListLookupInput = z.object({
   ...PaginationFields,
   query: z
     .string()
+    .max(MAX_QUERY_CHARS)
     .optional()
     .describe('Optional name substring filter.'),
 });
@@ -29,11 +31,10 @@ export const ListUsersInput = z.object({
   ...PaginationFields,
   query: z
     .string()
+    .max(MAX_QUERY_CHARS)
     .optional()
     .describe('Optional name or email substring filter.'),
-  email: z
-    .string()
-    .email()
+  email: EmailInput
     .optional()
     .describe('Filter to a specific email exactly.'),
   available_for_assignment_only: z

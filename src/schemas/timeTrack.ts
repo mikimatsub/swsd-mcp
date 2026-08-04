@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PaginationParams } from './common.js';
+import { MAX_TIME_ENTRY_NAME_CHARS } from './limits.js';
 
 export const TimeTrackObjectType = z.enum([
   'incidents',
@@ -16,7 +17,7 @@ export const ListTimeTracksInput = PaginationParams.extend({
 export const LogTimeInput = z.object({
   object_type: TimeTrackObjectType.describe('Parent SWSD object type.'),
   id: z.number().int().positive().describe('Parent record id.'),
-  name: z.string().min(1).describe('Time entry description.'),
+  name: z.string().min(1).max(MAX_TIME_ENTRY_NAME_CHARS).describe('Time entry description.'),
   minutes_parsed: z
     .number()
     .int()
@@ -28,7 +29,7 @@ export const UpdateTimeTrackInput = z.object({
   object_type: TimeTrackObjectType.describe('Parent SWSD object type.'),
   id: z.number().int().positive().describe('Parent record id.'),
   time_track_id: z.number().int().positive().describe('SWSD time track id.'),
-  name: z.string().min(1).optional().describe('Updated time entry description.'),
+  name: z.string().min(1).max(MAX_TIME_ENTRY_NAME_CHARS).optional().describe('Updated time entry description.'),
   minutes_parsed: z
     .number()
     .int()

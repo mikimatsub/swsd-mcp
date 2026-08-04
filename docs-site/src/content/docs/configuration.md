@@ -39,6 +39,7 @@ These only apply when `SWSD_TRANSPORT=http`. They have no effect in stdio mode.
 |---|---|---|
 | `SWSD_API_VERSION` | `v2.1` | Override only if your tenant requires v1.1 (rare) |
 | `SWSD_WRITE_MODE` | `live` | Write safety mode: `live` calls SWSD normally, `dry-run` returns the request payload without sending the write, and `disabled` rejects write tools. Read-only tools are unaffected. |
+| `SWSD_ATTACHMENT_ROOT` | _(empty)_ | Optional real-path boundary for `swsd_upload_attachment` when using `file_path` in stdio mode. Symlinks are resolved before containment is checked. Empty preserves unrestricted local stdio file uploads. It has no effect on base64 or HTTP uploads. |
 | `SWSD_ENABLE_EXTRAS` | _(empty)_ | Comma-separated extra tool names to enable on top of the profile. Unknown names cause a startup error (loud-fail by design). |
 
 The complete annotated example is in [`.env.example`](https://github.com/mikimatsub/swsd-mcp/blob/main/.env.example) on GitHub.

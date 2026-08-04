@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_CUSTOM_FIELDS, MAX_LABEL_CHARS, MAX_LONG_TEXT_CHARS } from './limits.js';
 
 /**
  * Reusable Zod schema for the `custom_fields` write parameter.
@@ -22,13 +23,14 @@ export const CustomFieldWrite = z.object({
   name: z
     .string()
     .min(1)
+    .max(MAX_LABEL_CHARS)
     .describe(
       'Custom field name (case-sensitive, matches the field as displayed in the SWSD UI). ' +
         'Use swsd_describe_custom_fields first to discover the available field names ' +
         'and their types/allowed values.',
     ),
   value: z
-    .union([z.string(), z.number(), z.boolean()])
+    .union([z.string().max(MAX_LONG_TEXT_CHARS), z.number().finite(), z.boolean()])
     .describe(
       'Value to set. For Date use ISO 8601 ("YYYY-MM-DD"); SWSD echoes back as ' +
         '"Mon DD, YYYY" on read. For Dropdown use one of the values from the ' +
@@ -38,6 +40,7 @@ export const CustomFieldWrite = z.object({
 
 export const CustomFieldsArray = z
   .array(CustomFieldWrite)
+  .max(MAX_CUSTOM_FIELDS)
   .optional()
   .describe(
     'Set tenant-specific custom field values on the record. ' +

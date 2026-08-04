@@ -46,9 +46,10 @@ verified.
 | Token forwarded to an attacker-controlled URL (SSRF) | High → Mitigated | `SWSD_BASE_URL` validated at startup against `*.samanage.com` allowlist (see [`src/config/env.ts`](../src/config/env.ts) `isSamanageUrl`) |
 | DoS via request flooding | Medium → Mitigated | Per-token+IP rate limiting on `/mcp` (default 100 req / 60 sec window) using `express-rate-limit`; standards-compliant `RateLimit-*` headers |
 | DoS via hung outbound calls | Medium → Mitigated | 30-second per-request timeout via `AbortSignal.timeout` in [`src/swsd/client.ts`](../src/swsd/client.ts) |
+| DoS or unintended file access via oversized MCP arguments | Medium → Mitigated | Zod validates bounded tool inputs before handlers run; attachments require exactly one bounded source, local paths must be regular files, and operators can confine resolved paths with `SWSD_ATTACHMENT_ROOT` |
 | DNS rebinding attack | Medium → Mitigated | `Origin` header validation hook on `/mcp` requests |
 | Compromised maintainer account → malicious release | High → Mitigated | npm OIDC trusted publishing (no long-lived `NPM_TOKEN` exists); hardware 2FA on npm + GitHub accounts; SLSA provenance attestations on every release |
-| Compromised dependency (transitive supply chain) | Medium → Mitigated | All direct dependencies pinned to exact versions in `package-lock.json`; Renovate weekly updates; `npm audit` in CI; small dependency surface (7 direct production deps: `@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, `dompurify`, `express`, `express-rate-limit`, `helmet`, `zod`) |
+| Compromised dependency (transitive supply chain) | Medium → Mitigated | All direct dependencies pinned to exact versions in `package-lock.json`; Renovate weekly updates; OSV-Scanner on PRs, `main`, and weekly; small dependency surface (7 direct production deps: `@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, `dompurify`, `express`, `express-rate-limit`, `helmet`, `zod`) |
 | Compromised GitHub Action | Medium → Mitigated | All actions in CI pinned to commit SHAs (not version tags); Renovate auto-PRs new SHAs |
 | Compromised Docker base image | Medium → Mitigated | `node:24-alpine` pinned by SHA256 digest in `Dockerfile`; Renovate tracks new digests |
 | Tenant data leakage in error responses | Medium → Mitigated | Error mapper in [`src/swsd/errors.ts`](../src/swsd/errors.ts) sanitizes upstream error bodies; never includes tokens; structured tool errors return only the field-level validation failures, not raw responses |
@@ -98,6 +99,39 @@ data persistence. See [`src/transports/http.ts`](../src/transports/http.ts).
 All SWSD responses are parsed defensively — fields can be missing,
 wrong-typed, or unexpected without crashing the tool. See the mapper
 helpers in [`src/swsd/mappers/`](../src/swsd/mappers/).
+
+### Bounded tool inputs and attachment paths
+
+The MCP SDK validates every call against its Zod input schema before invoking
+the tool handler. Shared limits bound free-text queries, tenant labels,
+long-form content, filter arrays, relationship IDs, custom fields, and service
+request variables. Date fields accept real ISO dates or RFC 3339 datetimes;
+relative incident windows accept only `Nh`, `Nd`, or `Nw` values from 1–365.
+A registry-wide regression test converts every registered tool input to JSON
+Schema and fails if any non-enum string or array lacks an explicit maximum.
+
+Attachment uploads apply additional controls in
+[`src/schemas/attachment.ts`](../src/schemas/attachment.ts) and
+[`src/tools/attachments/uploadAttachment.ts`](../src/tools/attachments/uploadAttachment.ts):
+
+- exactly one of `content_base64` or `file_path`
+- canonical base64 and a decoded/file size no larger than SWSD's 25 MB limit
+- display-only filenames with no path separators or control characters
+- `file_path` only on local stdio transport and only for regular files
+- optional `SWSD_ATTACHMENT_ROOT` containment after resolving real paths, so
+  symlink traversal cannot escape the configured directory
+
+HTTP JSON requests remain subject to the stricter 4 MB transport body limit.
+
+### Process execution surface
+
+Production source under `src/` does not import `node:child_process` and does not
+call `exec`, `execFile`, `spawn`, or `fork`. The repository does contain fixed
+maintainer-facing npm scripts for compiling, testing, generating artifacts, and
+launching the MCP Inspector, and the installed `swsd-mcp` binary is normally
+launched by an MCP host over stdio. Those are expected package/tooling
+capabilities, not a runtime primitive that turns MCP arguments into shell
+commands.
 
 ### Compact projections
 
@@ -191,12 +225,14 @@ which builds on the upstream `config:best-practices` preset:
 Security-flagged updates bypass the minimum-release-age and get
 individual PRs for faster review and merge.
 
-### `npm audit` in CI
+### Dependency vulnerability scanning
 
-The `prepublishOnly` script in `package.json` runs lint + typecheck
-+ test before any publish. Combined with Renovate's CVE-aware PRs,
-this gives multiple opportunities to catch vulnerable dependencies
-before they reach users.
+OSV-Scanner runs on pull requests, pushes to `main`, and a weekly schedule so
+newly disclosed vulnerabilities are detected even when the source tree has not
+changed. The `prepublishOnly` script also runs lint, typecheck, tests, and a
+build before any publish. Combined with Renovate's CVE-aware PRs, this gives
+multiple opportunities to catch vulnerable dependencies before they reach
+users.
 
 ---
 
@@ -265,7 +301,8 @@ Every push to `main` and every PR runs:
 1. Install dependencies (`npm ci` against locked versions)
 2. Lint (`eslint .`)
 3. Typecheck (`tsc --noEmit`)
-4. Unit tests (`vitest run` — 668 tests passed in the v2.2.0 release run)
+4. Unit tests with V8 coverage regression gates (`npm run test:coverage` — 72%
+   statements, 66% branches, 80% functions, and 76% lines minimum)
 5. Docker build (multi-stage, Alpine base)
 6. Container smoke test (boot, `/healthz` 200, `/mcp` 401-on-no-auth)
 7. (On push to main only) Image push to the public `ghcr.io/mikimatsub/swsd-mcp` package

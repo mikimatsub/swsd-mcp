@@ -46,6 +46,12 @@
           "format": "string",
           "default": "live",
           "choices": ["live", "dry-run", "disabled"]
+        },
+        {
+          "name": "SWSD_ATTACHMENT_ROOT",
+          "description": "Optional real-path boundary for local file_path attachment uploads over stdio. Files outside this directory are rejected.",
+          "isRequired": false,
+          "format": "string"
         }
       ]
     }

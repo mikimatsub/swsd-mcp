@@ -43,15 +43,16 @@ const isSamanageUrl = (url: string): boolean => {
 };
 
 export const EnvSchema = z.object({
-  SWSD_TOKEN: z.string().optional(),
+  SWSD_TOKEN: z.string().max(32_768).optional(),
   SWSD_BASE_URL: z
     .string()
+    .max(2_048)
     .url()
     .refine(isSamanageUrl, {
       message: 'SWSD_BASE_URL must be on samanage.com (e.g., https://api.samanage.com or https://apieu.samanage.com)',
     })
     .default('https://api.samanage.com'),
-  SWSD_API_VERSION: z.string().min(1).default('v2.1'),
+  SWSD_API_VERSION: z.string().min(1).max(32).default('v2.1'),
   SWSD_TRANSPORT: z.enum(TRANSPORTS).default('stdio'),
   SWSD_PROFILE: z.enum(PROFILES).default('agent'),
   SWSD_WRITE_MODE: z
@@ -60,13 +61,24 @@ export const EnvSchema = z.object({
     .describe(
       'Write safety mode. live = call SWSD normally; dry-run = return the request that would be sent; disabled = reject all write tools.',
     ),
+  SWSD_ATTACHMENT_ROOT: z
+    .preprocess(
+      (value) =>
+        typeof value === 'string' && value.trim().length === 0 ? undefined : value,
+      z.string().trim().min(1).max(4_096).optional(),
+    )
+    .describe(
+      'Optional real-path root for stdio file_path attachments. Files outside this directory are rejected.',
+    ),
   SWSD_ENABLE_EXTRAS: z
     .string()
+    .max(10_000)
     .optional()
     .transform(csv),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   SWSD_ALLOWED_ORIGINS: z
     .string()
+    .max(10_000)
     .optional()
     .transform(csv),
   SWSD_RETRY_MAX_ATTEMPTS: z.coerce.number().int().min(0).max(10).default(3),
@@ -77,7 +89,7 @@ export const EnvSchema = z.object({
     .max(300_000)
     .default(30_000)
     .describe('Per-request timeout for outbound SWSD calls. 30s default.'),
-  SWSD_TRUST_PROXY: z.string().optional().transform(trustProxyTransform),
+  SWSD_TRUST_PROXY: z.string().max(4_096).optional().transform(trustProxyTransform),
   SWSD_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
   SWSD_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100_000).default(100),
 });

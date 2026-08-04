@@ -161,7 +161,7 @@ Time entries are scoped to a parent `incident`, `problem`, `change`, or `release
 |---|---|---|---|---|---|---|
 | `swsd_upload_attachment` | W |   | ✓ |   | ✓ | ✓ |
 
-- **`swsd_upload_attachment`** — upload evidence to incidents, problems, changes, releases, solutions, hardware assets, other assets, or configuration items. Use `content_base64` for HTTP/hosted clients; `file_path` is allowed only in stdio mode.
+- **`swsd_upload_attachment`** — upload evidence to incidents, problems, changes, releases, solutions, hardware assets, other assets, or configuration items. Use `content_base64` for HTTP/hosted clients; `file_path` is allowed only in stdio mode. Files are limited to [SWSD's 25 MB per-file maximum](https://documentation.solarwinds.com/en/success_center/swsd/content/completeguidetoswsd/globalsettings-attachmentsettings.htm). For local clients, set `SWSD_ATTACHMENT_ROOT` to restrict resolved file paths to one directory.
 
 ---
 

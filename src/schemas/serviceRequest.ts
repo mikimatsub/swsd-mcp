@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CustomFieldsArray } from './customFieldWrite.js';
+import { EmailInput, MAX_LONG_TEXT_CHARS, MAX_REQUEST_VARIABLES } from './limits.js';
 
 /**
  * Input shape for `swsd_create_service_request`.
@@ -37,6 +38,7 @@ export const RequestVariableInput = z.object({
     ),
   value: z
     .string()
+    .max(MAX_LONG_TEXT_CHARS)
     .describe(
       'Stringified value to set on this variable. For dropdowns, use one of the variable\'s `options` choices verbatim. For dates, use the catalog item\'s expected format (often "YYYY-MM-DD" or "M/D/YYYY @ HHam/pm").',
     ),
@@ -52,19 +54,19 @@ export const CreateServiceRequestInput = z.object({
     ),
   request_variables: z
     .array(RequestVariableInput)
+    .max(MAX_REQUEST_VARIABLES)
     .default([])
     .describe(
       'Form variable values, one entry per catalog variable being filled. Use `swsd_get_catalog_item` first to discover the available variables and required ones (`required: "1"`).',
     ),
-  requester_email: z
-    .string()
-    .email()
+  requester_email: EmailInput
     .optional()
     .describe(
       'Email of the user the request is for. Defaults to the authenticated user (resolved from the JWT). SWSD rejects numeric requester ids on this endpoint, so pass an email if you need to file the request on behalf of someone else.',
     ),
   description: z
     .string()
+    .max(MAX_LONG_TEXT_CHARS)
     .optional()
     .describe(
       'Optional free-text description added to the resulting incident. The catalog item\'s default description from the SWSD UI is replaced if you pass this.',

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { EmailInput, IsoDateOrDateTimeInput, MAX_LONG_TEXT_CHARS } from './limits.js';
 
 export const ListIncidentTasksInput = z.object({
   incident_id: z
@@ -25,15 +26,13 @@ export const CreateIncidentTaskInput = z.object({
     .describe('Task name (required).'),
   description: z
     .string()
+    .max(MAX_LONG_TEXT_CHARS)
     .optional()
     .describe('Long-form task description. Plain text or HTML.'),
-  due_at: z
-    .string()
+  due_at: IsoDateOrDateTimeInput
     .optional()
     .describe('Due date / datetime in ISO 8601 (e.g., "2026-06-01" or RFC 3339).'),
-  assignee_email: z
-    .string()
-    .email()
+  assignee_email: EmailInput
     .optional()
     .describe('Email of the SWSD user to assign the task to.'),
 });

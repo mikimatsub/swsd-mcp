@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added measured V8 coverage reporting and CI regression gates at 72% statements,
+  66% branches, 80% functions, and 76% lines, plus direct request-boundary tests
+  for the SWSD HTTP client.
+- Added optional `SWSD_ATTACHMENT_ROOT` containment for local stdio attachment
+  paths.
+
+### Security
+
+- Bounded MCP query, label, long-text, filter, relationship, custom-field, and
+  request-variable inputs and now validate date inputs as ISO 8601/RFC 3339.
+- Hardened attachment inputs to require exactly one source, canonical base64,
+  safe display names, regular local files, and the SWSD 25 MB per-file limit.
+
 ### Fixed
 
 - Enforced MCP Registry metadata limits in tests and made partially completed

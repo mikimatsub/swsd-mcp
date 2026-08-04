@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_LABEL_CHARS } from './limits.js';
 
 export const DescribeCustomFieldsInput = z.object({
   page: z
@@ -17,12 +18,14 @@ export const DescribeCustomFieldsInput = z.object({
     .describe('Results per page (1-100).'),
   scope: z
     .string()
+    .max(MAX_LABEL_CHARS)
     .optional()
     .describe(
       'Filter to fields with this scope (e.g. "Global", "Service_Catalog", "Incident"). Tenant-specific.',
     ),
   module: z
     .string()
+    .max(MAX_LABEL_CHARS)
     .optional()
     .describe('Filter to fields scoped to this module (when set on the field).'),
   active_only: z

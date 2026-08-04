@@ -1,7 +1,18 @@
-import { readFileSync } from 'node:fs';
-import { basename } from 'node:path';
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  openSync,
+  readSync,
+  realpathSync,
+  statSync,
+} from 'node:fs';
+import { isAbsolute, relative, sep } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { UploadAttachmentInput } from '../../schemas/attachment.js';
+import {
+  MAX_ATTACHMENT_BYTES,
+  UploadAttachmentInput,
+} from '../../schemas/attachment.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
@@ -19,6 +30,75 @@ const ATTACHABLE_TYPE: Record<string, string> = {
   configuration_items: 'ConfigurationItem',
 };
 
+class AttachmentInputError extends Error {}
+
+function isWithinRoot(root: string, filePath: string): boolean {
+  const relativePath = relative(root, filePath);
+  return (
+    relativePath === '' ||
+    (relativePath !== '..' && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath))
+  );
+}
+
+function readBoundedAttachment(filePath: string, allowedRoot?: string): Buffer {
+  let realFilePath: string;
+  try {
+    realFilePath = realpathSync(filePath);
+  } catch {
+    throw new AttachmentInputError('Attachment file_path could not be resolved.');
+  }
+
+  if (allowedRoot) {
+    let realRoot: string;
+    try {
+      realRoot = realpathSync(allowedRoot);
+    } catch {
+      throw new AttachmentInputError('SWSD_ATTACHMENT_ROOT could not be resolved.');
+    }
+    if (!statSync(realRoot).isDirectory()) {
+      throw new AttachmentInputError('SWSD_ATTACHMENT_ROOT must reference a directory.');
+    }
+    if (!isWithinRoot(realRoot, realFilePath)) {
+      throw new AttachmentInputError('Attachment file_path is outside SWSD_ATTACHMENT_ROOT.');
+    }
+  }
+
+  let descriptor: number;
+  try {
+    descriptor = openSync(realFilePath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  } catch {
+    throw new AttachmentInputError('Attachment file_path could not be opened safely.');
+  }
+
+  try {
+    const stats = fstatSync(descriptor);
+    if (!stats.isFile()) {
+      throw new AttachmentInputError('Attachment file_path must reference a regular file.');
+    }
+    if (stats.size > MAX_ATTACHMENT_BYTES) {
+      throw new AttachmentInputError('Attachment exceeds the SWSD 25 MB file limit.');
+    }
+
+    const bytes = Buffer.allocUnsafe(stats.size);
+    let offset = 0;
+    while (offset < bytes.length) {
+      const count = readSync(descriptor, bytes, offset, bytes.length - offset, offset);
+      if (count === 0) {
+        throw new AttachmentInputError('Attachment changed while it was being read.');
+      }
+      offset += count;
+    }
+
+    const probe = Buffer.allocUnsafe(1);
+    if (readSync(descriptor, probe, 0, 1, stats.size) > 0) {
+      throw new AttachmentInputError('Attachment changed while it was being read.');
+    }
+    return bytes;
+  } finally {
+    closeSync(descriptor);
+  }
+}
+
 export function registerUploadAttachment(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
     'swsd_upload_attachment',
@@ -26,7 +106,7 @@ export function registerUploadAttachment(server: McpServer, ctx: ToolContext): v
       description:
         'Upload an attachment to a SWSD incident, problem, change, release, solution, hardware asset, other asset, or configuration item. ' +
         'Use content_base64 for hosted/HTTP clients; file_path is allowed only on stdio. WRITE — honors SWSD_WRITE_MODE.',
-      inputSchema: UploadAttachmentInput.shape,
+      inputSchema: UploadAttachmentInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async ({ parent_type, parent_id, file_name, content_base64, file_path }) => {
@@ -48,11 +128,14 @@ export function registerUploadAttachment(server: McpServer, ctx: ToolContext): v
         if (!attachableType) return toolError(`Unsupported attachment parent_type: ${parent_type}`);
 
         const bytes = file_path
-          ? readFileSync(file_path)
+          ? readBoundedAttachment(file_path, ctx.env.SWSD_ATTACHMENT_ROOT)
           : Buffer.from(content_base64 ?? '', 'base64');
         if (bytes.length === 0) return toolError('Attachment contents are empty.');
+        if (bytes.length > MAX_ATTACHMENT_BYTES) {
+          return toolError('Attachment exceeds the SWSD 25 MB file limit.');
+        }
 
-        const displayName = file_name || (file_path ? basename(file_path) : 'attachment');
+        const displayName = file_name;
         const path = '/attachments.json';
         const dryRunBody = {
           file: {
@@ -94,6 +177,7 @@ export function registerUploadAttachment(server: McpServer, ctx: ToolContext): v
           `Uploaded attachment ${displayName} to ${parent_type} ${String(parent_id)}.`,
         );
       } catch (err) {
+        if (err instanceof AttachmentInputError) return toolError(err.message);
         return mapSwsdError(err);
       }
     },
