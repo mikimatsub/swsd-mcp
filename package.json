@@ -1,6 +1,6 @@
 {
   "name": "swsd-mcp",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "mcpName": "io.github.mikimatsub/swsd",
   "description": "MCP server for SolarWinds Service Desk (SWSD / Samanage). Dual transport: stdio for local agents, Streamable HTTP for Copilot Studio and hosted deployments. Not affiliated with SolarWinds.",
   "type": "module",

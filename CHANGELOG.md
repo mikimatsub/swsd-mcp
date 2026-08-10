@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-08-10
+
 ### Added
 
 - Added measured V8 coverage reporting and CI regression gates at 72% statements,
@@ -14,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for the SWSD HTTP client.
 - Added optional `SWSD_ATTACHMENT_ROOT` containment for local stdio attachment
   paths.
+
+### Changed
+
+- Updated the official `node:24-alpine` image digest and refreshed the resolved
+  `express-rate-limit` and `@hono/node-server` runtime versions after full
+  compatibility, container, and security validation.
+- Updated the documentation site to `@astrojs/starlight` 0.41.7.
 
 ### Security
 
@@ -572,7 +581,8 @@ Detailed history available via `git log`.
 * **2026-05-03** — `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.1...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.0...v2.1.1
