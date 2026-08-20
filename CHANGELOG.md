@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-08-20
+
+### Changed
+
+- Updated `@hono/node-server` to 2.1.1 and `tsx` to 4.23.12.
+- Updated the docs toolchain to Astro 7.2.2, `astro-d2` 0.13.1, and
+  the `esbuild` 0.28.2 override, keeping Astro's exact
+  `@astrojs/markdown-remark` peer aligned.
+- Refreshed compatible root and docs dependency locks while retaining the
+  inherited three-day minimum release age.
+
+### Security
+
+- Updated transitive `nanoid` from 3.3.17 to 3.3.18 in both lockfiles to
+  remediate `GHSA-2v37-7h3g-55p8`.
+
 ## [2.3.0] - 2026-08-10
 
 ### Added
@@ -581,7 +597,8 @@ Detailed history available via `git log`.
 * **2026-05-03** — `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.1...v2.2.0
