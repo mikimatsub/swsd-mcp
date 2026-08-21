@@ -7,14 +7,14 @@ Contributions are welcome. This page covers what to expect when filing issues or
 
 ## Reporting bugs
 
-→ **[Open a bug report](https://github.com/mikimatsub/swsd-mcp/issues/new?template=bug_report.yml)** — uses a structured form
+→ **[Open a bug report](https://github.com/mikimatsub/swsd-mcp/issues/new?template=bug_report.yml)**: uses a structured form
 
 Include:
 
-- **What you tried** — exact tool call, environment (stdio vs http), profile in use
-- **What happened** — actual response or error, with sensitive data redacted
-- **What you expected** — what behavior you were aiming for
-- **Version** — `npm view swsd-mcp version` or commit SHA
+- **What you tried**: exact tool call, environment (stdio vs http), profile in use
+- **What happened**: actual response or error, with sensitive data redacted
+- **What you expected**: what behavior you were aiming for
+- **Version**: `npm view swsd-mcp version` or commit SHA
 
 For **security issues**, see [Security → Vulnerability reporting](/security/#vulnerability-reporting). Do not file public issues for vulnerabilities.
 
@@ -42,8 +42,8 @@ PRs are welcome. Before submitting:
    ```
 3. **Add tests** for new behavior. The existing test suite is hermetic (no live API calls); follow that pattern.
 4. **Smoke against your tenant** for changes touching SWSD interactions. Use the `[MCP-VAL]` prefix convention for any test data you create, and clean up after yourself.
-5. **Commit messages** follow conventional-commit style — `feat:`, `fix:`, `ci:`, `docs:`, etc. — with a clear "why" in the body.
-6. **Don't bump the package version** in your PR — releases are tagged separately.
+5. **Commit messages** follow conventional-commit style (`feat:`, `fix:`, `ci:`, `docs:`, etc.) and include a clear "why" in the body.
+6. **Don't bump the package version** in your PR: releases are tagged separately.
 
 ### Pre-commit hooks
 
@@ -51,11 +51,11 @@ The repo uses `husky` + `lint-staged` to run `eslint --fix` on staged TS/JS file
 
 ### What I look for in code review
 
-- **Defensive parsing** for SWSD response shapes — assume fields can be missing or wrong-typed
-- **Compact projections** for list tools — every leaked field is tokens consumed in the agent's context
+- **Defensive parsing** for SWSD response shapes: assume fields can be missing or wrong-typed
+- **Compact projections** for list tools: every leaked field is tokens consumed in the agent's context
 - **Tight Zod schemas** with `.describe()` on every parameter
-- **Errors that name the next action** — _"use `swsd_list_users` first"_ rather than just _"404"_
-- **No new dependencies** without strong justification — each one expands the supply-chain surface
+- **Errors that name the next action**: _"use `swsd_list_users` first"_ rather than just _"404"_
+- **No new dependencies** without strong justification: each one expands the supply-chain surface
 
 ### What blocks a PR
 
@@ -97,7 +97,7 @@ SWSD_TRANSPORT=http npm run dev
 
 ## Documentation contributions
 
-The docs site (this site!) lives under [`docs-site/`](https://github.com/mikimatsub/swsd-mcp/tree/main/docs-site) — see [`docs-site/README.md`](https://github.com/mikimatsub/swsd-mcp/blob/main/docs-site/README.md) for dev/build commands.
+The docs site (this site!) lives under [`docs-site/`](https://github.com/mikimatsub/swsd-mcp/tree/main/docs-site): see [`docs-site/README.md`](https://github.com/mikimatsub/swsd-mcp/blob/main/docs-site/README.md) for dev/build commands.
 
 Cloudflare Pages auto-deploys every push to `main`. PRs get preview URLs commented automatically.
 

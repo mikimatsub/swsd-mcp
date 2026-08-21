@@ -3,13 +3,13 @@ title: Quick start
 description: Install and configure swsd-mcp in any MCP client in under five minutes.
 ---
 
-This guide gets swsd-mcp running locally via `npx`. For Microsoft Copilot Studio, see [Deployment → Copilot Studio](/deployment/#microsoft-copilot-studio) — it uses HTTP transport, which is a different setup.
+This guide gets swsd-mcp running locally via `npx`. For Microsoft Copilot Studio, see [Deployment → Copilot Studio](/deployment/#microsoft-copilot-studio), which uses the HTTP transport and requires a different setup.
 
 ## What you need
 
-- An MCP client installed — any MCP-compatible client works ([client compatibility matrix](/compatibility/))
+- An MCP client installed: any MCP-compatible client works ([client compatibility matrix](/compatibility/))
 - Node.js 24.15.0 or newer (for `npx`; current LTS line, matches `package.json` engines)
-- A SolarWinds Service Desk **admin token** — see below
+- A SolarWinds Service Desk **admin token**: see below
 
 ## Generate an SWSD admin token
 
@@ -21,7 +21,7 @@ In the SWSD web UI, navigate:
 4. Copy the token (it's a long JWT string)
 
 :::caution[Service Desk administrator rights required]
-Only users with a Service Desk administrator license can generate tokens. If you don't have admin rights, your administrator needs to generate one for you. The token inherits *your* permissions — when your role changes, the token's permissions change with it.
+Only users with a Service Desk administrator license can generate tokens. If you don't have admin rights, your administrator needs to generate one for you. The token inherits *your* permissions, so its permissions change whenever your role changes.
 :::
 
 ## Install in VS Code
@@ -171,7 +171,7 @@ When testing write-heavy workflows, add `SWSD_WRITE_MODE: "dry-run"` to preview 
 | Claude Desktop (Linux) | `~/.config/Claude/claude_desktop_config.json` |
 | Claude Code | `~/.claude.json` (or use the [shortcut below](#claude-code-shortcut)) |
 | Cursor | `~/.cursor/mcp.json` |
-| Continue, Cline, other clients | check your client's docs — same JSON shape |
+| Continue, Cline, other clients | check your client's docs: same JSON shape |
 
 Create the file if it doesn't exist. Then **restart your client** so it picks up the new server.
 
@@ -214,6 +214,6 @@ The full tool catalog is in [Tools reference](/tools/).
 
 ## Next steps
 
-- **Tighten or expand the tool set** — see [Configuration](/configuration/#profiles) to switch from the default `agent` profile to `triage` (read-heavy), `knowledge` (KB authoring), `operations`, or `full`
-- **Hosting for a team** — see [Deployment](/deployment/) for the HTTP-transport setup
-- **Microsoft Copilot Studio integration** — see [Deployment → Microsoft Copilot Studio](/deployment/#microsoft-copilot-studio)
+- **Tighten or expand the tool set**: see [Configuration](/configuration/#profiles) to switch from the default `agent` profile to `triage` (read-heavy), `knowledge` (KB authoring), `operations`, or `full`
+- **Hosting for a team**: see [Deployment](/deployment/) for the HTTP-transport setup
+- **Microsoft Copilot Studio integration**: see [Deployment → Microsoft Copilot Studio](/deployment/#microsoft-copilot-studio)

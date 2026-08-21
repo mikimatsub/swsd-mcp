@@ -3,14 +3,14 @@ title: Configuration
 description: Environment variables, profiles, and tool selection for swsd-mcp.
 ---
 
-All configuration is via environment variables. Most users only need to set `SWSD_TOKEN` and `SWSD_BASE_URL` — see [Quick start](/quickstart/). This page is the full reference.
+All configuration is via environment variables. Most users only need to set `SWSD_TOKEN` and `SWSD_BASE_URL`; see [Quick start](/quickstart/). This page is the full reference.
 
 ## Essential
 
 | Variable | Default | Notes |
 |---|---|---|
 | `SWSD_TOKEN` | _(required for stdio)_ | Your SWSD admin token (JWT). For HTTP transport, pass per-request via the `Authorization` or `X-SWSD-Token` header instead. |
-| `SWSD_BASE_URL` | `https://api.samanage.com` | EU tenant: `https://apieu.samanage.com`. SSRF defense: must be on the `samanage.com` domain — other URLs are rejected at startup. |
+| `SWSD_BASE_URL` | `https://api.samanage.com` | EU tenant: `https://apieu.samanage.com`. SSRF defense: must be on the `samanage.com` domain: other URLs are rejected at startup. |
 | `SWSD_PROFILE` | `agent` | Tool set: `triage`, `agent`, `knowledge`, `operations`, or `full`. See [Profiles](#profiles) below. |
 
 ## Advanced (HTTP transport only)
@@ -46,7 +46,7 @@ The complete annotated example is in [`.env.example`](https://github.com/mikimat
 
 ## Profiles
 
-Profiles control which tools are registered at startup. The choice is made once at startup and **cannot be changed mid-session** — restart the server to switch.
+Profiles control which tools are registered at startup. The choice is made once at startup and **cannot be changed mid-session**: restart the server to switch.
 
 | Profile | Intent | Tool count |
 |---|---|---|
@@ -58,11 +58,11 @@ Profiles control which tools are registered at startup. The choice is made once 
 
 ### When to pick which
 
-- **`triage`** — first-line support agents who read tickets and post comments but don't reassign or close. Minimal write surface.
-- **`agent`** (default) — full incident-handling: create, update, assign, state-transition, link solutions, plus comment writes, KB lookups, work logs, and attachments. The most common choice.
-- **`knowledge`** — KB authors who need full solution CRUD plus incident reads for context. No incident writes.
-- **`operations`** — agents who also need ITSM lifecycle and operational context: changes, releases, assets, CMDB records, contracts, purchase orders, vendors, and risks.
-- **`full`** — every tool. Use for hosted deployments serving multiple roles, or when you want to start permissive and tighten later.
+- **`triage`**: first-line support agents who read tickets and post comments but don't reassign or close. Minimal write surface.
+- **`agent`** (default): full incident-handling: create, update, assign, state-transition, link solutions, plus comment writes, KB lookups, work logs, and attachments. The most common choice.
+- **`knowledge`**: KB authors who need full solution CRUD plus incident reads for context. No incident writes.
+- **`operations`**: agents who also need ITSM lifecycle and operational context: changes, releases, assets, CMDB records, contracts, purchase orders, vendors, and risks.
+- **`full`**: every tool. Use for hosted deployments serving multiple roles, or when you want to start permissive and tighten later.
 
 ### Adding individual tools to a profile
 
@@ -73,11 +73,11 @@ SWSD_PROFILE=triage
 SWSD_ENABLE_EXTRAS=swsd_search_solutions,swsd_get_solution
 ```
 
-This gives you the `triage` profile **plus** solution lookups — handy when first-line support needs to reference KB articles. Unknown tool names cause a startup error so typos don't silently expand or contract the registered set.
+This gives you the `triage` profile **plus** solution lookups: handy when first-line support needs to reference KB articles. Unknown tool names cause a startup error so typos don't silently expand or contract the registered set.
 
 ## Verifying configuration at startup
 
-**Stdio mode is intentionally silent on stdout** — the MCP transport multiplexes JSON-RPC over stdout, so the server cannot print human-readable banners there. To verify configuration in stdio mode, call the `swsd_get_server_info` tool from your MCP client; it returns the active profile, base URL, version, transport, and full tool list as a structured response.
+**Stdio mode is intentionally silent on stdout**: the MCP transport multiplexes JSON-RPC over stdout, so the server cannot print human-readable banners there. To verify configuration in stdio mode, call the `swsd_get_server_info` tool from your MCP client; it returns the active profile, base URL, version, transport, and full tool list as a structured response.
 
 **HTTP mode** prints a single startup line on stderr (no token leakage):
 
@@ -85,4 +85,4 @@ This gives you the `triage` profile **plus** solution lookups — handy when fir
 swsd-mcp 2.2.0 HTTP transport listening on :3000 (POST /mcp, GET /healthz; rate limit 100/60s, request timeout 30s)
 ```
 
-In HTTP mode, hit `GET /healthz` for `{"ok":true}` (deliberately minimal — no version disclosure to anonymous callers) or call `swsd_get_server_info` through an authenticated MCP client for full configuration details.
+In HTTP mode, hit `GET /healthz` for `{"ok":true}` (deliberately minimal: no version disclosure to anonymous callers) or call `swsd_get_server_info` through an authenticated MCP client for full configuration details.

@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Cut a v2 release of swsd-mcp — bump the version, ship to npm with provenance, ship the Docker image to ghcr.io, and submit the package to the official MCP Registry at `registry.modelcontextprotocol.io` so MCP clients (Claude Desktop, ChatGPT app picker, Goose, etc.) can discover it.
+**Goal:** Cut a v2 release of swsd-mcp: bump the version, ship to npm with provenance, ship the Docker image to ghcr.io, and submit the package to the official MCP Registry at `registry.modelcontextprotocol.io` so MCP clients (Claude Desktop, ChatGPT app picker, Goose, etc.) can discover it.
 
-**Architecture:** No new code — this is a release/distribution task. Use the existing `publish-npm.yml` workflow (OIDC trusted publishing already configured), the existing ghcr publish workflow on `ci.yml` (already runs on main pushes), and the official `mcp-publisher` CLI for the registry submission. Add a new `server.json` file at the repo root to satisfy the registry's metadata schema.
+**Architecture:** No new code: this is a release/distribution task. Use the existing `publish-npm.yml` workflow (OIDC trusted publishing already configured), the existing ghcr publish workflow on `ci.yml` (already runs on main pushes), and the official `mcp-publisher` CLI for the registry submission. Add a new `server.json` file at the repo root to satisfy the registry's metadata schema.
 
-**Tech stack:** No new dependencies. The `mcp-publisher` CLI is a Go-built binary (Homebrew or curl install), not an npm package — so the user's package-version verification rule doesn't apply to it. The registry's API is at `v0.1` and currently in **API freeze** (per the registry README: "API will remain stable with no breaking changes" through at least Q1 2026), so submission shape is stable.
+**Tech stack:** No new dependencies. The `mcp-publisher` CLI is a Go-built binary (Homebrew or curl install), not an npm package, so the user's package-version verification rule doesn't apply to it. The registry's API is at `v0.1` and currently in **API freeze** (per the registry README: "API will remain stable with no breaking changes" through at least Q1 2026), so submission shape is stable.
 
 ---
 
@@ -15,21 +15,21 @@
 Recorded here so the implementer doesn't re-derive:
 
 **Existing distribution infrastructure (mature):**
-- `.github/workflows/publish-npm.yml` — fires on `git push --tags` matching `v*`. OIDC trusted publishing on npmjs (no `NPM_TOKEN` secret). Runs lint + typecheck + test + build + `npm pack --dry-run` + `npm publish --provenance --access public`. **Already used for v1.0.0 and v1.0.1** — trusted-publisher entry already configured on npmjs for `swsd-mcp`.
-- `.github/workflows/ci.yml` — has a `publish-image` job on main pushes that pushes to `ghcr.io/mikimatsub/mcp-swsd:latest` and `ghcr.io/mikimatsub/mcp-swsd:sha-<short>`. Already running.
-- `package.json` — has `publishConfig: {access: public, provenance: true}`, `prepublishOnly` chains lint+typecheck+test+build, healthy `keywords` array, `homepage`/`repository`/`bugs` all set.
+- `.github/workflows/publish-npm.yml`: fires on `git push --tags` matching `v*`. OIDC trusted publishing on npmjs (no `NPM_TOKEN` secret). Runs lint + typecheck + test + build + `npm pack --dry-run` + `npm publish --provenance --access public`. **Already used for v1.0.0 and v1.0.1**: trusted-publisher entry already configured on npmjs for `swsd-mcp`.
+- `.github/workflows/ci.yml`: has a `publish-image` job on main pushes that pushes to `ghcr.io/mikimatsub/mcp-swsd:latest` and `ghcr.io/mikimatsub/mcp-swsd:sha-<short>`. Already running.
+- `package.json`: has `publishConfig: {access: public, provenance: true}`, `prepublishOnly` chains lint+typecheck+test+build, healthy `keywords` array, `homepage`/`repository`/`bugs` all set.
 
 **Current published state on npm (verified via `npm view`):**
-- `swsd-mcp@1.0.0` — published 2026-05-04T01:13Z (initial)
-- `swsd-mcp@1.0.1` — published 2026-05-04T01:15Z (current latest)
-- This plan adds `swsd-mcp@2.0.0` (or `1.1.0` — see Task 1 Step 1 for the version-bump decision).
+- `swsd-mcp@1.0.0`: published 2026-05-04T01:13Z (initial)
+- `swsd-mcp@1.0.1`: published 2026-05-04T01:15Z (current latest)
+- This plan adds `swsd-mcp@2.0.0` (or `1.1.0`: see Task 1 Step 1 for the version-bump decision).
 
 **MCP Registry submission flow (from `modelcontextprotocol/registry` quickstart):**
-1. Add `mcpName: "io.github.mikimatsub/swsd"` to `package.json` (ownership verification — must start with `io.github.<username>/` for GitHub auth).
+1. Add `mcpName: "io.github.mikimatsub/swsd"` to `package.json` (ownership verification: must start with `io.github.<username>/` for GitHub auth).
 2. Publish the npm package (already automated).
 3. Install `mcp-publisher` CLI locally (Homebrew, curl, or pre-built binary).
 4. Create `server.json` at repo root (registry metadata).
-5. `mcp-publisher login github` (device flow — ONE TIME per maintainer machine).
+5. `mcp-publisher login github` (device flow: ONE TIME per maintainer machine).
 6. `mcp-publisher publish` (uploads `server.json` to `registry.modelcontextprotocol.io`).
 
 The first registry submission is **manual** (device-flow auth). Subsequent versions can be automated by re-running `mcp-publisher publish` after each npm publish.
@@ -40,7 +40,7 @@ The first registry submission is **manual** (device-flow auth). Subsequent versi
 
 This plan must NOT regress any existing behavior:
 
-- The npm-published binary surface is unchanged (no tool removed, no signature changed; v2 is strictly additive over v1.0.1 — verified across Plans A-E).
+- The npm-published binary surface is unchanged (no tool removed, no signature changed; v2 is strictly additive over v1.0.1: verified across Plans A-E).
 - Existing v1.0.1 users continue to work unchanged when they upgrade to v2.
 - The new `server.json` is a metadata file; it has no runtime effect.
 - The new `mcpName` package.json field is metadata; it has no runtime effect.
@@ -49,7 +49,7 @@ This plan must NOT regress any existing behavior:
 **Risk surface for THIS task:**
 - **Tag push triggers production publish.** Once `v2.0.0` is tagged and pushed, npm publish runs. If anything is wrong, you cannot un-publish from npm (only deprecate the version). So Task 1's "verify everything is right" steps are load-bearing. Run `npm publish --dry-run` AND inspect what's in the tarball before tagging.
 - **MCP Registry first-submission cost.** Once a `mcpName` is taken, it's taken. Pick the right slug.
-- **Renovate may flag the new server.json schema URL.** It's a schema URL pinned by date (`https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json`) — Renovate may try to bump the date. Add it to the renovate-ignore list if needed.
+- **Renovate may flag the new server.json schema URL.** It's a schema URL pinned by date (`https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json`): Renovate may try to bump the date. Add it to the renovate-ignore list if needed.
 
 A test sweep (`npm test` + e2e smoke) must pass after Task 1's metadata edits and BEFORE the tag push.
 
@@ -58,13 +58,13 @@ A test sweep (`npm test` + e2e smoke) must pass after Task 1's metadata edits an
 ## File Structure
 
 **New files:**
-- `server.json` — MCP Registry metadata at repo root. Generated by `mcp-publisher init` then hand-edited.
+- `server.json`: MCP Registry metadata at repo root. Generated by `mcp-publisher init` then hand-edited.
 
 **Modified files:**
-- `package.json` — bump `version` (1.0.1 → 2.0.0 or 1.1.0); add `mcpName` field.
-- `CHANGELOG.md` — convert the `[Unreleased]` section header to `[2.0.0] - 2026-05-07` (or `[1.1.0]`); add a fresh empty `[Unreleased]` block above it.
-- `README.md` — bump the npm version badge if hardcoded; add a "Listed on MCP Registry" badge or link.
-- `docs-site/src/content/docs/index.mdx` — add a "Available on the MCP Registry" link/card.
+- `package.json`: bump `version` (1.0.1 → 2.0.0 or 1.1.0); add `mcpName` field.
+- `CHANGELOG.md`: convert the `[Unreleased]` section header to `[2.0.0] - 2026-05-07` (or `[1.1.0]`); add a fresh empty `[Unreleased]` block above it.
+- `README.md`: bump the npm version badge if hardcoded; add a "Listed on MCP Registry" badge or link.
+- `docs-site/src/content/docs/index.mdx`: add a "Available on the MCP Registry" link/card.
 
 **No source-code changes.** This is purely a release task.
 
@@ -83,15 +83,15 @@ A test sweep (`npm test` + e2e smoke) must pass after Task 1's metadata edits an
 
 Two valid choices, with rationale for each. Pick one and proceed:
 
-- **`2.0.0`** (recommended) — All implementation has been branded "v2"; the CHANGELOG has Tier 1 / Tier 2 / Service Catalog headers under `[Unreleased]` that describe v2 scope; major version signals to users "significant new functionality, worth a re-look"; aligns with how MCP servers in the ecosystem version (e.g., React 16→17 was almost entirely additive but bumped major). **Trade-off:** strict SemVer says minor.
+- **`2.0.0`** (recommended): All implementation has been branded "v2"; the CHANGELOG has Tier 1 / Tier 2 / Service Catalog headers under `[Unreleased]` that describe v2 scope; major version signals to users "significant new functionality, worth a re-look"; aligns with how MCP servers in the ecosystem version (e.g., React 16→17 was almost entirely additive but bumped major). **Trade-off:** strict SemVer says minor.
 
-- **`1.1.0`** — Strict SemVer: every change since v1.0.1 has been additive (5 new tools, MCP Apps `_meta.ui.resourceUri` advertisement, expanded `instructions`, new structured-content fields like `applied_filters` / `total_scope`, SDK floor internal-only bump, new `ext-apps` direct dep). Zero breaking changes per the strict-additivity contracts in Plans A-E. **Trade-off:** loses the "v2" branding consistency that's been used in CHANGELOG / commit messages / PR titles for the past two days of work.
+- **`1.1.0`**: Strict SemVer: every change since v1.0.1 has been additive (5 new tools, MCP Apps `_meta.ui.resourceUri` advertisement, expanded `instructions`, new structured-content fields like `applied_filters` / `total_scope`, SDK floor internal-only bump, new `ext-apps` direct dep). Zero breaking changes per the strict-additivity contracts in Plans A-E. **Trade-off:** loses the "v2" branding consistency that's been used in CHANGELOG / commit messages / PR titles for the past two days of work.
 
-The maintainer's call. The rest of this plan assumes **`2.0.0`** but works identically for `1.1.0` — just substitute throughout.
+The maintainer's call. The rest of this plan assumes **`2.0.0`** but works identically for `1.1.0`: just substitute throughout.
 
 - [ ] **Step 2: Bump `package.json` version + add `mcpName`**
 
-DO NOT use `npm version` yet — that command bumps version AND creates a git tag in one step, and we don't want the tag yet (it triggers publishing). Edit `package.json` directly:
+Do not use `npm version` yet. That command bumps the version and creates a git tag in one step, and we don't want the tag yet because it triggers publishing. Edit `package.json` directly:
 
 ```diff package.json
  {
@@ -105,7 +105,7 @@ DO NOT use `npm version` yet — that command bumps version AND creates a git ta
 
 The `mcpName` value:
 - MUST start with `io.github.mikimatsub/` for GitHub-based registry auth to work.
-- The slug `swsd` (NOT `swsd-mcp` — the `-mcp` suffix is implied by the registry context) is recommended; matches the npm package's stripped-stem name and the SWSD product abbreviation. The maintainer can pick `swsd-mcp` if they want full unambiguity — registry lookup works for either.
+- The slug `swsd` is recommended because the `-mcp` suffix is implied by the registry context; it matches the npm package's stripped-stem name and the SWSD product abbreviation. The maintainer can pick `swsd-mcp` for full clarity because registry lookup works for either.
 
 - [ ] **Step 3: Cut the CHANGELOG release**
 
@@ -122,7 +122,7 @@ Edit `CHANGELOG.md`:
 [1.0.0]: https://github.com/mikimatsub/MCP-SWSD/releases/tag/v1.0.0
 ```
 
-Verify the `[2.0.0]` block reads naturally as a release-note (it should — Plan E Task 4 already wrote it as the unreleased section, but skim once more for "the v2 release adds X" framing where helpful).
+Verify the `[2.0.0]` block reads naturally as a release-note (it should: Plan E Task 4 already wrote it as the unreleased section, but skim once more for "the v2 release adds X" framing where helpful).
 
 - [ ] **Step 4: Verify README badges + version references are current**
 
@@ -130,7 +130,7 @@ Verify the `[2.0.0]` block reads naturally as a release-note (it should — Plan
 grep -n "version\|badge\|1.0.1\|1.0.0" README.md | head -20
 ```
 
-The `[![npm version](https://img.shields.io/npm/v/swsd-mcp.svg)]` badge auto-updates from npm — no edit needed. But scan for any hardcoded `1.0.1` references and update to `2.0.0`. Likely zero hits, since the README has been kept evergreen.
+The `[![npm version](https://img.shields.io/npm/v/swsd-mcp.svg)]` badge auto-updates from npm: no edit needed. But scan for any hardcoded `1.0.1` references and update to `2.0.0`. Likely zero hits, since the README has been kept evergreen.
 
 - [ ] **Step 5: Run `npm pack --dry-run` and inspect the tarball**
 
@@ -141,12 +141,12 @@ npm pack --dry-run 2>&1 | tail -50
 Verify:
 - `version: 2.0.0`
 - Files included: only what's in the `files` array (`dist`, `README.md`, `LICENSE`, `SECURITY.md`, `CHANGELOG.md`).
-- `dist/ui/*.html` IS included (Plan D's UI bundles must ship in the npm tarball — they're loaded by `loadUiResource` at startup).
+- `dist/ui/*.html` IS included (Plan D's UI bundles must ship in the npm tarball: they're loaded by `loadUiResource` at startup).
 - No surprises like `tests/`, `.research/`, `*.test.ts`, screenshots from the verification run, etc.
 
 If anything surprising shows up, fix it before tagging. Common gotchas:
-- `dist/ui/` not built — run `npm run build:ui` first (the `prepublishOnly` chain handles this on actual publish, but `npm pack --dry-run` doesn't trigger it).
-- `tests/` getting included — should be excluded by absence from the `files` array, but verify.
+- `dist/ui/` not built: run `npm run build:ui` first (the `prepublishOnly` chain handles this on actual publish, but `npm pack --dry-run` doesn't trigger it).
+- `tests/` getting included: should be excluded by absence from the `files` array, but verify.
 
 - [ ] **Step 6: Run the full test sweep**
 
@@ -233,13 +233,13 @@ This reads `package.json` and produces a `server.json` template. The output will
 
 - [ ] **Step 3: Hand-edit `server.json` to add env-var documentation**
 
-The auto-generated `server.json` doesn't include the env-var schema. Add the documented variables so the registry can render an install/setup UI for users. Below is the recommended shape — verify each field name + default against `src/config/env.ts` and `.env.example` before pasting:
+The auto-generated `server.json` doesn't include the env-var schema. Add the documented variables so the registry can render an install/setup UI for users. Below is the recommended shape: verify each field name + default against `src/config/env.ts` and `.env.example` before pasting:
 
 ```json
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.mikimatsub/swsd",
-  "description": "MCP server for SolarWinds Service Desk (SWSD / Samanage). Read and modify SWSD tickets, comments, knowledge-base articles, and the service catalog from any MCP client. Zero credentials at rest — each user's SWSD admin token is forwarded per-request and never persisted.",
+  "description": "MCP server for SolarWinds Service Desk (SWSD / Samanage). Read and modify SWSD tickets, comments, knowledge-base articles, and the service catalog from any MCP client. Zero credentials at rest: each user's SWSD admin token is forwarded per-request and never persisted.",
   "repository": {
     "url": "https://github.com/mikimatsub/MCP-SWSD",
     "source": "github"
@@ -283,10 +283,10 @@ The auto-generated `server.json` doesn't include the env-var schema. Add the doc
 ```
 
 Notes on the schema:
-- `websiteUrl` is optional but useful — points users at the docs site.
+- `websiteUrl` is optional but useful: points users at the docs site.
 - HTTP transport is intentionally NOT advertised in the registry. The registry surfaces stdio-installable servers; HTTP deployment is out-of-band (Azure Container Apps recipe in `docs/deployment/azure-container-apps.md`). If the registry adds HTTP support later, this can be expanded.
 - `format: "string"` is a soft hint to the registry's rendering UI; the `isSecret: true` flag is what triggers password-input rendering.
-- The `description` is what shows up in registry search results and MCP-host install pickers — make it scannable.
+- The `description` is what shows up in registry search results and MCP-host install pickers: make it scannable.
 
 - [ ] **Step 4: Verify the `server.json` schema**
 
@@ -311,7 +311,7 @@ git commit -m "feat(release): add server.json for MCP Registry submission"
 
 **Goal:** Push the version tag. The existing `publish-npm.yml` workflow fires on tag push; the existing ghcr workflow fires on main push.
 
-**Files:** None modified — this is git tag work.
+**Files:** None modified: this is git tag work.
 
 - [ ] **Step 1: Push Tasks 1-2 to a release branch first (NOT direct to main)**
 
@@ -337,7 +337,7 @@ Wait for the merge to land on main.
 git fetch origin
 git checkout main
 git pull --ff-only
-git tag -a v2.0.0 -m "Release v2.0.0 — see CHANGELOG.md"
+git tag -a v2.0.0 -m "Release v2.0.0: see CHANGELOG.md"
 git push origin v2.0.0
 ```
 
@@ -376,7 +376,7 @@ Should show `org.opencontainers.image.source` pointing at the repo and the new c
 
 **Goal:** Upload `server.json` to `registry.modelcontextprotocol.io`. After this lands, `swsd-mcp` shows up in MCP-host install pickers (Claude Desktop's app store, Goose's catalog, etc.).
 
-**Files:** None modified — this is a publishing operation.
+**Files:** None modified: this is a publishing operation.
 
 - [ ] **Step 1: Authenticate with the registry**
 
@@ -429,18 +429,18 @@ The MCP Registry doesn't currently mint shield-badges, but you can add a manual 
 
 (The shield uses `shields.io`'s static-content API; encode the `/` in the URL path with `%2F`.)
 
-This goes into a follow-up commit/PR — not load-bearing for the release itself.
+This goes into a follow-up commit/PR because it is not load-bearing for the release itself.
 
 ---
 
-## Task 5: Polish — docs, announce, hardening
+## Task 5: Polish: docs, announce, hardening
 
 **Goal:** Reflect the release in docs, set up the next release, and harden for future automation.
 
 **Files:**
-- Modify: `README.md` — registry badge / link.
-- Modify: `docs-site/src/content/docs/index.mdx` — "Available on the MCP Registry" card or link.
-- Modify: `docs-site/src/content/docs/quickstart.md` — add an alternative install path via the registry (if/when MCP hosts surface registry-driven installs).
+- Modify: `README.md`: registry badge / link.
+- Modify: `docs-site/src/content/docs/index.mdx`: "Available on the MCP Registry" card or link.
+- Modify: `docs-site/src/content/docs/quickstart.md`: add an alternative install path via the registry (if/when MCP hosts surface registry-driven installs).
 - Optional: add a future automation workflow that runs `mcp-publisher publish` on tag push.
 
 - [ ] **Step 1: README + docs-site updates**
@@ -472,7 +472,7 @@ The `mcp-publisher` CLI supports OIDC auth in CI (per the registry's `docs/contr
           mcp-publisher publish
 ```
 
-⚠️ **VERIFY OIDC support before adding this step** — the device-flow `login github` is documented; OIDC may or may not be live yet. Check `mcp-publisher login --help` after install. If OIDC isn't supported yet, defer this step to a future plan.
+⚠️ **VERIFY OIDC support before adding this step**: the device-flow `login github` is documented; OIDC may or may not be live yet. Check `mcp-publisher login --help` after install. If OIDC isn't supported yet, defer this step to a future plan.
 
 - [ ] **Step 3: Open a GitHub Release on the v2.0.0 tag**
 
@@ -503,9 +503,9 @@ Merge after CI green.
 
 These are deliberately not prescribed in the plan:
 
-1. **Version number choice** (Task 1 Step 1): `2.0.0` (recommended, plan default) or `1.1.0` (strict SemVer). The plan works identically with either — just substitute.
+1. **Version number choice** (Task 1 Step 1): `2.0.0` (recommended, plan default) or `1.1.0` (strict SemVer). The plan works identically with either: just substitute.
 
-2. **`mcpName` slug**: `io.github.mikimatsub/swsd` (recommended, terse) or `io.github.mikimatsub/swsd-mcp` (full unambiguity). Once chosen, it's locked — registry slugs aren't renamable.
+2. **`mcpName` slug**: `io.github.mikimatsub/swsd` (recommended, terse) or `io.github.mikimatsub/swsd-mcp` (full unambiguity). Once chosen, it's locked: registry slugs aren't renamable.
 
 3. **Whether to add the registry badge to README in Task 4 Step 4**: optional polish. Doesn't change functionality.
 

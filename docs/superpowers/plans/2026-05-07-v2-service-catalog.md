@@ -6,19 +6,19 @@
 
 **Architecture:** Three tools, all calling `api.samanage.com`. Two reads (`/catalog_items.json` list and single GET) and one write (`/incidents.json` POST with the SAManage-specific service-request payload shape). Reuses Plan B's `applied_filters` + `total_scope` pattern for the list tool. Reuses Plan C's nested-wrapper write idiom for the create tool. No new runtime dependencies.
 
-**Tech Stack:** Same as v2 — `@modelcontextprotocol/sdk@^1.29.0`, zod 4.x, vitest 4.x, TypeScript 6.x. No new packages.
+**Tech Stack:** Same as v2: `@modelcontextprotocol/sdk@^1.29.0`, zod 4.x, vitest 4.x, TypeScript 6.x. No new packages.
 
 ---
 
 ## What was researched (live API probes)
 
-The following findings come from probes recorded in `.research/v2/swsd-probes/` against the production tenant (gitignored — implementers can re-run them with `SWSD_TOKEN` set):
+The following findings come from probes recorded in `.research/v2/swsd-probes/` against the production tenant (gitignored: implementers can re-run them with `SWSD_TOKEN` set):
 
-- **`GET /catalog_items.json`** returns an array of catalog items. Pagination via standard `page`/`per_page`; `X-Total-Count` header reflects total. Per-tenant volume is small (this tenant: 14 items total) — no aggressive pagination concerns.
-- **`GET /catalog_items/{id}.json`** returns the same shape as a list entry — no extra fields surfaced. (Confirmed: 23,919-byte single-item GET vs ~13.5 KB per item in the list.)
-- **`GET /catalog_categories.json`** returns 404. There is no separate categories endpoint — categories are a property of each catalog item (`category` and `subcategory` fields).
+- **`GET /catalog_items.json`** returns an array of catalog items. Pagination via standard `page`/`per_page`; `X-Total-Count` header reflects total. Per-tenant volume is small (this tenant: 14 items total): no aggressive pagination concerns.
+- **`GET /catalog_items/{id}.json`** returns the same shape as a list entry: no extra fields surfaced. (Confirmed: 23,919-byte single-item GET vs ~13.5 KB per item in the list.)
+- **`GET /catalog_categories.json`** returns 404. There is no separate categories endpoint: categories are a property of each catalog item (`category` and `subcategory` fields).
 - **`GET /service_requests.json`** returns 404. Service requests are surfaced ONLY through the regular `/incidents.json` collection with `is_service_request: true`.
-- **No documented query filter narrows `/incidents.json` to service requests.** Tried 14 candidates including `is_service_request=true`, `sub_type=*`, `request_type=*`, `incident_type=*`, etc. — all silently ignored (returned the unfiltered set). Categories don't cluster either (service requests appear in the same `Software`/`File System`/etc. categories as regular incidents). **Consequence: this plan does NOT include a `swsd_list_my_service_requests` wrapper.** A wrapper that paginated through 56,800 incidents to find the few service-request rows would be a bad tool. Defer to v2.5 once SWSD documents (or we discover) the correct filter mechanism.
+- **No documented query filter narrows `/incidents.json` to service requests.** Fourteen candidates were tried, including `is_service_request=true`, `sub_type=*`, `request_type=*`, and `incident_type=*`; all were silently ignored and returned the unfiltered set. Categories don't cluster either (service requests appear in the same `Software`/`File System`/etc. categories as regular incidents). **Consequence: this plan does NOT include a `swsd_list_my_service_requests` wrapper.** A wrapper that paginated through 56,800 incidents to find the few service-request rows would be a bad tool. Defer to v2.5 once SWSD documents (or we discover) the correct filter mechanism.
 
 Catalog-item shape:
 ```
@@ -31,11 +31,11 @@ request_count, variables, variables_unparsed, custom
 Per-variable shape inside `variables`:
 ```
 id, uuid (numeric), name, kind ("free_text" | "drop_down_menu" | "multi_select" | "date" | "user" | null),
-field_type (1, 2, 4, 5, 7, 8 — see mapping below), options (newline-separated string for dropdowns),
+field_type (1, 2, 4, 5, 7, 8: see mapping below), options (newline-separated string for dropdowns),
 required ("0"/"1" string), sorted (boolean | null), helptext (HTML string)
 ```
 
-`kind` to `field_type` mapping observed in this tenant (record what you find; do NOT hardcode any inferred mapping into the mapper — pass through both fields):
+`kind` to `field_type` mapping observed in this tenant (record what you find; do NOT hardcode any inferred mapping into the mapper: pass through both fields):
 - `free_text` → 1
 - `drop_down_menu` → 2
 - `date` → 4
@@ -48,7 +48,7 @@ When the request is created, the SUBMITTED `request_variables` array on the resu
 { id, custom_field_id, name, value, attachment, options, type (int), type_name (string), entity, user }
 ```
 
-Note `type_name`'s SAManage names ("Text_Area", "Dropdown", "Free_Text", ...) differ from the catalog-item `kind` names ("free_text", "drop_down_menu", ...). The TWO sides are semantically the same field type but use different label conventions — DO NOT try to translate or normalize. Pass through both fields as-is.
+Note `type_name`'s SAManage names ("Text_Area", "Dropdown", "Free_Text", ...) differ from the catalog-item `kind` names ("free_text", "drop_down_menu", ...). The TWO sides are semantically the same field type but use different label conventions: DO NOT try to translate or normalize. Pass through both fields as-is.
 
 ---
 
@@ -68,28 +68,28 @@ A regression check (`npm test` + e2e smoke) must pass after every task in this p
 ## File Structure
 
 **New files:**
-- `src/schemas/catalogItem.ts` — Zod input schemas for `swsd_list_catalog_items` (state/department/site filters, pagination) and `swsd_get_catalog_item` (id).
-- `src/schemas/serviceRequest.ts` — Zod input schema for `swsd_create_service_request`. Mirrors `createIncident.ts`'s shape but adds `catalog_item_id` (required) and `request_variables` (array of `{custom_field_id, value}`).
-- `src/swsd/types.ts` — append `CatalogItemSummary`, `CatalogItemDetail`, `CatalogItemVariable` interfaces.
-- `src/swsd/mappers/catalogItem.ts` — `toCatalogItemSummary(raw)` (compact projection for list responses) and `toCatalogItemDetail(raw)` (full pass-through with normalized variables array).
-- `src/tools/catalog/listCatalogItems.ts` — `swsd_list_catalog_items` tool registration.
-- `src/tools/catalog/getCatalogItem.ts` — `swsd_get_catalog_item` tool registration.
-- `src/tools/catalog/createServiceRequest.ts` — `swsd_create_service_request` tool registration.
-- `tests/unit/mappers/catalogItem.test.ts` — mapper unit tests (real-shape fixtures captured from live probes).
-- `tests/unit/tools/listCatalogItems.test.ts` — input-schema validation + applied_filters/total_scope assertions (no live HTTP — uses a fake client).
-- `tests/unit/tools/getCatalogItem.test.ts` — input-schema validation + structured output shape.
-- `tests/unit/tools/createServiceRequest.test.ts` — input-schema validation + payload shape verification (asserts that the POST body matches the SAManage nested-wrapper convention with `incident.{is_service_request, catalog_item_id, request_variables, custom_fields_values}`).
+- `src/schemas/catalogItem.ts`: Zod input schemas for `swsd_list_catalog_items` (state/department/site filters, pagination) and `swsd_get_catalog_item` (id).
+- `src/schemas/serviceRequest.ts`: Zod input schema for `swsd_create_service_request`. Mirrors `createIncident.ts`'s shape but adds `catalog_item_id` (required) and `request_variables` (array of `{custom_field_id, value}`).
+- `src/swsd/types.ts`: append `CatalogItemSummary`, `CatalogItemDetail`, `CatalogItemVariable` interfaces.
+- `src/swsd/mappers/catalogItem.ts`: `toCatalogItemSummary(raw)` (compact projection for list responses) and `toCatalogItemDetail(raw)` (full pass-through with normalized variables array).
+- `src/tools/catalog/listCatalogItems.ts`: `swsd_list_catalog_items` tool registration.
+- `src/tools/catalog/getCatalogItem.ts`: `swsd_get_catalog_item` tool registration.
+- `src/tools/catalog/createServiceRequest.ts`: `swsd_create_service_request` tool registration.
+- `tests/unit/mappers/catalogItem.test.ts`: mapper unit tests (real-shape fixtures captured from live probes).
+- `tests/unit/tools/listCatalogItems.test.ts`: input-schema validation + applied_filters/total_scope assertions (uses a fake client, not live HTTP).
+- `tests/unit/tools/getCatalogItem.test.ts`: input-schema validation + structured output shape.
+- `tests/unit/tools/createServiceRequest.test.ts`: input-schema validation + payload shape verification (asserts that the POST body matches the SAManage nested-wrapper convention with `incident.{is_service_request, catalog_item_id, request_variables, custom_fields_values}`).
 
 **Modified files:**
-- `src/config/toolRegistry.ts` — register the 3 new tools.
-- `src/config/profiles.ts` — add new tools to the appropriate profiles.
-- `src/mcp/server.ts` — append guidance to the INSTRUCTIONS array (e.g., "When the user wants to fulfill a request, prefer `swsd_create_service_request` over `swsd_create_incident` if a matching catalog item exists.").
-- `src/tools/utility/healthCheck.ts` — bump the tool-count surfacing assertion if needed (verify by running `npm test` after toolRegistry change).
-- `tests/unit/toolNames.test.ts` — auto-includes 3 new tools (it iterates the registry); test count increases by 3 here.
-- `README.md` — append a section on the catalog tools.
-- `CHANGELOG.md` — entry under unreleased v2.
-- `docs-site/src/content/docs/tools.md` — add 3 rows + brief catalog-tool description block.
-- `.research/v2/smoke-tests/mcp-e2e-smoke.mjs` — add Test 8 (`swsd_list_catalog_items` smoke).
+- `src/config/toolRegistry.ts`: register the 3 new tools.
+- `src/config/profiles.ts`: add new tools to the appropriate profiles.
+- `src/mcp/server.ts`: append guidance to the INSTRUCTIONS array (e.g., "When the user wants to fulfill a request, prefer `swsd_create_service_request` over `swsd_create_incident` if a matching catalog item exists.").
+- `src/tools/utility/healthCheck.ts`: bump the tool-count surfacing assertion if needed (verify by running `npm test` after toolRegistry change).
+- `tests/unit/toolNames.test.ts`: auto-includes 3 new tools (it iterates the registry); test count increases by 3 here.
+- `README.md`: append a section on the catalog tools.
+- `CHANGELOG.md`: entry under unreleased v2.
+- `docs-site/src/content/docs/tools.md`: add 3 rows + brief catalog-tool description block.
+- `.research/v2/smoke-tests/mcp-e2e-smoke.mjs`: add Test 8 (`swsd_list_catalog_items` smoke).
 
 ---
 
@@ -120,7 +120,7 @@ node -e "const j=require('./tests/fixtures/swsd/catalog_items_list.json'); conso
 
 Confirm fields: `id`, `uuid`, `name`, `kind`, `field_type`, `options`, `required` (string), `sorted`, `helptext`.
 
-(If `tests/fixtures/swsd/` doesn't exist or is in `.gitignore`, just keep the fixture out of the commit — it has account-internal data anyway. The mapper test below uses a hand-edited synthesized fixture below; this step is just for the implementer's reference.)
+(If `tests/fixtures/swsd/` doesn't exist or is in `.gitignore`, just keep the fixture out of the commit: it has account-internal data anyway. The mapper test below uses a hand-edited synthesized fixture below; this step is just for the implementer's reference.)
 
 - [ ] **Step 2: Define `CatalogItemSummary` + `CatalogItemDetail` + `CatalogItemVariable` types**
 
@@ -138,9 +138,9 @@ export interface CatalogItemVariable {
   field_type?: number;
   /** Comma-/newline-separated allowed values for dropdown / multi_select kinds. */
   options?: string;
-  /** "1" if required, "0" otherwise — preserved as string per SWSD's wire shape. */
+  /** "1" if required, "0" otherwise: preserved as string per SWSD's wire shape. */
   required?: string;
-  /** Helper text shown to requesters in the SWSD portal — may contain HTML. */
+  /** Helper text shown to requesters in the SWSD portal: may contain HTML. */
   helptext?: string;
 }
 
@@ -277,7 +277,7 @@ describe('toCatalogItemDetail', () => {
 });
 ```
 
-- [ ] **Step 4: Run tests — confirm fail (TDD red)**
+- [ ] **Step 4: Run tests: confirm fail (TDD red)**
 
 ```bash
 npx vitest run tests/unit/mappers/catalogItem.test.ts
@@ -376,7 +376,7 @@ function removeUndefined<T extends Record<string, unknown>>(o: T): T {
 }
 ```
 
-- [ ] **Step 6: Run mapper tests — confirm pass (TDD green)**
+- [ ] **Step 6: Run mapper tests: confirm pass (TDD green)**
 
 ```bash
 npx vitest run tests/unit/mappers/catalogItem.test.ts
@@ -397,7 +397,7 @@ const PER_PAGE = z.number().int().min(1).max(100).default(25);
 export const ListCatalogItemsInput = z.object({
   page: PAGE,
   per_page: PER_PAGE,
-  /** Filter by state (e.g. "Approved" — Approved is the production set). */
+  /** Filter by state (e.g. "Approved": Approved is the production set). */
   state: z.string().optional(),
   /** Filter by department name (substring match, server-side). */
   department: z.string().optional(),
@@ -493,11 +493,11 @@ export function registerListCatalogItems(server: McpServer, ctx: ToolContext): v
 
 - [ ] **Step 9: Register the new tool**
 
-Modify `src/config/toolRegistry.ts` to import + register `registerListCatalogItems` (follow the existing registration pattern for other tools). Then update `src/config/profiles.ts` to include `swsd_list_catalog_items` in the appropriate profiles (likely `read`, `full`, `triage` — match what `swsd_list_incidents` is in).
+Modify `src/config/toolRegistry.ts` to import + register `registerListCatalogItems` (follow the existing registration pattern for other tools). Then update `src/config/profiles.ts` to include `swsd_list_catalog_items` in the appropriate profiles (likely `read`, `full`, `triage`: match what `swsd_list_incidents` is in).
 
 - [ ] **Step 10: Write the failing tool-level test**
 
-Create `tests/unit/tools/listCatalogItems.test.ts`. Mock the SWSD client (look at existing tool tests like `tests/unit/tools/...` for the pattern — use a fake client object that returns a fixed `body` + `pagination`). Assert:
+Create `tests/unit/tools/listCatalogItems.test.ts`. Mock the SWSD client (look at existing tool tests like `tests/unit/tools/...` for the pattern: use a fake client object that returns a fixed `body` + `pagination`). Assert:
 - Tool registers with the right name + annotations
 - With no filters, `applied_filters` is empty and `total_scope` is `'unfiltered'`
 - With `state: 'Approved'`, `applied_filters.state === 'Approved'` and `total_scope === 'filtered'`
@@ -518,7 +518,7 @@ Expected: all green. Test count goes from 373 to ~382 (8 new mapper + 4 new tool
 node .research/v2/smoke-tests/mcp-e2e-smoke.mjs
 ```
 
-Expected: still 14/14 (the smoke test doesn't yet probe the catalog endpoints — Task 3 adds that).
+Expected: still 14/14 (the smoke test doesn't yet probe the catalog endpoints: Task 3 adds that).
 
 - [ ] **Step 13: Commit**
 
@@ -531,7 +531,7 @@ git commit -m "feat(catalog): add swsd_list_catalog_items + catalog-item mappers
 
 ## Task 2: Get a single catalog item (read-only, exposes form schema)
 
-**Goal:** Ship `swsd_get_catalog_item` so agents can inspect a catalog item's `variables` before submitting a request. The `variables` array IS the form schema — the agent (or downstream UI) needs it to know what fields to fill.
+**Goal:** Ship `swsd_get_catalog_item` so agents can inspect a catalog item's `variables` before submitting a request. The `variables` array IS the form schema: the agent (or downstream UI) needs it to know what fields to fill.
 
 **Files:**
 - Create: `src/tools/catalog/getCatalogItem.ts`
@@ -629,7 +629,7 @@ git commit -m "feat(catalog): add swsd_get_catalog_item with variable form schem
 
 ---
 
-## Task 3: Create a service request (write — high-value, careful)
+## Task 3: Create a service request (write: high-value, careful)
 
 **Goal:** Ship `swsd_create_service_request`. This creates an incident with `is_service_request: true`, `catalog_item_id`, and a `request_variables` array mapping each catalog-variable's `id` to the user-supplied value. Optionally accepts custom_fields_values (per Plan C's nested-wrapper pattern).
 
@@ -646,13 +646,13 @@ git commit -m "feat(catalog): add swsd_get_catalog_item with variable form schem
 - **Endpoint:** `POST /catalog_items/{catalog_item_id}/service_requests.json`
   - The flat `POST /incidents.json` endpoint from the plan's draft schema is wrong: SWSD silently drops `is_service_request`, `catalog_item_id`/`catalog_item`, and `request_variables` from that endpoint, creating a plain incident instead.
   - `POST /service_requests.json` returns 404 (no top-level resource).
-- **Body wrapper:** `{ "incident": { ... } }` (NOT `{"service_request": {...}}` — that 422s with "Please enter subject" because SWSD doesn't recognize the wrapper).
+- **Body wrapper:** `{ "incident": { ... } }` (not `{"service_request": {...}}`, which returns 422 with "Please enter subject" because SWSD doesn't recognize the wrapper).
 - **Field name for variables:** `request_variables_attributes` (Rails-style nested-attributes assignment), NOT `request_variables`.
-  - Sending the variables as `request_variables` (matching the read-shape field name) silently drops them — same with `variable_id`, `field_id`, `uuid`. Only `request_variables_attributes` persists.
+  - Sending the variables as `request_variables` (matching the read-shape field name) silently drops them: same with `variable_id`, `field_id`, `uuid`. Only `request_variables_attributes` persists.
 - **Per-variable shape:** `{ custom_field_id: <catalog item variable id>, value: <string> }`.
 - **Auto-populated from the catalog item:** `category`, `subcategory`, and `is_service_request: true`.
 - **Server-overridden:** the SR's `name` on the response is the catalog item's name, not the `name` you sent in the body.
-- **`requester` MUST be by email** — `requester: {id: <user_id>}` returns 422 "Please provide a registered requester to get updates". Use `requester: {email: ...}`. The default-to-JWT-user pattern therefore needs an extra `GET /users/{user_id}.json` call to resolve the email (mirrors `swsd_list_my_incidents`'s self-resolution).
+- **`requester` MUST be by email**: `requester: {id: <user_id>}` returns 422 "Please provide a registered requester to get updates". Use `requester: {email: ...}`. The default-to-JWT-user pattern therefore needs an extra `GET /users/{user_id}.json` call to resolve the email (mirrors `swsd_list_my_incidents`'s self-resolution).
 
 **Canonical request:**
 
@@ -812,7 +812,7 @@ export function registerCreateServiceRequest(server: McpServer, ctx: ToolContext
         'and swsd_get_catalog_item to inspect its variables before filling. ' +
         'Each request_variables entry must have `custom_field_id` (from ' +
         'item.variables[*].id) and `value` (a string matching the variable\'s ' +
-        'kind — for dropdowns, one of the `options`).',
+        'kind: for dropdowns, one of the `options`).',
       inputSchema: CreateServiceRequestInput.shape,
       outputSchema: z.object({
         incident: z.object({
@@ -836,7 +836,7 @@ export function registerCreateServiceRequest(server: McpServer, ctx: ToolContext
         const requesterId = input.requester_id
           ?? getUserIdFromJwtClaims(decodeJwtClaims(ctx.token) ?? {});
         if (requesterId === null || requesterId === undefined) {
-          throw new Error('Cannot determine requester user_id — provide `requester_id` or supply a token with a user_id/user_ic claim.');
+          throw new Error('Cannot determine requester user_id: provide `requester_id` or supply a token with a user_id/user_ic claim.');
         }
         const incident: Record<string, unknown> = {
           name: input.name,
@@ -907,7 +907,7 @@ git commit -m "feat(catalog): add swsd_create_service_request with request_varia
 
 ---
 
-## Task 4: Polish — INSTRUCTIONS, docs, e2e Test 8
+## Task 4: Polish: INSTRUCTIONS, docs, e2e Test 8
 
 **Goal:** Surface the new catalog tools to agents (so they're chosen when the user wants to fulfill a request), document them, and extend the e2e smoke.
 
@@ -918,7 +918,7 @@ git commit -m "feat(catalog): add swsd_create_service_request with request_varia
 
 - [ ] **Step 1: Add INSTRUCTIONS guidance**
 
-Modify `src/mcp/server.ts` — append to the INSTRUCTIONS array:
+Modify `src/mcp/server.ts`: append to the INSTRUCTIONS array:
 
 ```ts
 INSTRUCTIONS.push(
@@ -934,10 +934,10 @@ INSTRUCTIONS.push(
 
 - [ ] **Step 2: Extend e2e smoke test**
 
-Edit `.research/v2/smoke-tests/mcp-e2e-smoke.mjs` — add Test 8 after the existing Test 7:
+Edit `.research/v2/smoke-tests/mcp-e2e-smoke.mjs`: add Test 8 after the existing Test 7:
 
 ```js
-// 8. swsd_list_catalog_items — verify catalog endpoint integration
+// 8. swsd_list_catalog_items: verify catalog endpoint integration
 console.log('\n=== Test 8: tools/call swsd_list_catalog_items ===');
 const ciRes = await send('tools/call', {
   name: 'swsd_list_catalog_items',
@@ -968,16 +968,16 @@ Expected: 14/14 + 1 new = 15/15 (or 14 if no items exist; either way the structu
 
 - [ ] **Step 3: Update docs**
 
-`README.md` — add a "Service Catalog tools" subsection under the existing tools section, listing the 3 new tools.
+`README.md`: add a "Service Catalog tools" subsection under the existing tools section, listing the 3 new tools.
 
-`CHANGELOG.md` — add an "Added" entry under unreleased v2:
+`CHANGELOG.md`: add an "Added" entry under unreleased v2:
 
 ```markdown
 ### Added
-- Service catalog support: `swsd_list_catalog_items`, `swsd_get_catalog_item`, `swsd_create_service_request`. The list/get tools surface the catalog plus each item's variable schema; the create tool submits the request as an incident with `is_service_request: true`. Note: a `swsd_list_my_service_requests` wrapper is NOT yet shipped — SAManage's REST API has no documented filter param to narrow the incident collection by `is_service_request`. To be revisited in v2.5.
+- Service catalog support: `swsd_list_catalog_items`, `swsd_get_catalog_item`, `swsd_create_service_request`. The list/get tools surface the catalog plus each item's variable schema; the create tool submits the request as an incident with `is_service_request: true`. Note: a `swsd_list_my_service_requests` wrapper is NOT yet shipped: SAManage's REST API has no documented filter param to narrow the incident collection by `is_service_request`. To be revisited in v2.5.
 ```
 
-`docs-site/src/content/docs/tools.md` — add 3 rows for the new tools.
+`docs-site/src/content/docs/tools.md`: add 3 rows for the new tools.
 
 - [ ] **Step 4: Final test sweep**
 
@@ -998,7 +998,7 @@ Expected:
 
 ```bash
 git add src/mcp/server.ts README.md CHANGELOG.md docs-site/src/content/docs/tools.md
-git commit -m "feat(catalog): finalize Service Catalog plan E — INSTRUCTIONS, docs, e2e"
+git commit -m "feat(catalog): finalize Service Catalog plan E: INSTRUCTIONS, docs, e2e"
 git push -u origin <branch>
 gh pr create --title "v2: Service Catalog support (3 new tools)" --body "..."
 ```
@@ -1009,7 +1009,7 @@ gh pr create --title "v2: Service Catalog support (3 new tools)" --body "..."
 
 1. **Live wire shape for POST /incidents.json with is_service_request:** Task 3 Step 1 verifies. If the actual accepted body diverges from the plan's schema, update the schema and the createServiceRequest tool accordingly.
 
-2. **`swsd_list_my_service_requests`:** explicitly DEFERRED to v2.5 — no working server-side filter param. If a future SWSD docs update or SDK change exposes one, that's the trigger to add this tool.
+2. **`swsd_list_my_service_requests`:** explicitly DEFERRED to v2.5: no working server-side filter param. If a future SWSD docs update or SDK change exposes one, that's the trigger to add this tool.
 
 3. **MCP Apps UI for the catalog tools:** out of scope for Plan E. A `swsd_get_catalog_item` UI rendering the variable form (with `kind`-aware widgets) would be a nice Tier 3 addition. Defer to Plan G or later.
 
@@ -1031,11 +1031,11 @@ Spec coverage:
 - INSTRUCTIONS guidance for tool selection: ✓ Task 4 Step 1.
 - Strict additivity preserved: ✓ stated in Strict Additivity Contract; reviewed before each commit.
 
-Placeholder scan: Task 3 Step 1 has `???` placeholders for `catalog_item_id`, `my_user_id`, `custom_field_id` — these are deliberate (the implementer fills in based on the live tenant). Task 4 Step 1 has a "see file for current shape" instruction for INSTRUCTIONS — also deliberate.
+Placeholder scan: Task 3 Step 1 has deliberate `???` placeholders for `catalog_item_id`, `my_user_id`, and `custom_field_id`; the implementer fills them in based on the live tenant. Task 4 Step 1 also has a deliberate "see file for current shape" instruction for INSTRUCTIONS.
 
 Type consistency:
 - `CatalogItemSummary` field names match what the mapper produces.
-- `CatalogItemDetail` is `Record<string, unknown> & {id, name?, variables?}` — pass-through with minimum guarantees.
+- `CatalogItemDetail` is `Record<string, unknown> & {id, name?, variables?}`: pass-through with minimum guarantees.
 - `CatalogItemVariable.id` (number) is what `swsd_create_service_request.input.request_variables[*].custom_field_id` consumes.
 - `swsd_create_service_request`'s output `incident.is_service_request: boolean` matches what the API returns post-creation.
 

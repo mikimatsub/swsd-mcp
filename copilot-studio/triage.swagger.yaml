@@ -1,6 +1,6 @@
 swagger: '2.0'
 info:
-  title: SWSD MCP — triage profile
+  title: SWSD MCP: triage profile
   description: |
     SolarWinds Service Desk MCP server, triage profile (14 tools).
 
@@ -10,7 +10,7 @@ info:
     Copilot connector establishes a session. This Swagger only declares
     the transport endpoint and authentication; it does not enumerate
     individual tools.
-  version: 2.2.0
+  version: 2.3.1
 host: REPLACE_WITH_YOUR_HOST.example.com
 basePath: /
 schemes:

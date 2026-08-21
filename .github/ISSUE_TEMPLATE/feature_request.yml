@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for suggesting an improvement. Concrete use cases help a lot — they let us judge whether a feature lives in the core profile, an extra, or as something a user can compose on their own.
+        Thanks for suggesting an improvement. Concrete use cases help a lot: they let us judge whether a feature lives in the core profile, an extra, or as something a user can compose on their own.
 
   - type: textarea
     id: problem

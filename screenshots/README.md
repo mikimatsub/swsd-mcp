@@ -10,8 +10,8 @@ SWSD tenant data.
 ```
 screenshots/
 ├── README.md          (this file)
-├── host-mock.html     (single-page harness — mocks the MCP Apps host bridge)
-└── fixtures/          (synthetic structuredContent per widget — fictional Acme Corp data)
+├── host-mock.html     (single-page harness: mocks the MCP Apps host bridge)
+└── fixtures/          (synthetic structuredContent per widget: fictional Acme Corp data)
     ├── incident-detail.json
     ├── solution-detail.json
     ├── incident-list.json
@@ -21,13 +21,13 @@ screenshots/
     └── custom-fields.json
 
 docs-site/public/widgets/
-├── *.png              (the captured screenshots — committed; served by Astro at /widgets/*.png)
+├── *.png              (the captured screenshots: committed; served by Astro at /widgets/*.png)
 ```
 
 The fixtures use a fictional company called **Acme Corp**:
 - Domain: `acme.example`
 - Users: Jane Doe, Alex Kim, Sam Patel, Morgan Lee, Taylor Gomez, Jordan Weiss, Casey Rivera
-- Department: IT Services / Acme HQ — Boston
+- Department: IT Services at Acme HQ in Boston
 
 No SWSD tenant or real customer data is used. The fixtures are committed and serve
 double-duty as canonical examples of each widget's expected `structuredContent` shape.
@@ -44,7 +44,7 @@ double-duty as canonical examples of each widget's expected `structuredContent` 
 4. Renders the widget at fixed dimensions for clean screenshots.
 
 The harness intentionally feeds the production `dist/ui/*.html` bundles, not the
-source — screenshots reflect what users actually see in Claude Desktop / VS Code
+source: screenshots reflect what users actually see in Claude Desktop / VS Code
 Copilot Chat / Goose / etc.
 
 ## Regenerating the screenshots
@@ -67,5 +67,5 @@ The committed PNGs live at `docs-site/public/widgets/*.png` and are served by
 the docs site at `/widgets/*.png`.
 
 If you change a widget's structured-content schema, update the matching fixture
-here too — the smoke tests don't enforce fixture validity, but the screenshots
+here too: the smoke tests don't enforce fixture validity, but the screenshots
 will degrade silently.

@@ -6,7 +6,7 @@
  * Re-run after changing PROFILES or the template:
  *   npm run generate:swagger
  *
- * The committed .yaml files are the source of truth users grab — this
+ * The committed .yaml files are the source of truth users grab. This
  * script just keeps them in sync with profile changes.
  */
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
@@ -74,7 +74,7 @@ const PLACEHOLDER_HOST = 'REPLACE_WITH_YOUR_HOST.example.com';
 function buildSwagger(profile: string, meta: ProfileMeta): string {
   return `swagger: '2.0'
 info:
-  title: SWSD MCP — ${profile} profile
+  title: SWSD MCP: ${profile} profile
   description: |
     SolarWinds Service Desk MCP server, ${profile} profile (${String(meta.toolCount)} tools).
 

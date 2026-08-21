@@ -3,7 +3,7 @@ title: Widgets reference
 description: The seven MCP Apps UI bundles swsd-mcp ships, what they render, and which hosts support them.
 ---
 
-swsd-mcp ships **seven** interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Each one is a single-file HTML resource served at `ui://swsd-mcp/<widget-name>` with content type `text/html;profile=mcp-app`. When a tool with an attached widget is called from an MCP Apps-capable host, the host renders the bundle alongside (or in place of) the structured-content text response. Hosts without MCP Apps support are unaffected — the same tools still return their normal text + structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
+swsd-mcp ships **seven** interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Each one is a single-file HTML resource served at `ui://swsd-mcp/<widget-name>` with content type `text/html;profile=mcp-app`. When a tool with an attached widget is called from an MCP Apps-capable host, the host renders the bundle alongside (or in place of) the structured-content text response. Hosts without MCP Apps support are unaffected: the same tools still return their normal text + structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
 
 All widgets are self-contained. No external network access, no third-party scripts. HTML coming from SWSD (solution bodies, incident descriptions, comment bodies, catalog helptext) is sanitized client-side via [DOMPurify](https://github.com/cure53/DOMPurify) before insertion. Theme variables and host fonts are applied via the SDK's `applyHostStyleVariables` / `applyDocumentTheme` / `applyHostFonts` helpers, so widgets follow the host's light/dark mode and font settings automatically.
 
@@ -25,7 +25,7 @@ All widgets are self-contained. No external network access, no third-party scrip
 1. Tool handler returns content + structuredContent + _meta.ui.resourceUri
 2. Host fetches the resource via resources/read on resourceUri
 3. Host opens the inlined HTML in a sandboxed iframe
-4. Widget calls App.connect() — runs ui/initialize → ui/notifications/initialized
+4. Widget calls App.connect(): runs ui/initialize → ui/notifications/initialized
 5. Server pushes the same structuredContent via ui/notifications/tool-result
 6. Widget's toolresult listener renders the data
 ```
@@ -34,11 +34,11 @@ Steps 4–6 run over JSON-RPC postMessage between the host and the iframe. The w
 
 ## Error handling
 
-All seven widgets handle `isError: true` tool results: instead of an infinite "Loading…" spinner, they render a clear error state showing the tool's error message. This is the v2.1 fix for the v2.0 bug where tool errors silently spun forever.
+All seven widgets handle `isError: true` tool results. Instead of an infinite "Loading…" spinner, they render a clear error state showing the tool's error message. This is the v2.1 fix for the v2.0 bug where tool errors silently spun forever.
 
 ## Per-widget detail
 
-> The screenshots below are rendered with synthetic example data ("Acme Corp"). The harness lives at [`screenshots/host-mock.html`](https://github.com/mikimatsub/swsd-mcp/blob/main/screenshots/host-mock.html) — run `npm run build` then serve the worktree over a local HTTP server to regenerate them. No real SWSD tenant data appears anywhere on this site.
+> The screenshots below are rendered with synthetic example data ("Acme Corp"). The harness lives at [`screenshots/host-mock.html`](https://github.com/mikimatsub/swsd-mcp/blob/main/screenshots/host-mock.html): run `npm run build` then serve the worktree over a local HTTP server to regenerate them. No real SWSD tenant data appears anywhere on this site.
 
 ### `incident-detail`
 
@@ -56,7 +56,7 @@ Pass `detail_level: "long"` to populate description, SLA, and resolution from `?
 
 *Light theme: [`solution-detail-light.png`](/widgets/solution-detail-light.png)*
 
-Bound to `swsd_get_solution`. Card layout: header (id, name, state, category), metadata strip (author, created/updated dates, view count), and the **full** sanitized HTML body of the article — not an excerpt. This was the v2.1 fix for the v2.0 widget that only showed a teaser; the whole reason an agent opens a KB article is to read it.
+Bound to `swsd_get_solution`. Card layout: header (id, name, state, category), metadata strip (author, created/updated dates, view count), and the **full** sanitized HTML body of the article rather than an excerpt. This was the v2.1 fix for the v2.0 widget that only showed a teaser; the whole reason an agent opens a KB article is to read it.
 
 ### `incident-list`
 
@@ -104,10 +104,10 @@ Bound to `swsd_describe_custom_fields`. Searchable explorer with a filter panel 
 
 ## Host compatibility
 
-For the canonical client matrix — both stdio MCP support and which clients render these widgets — see the [Compatibility](/compatibility/) page.
+For the canonical client matrix covering both stdio MCP support and widget rendering, see the [Compatibility](/compatibility/) page.
 
 ## See also
 
-- [Tools reference](/tools/) — every tool, including which ones ship a widget
-- [Architecture](/architecture/) — how the server, client, and SWSD API fit together
-- [SEP-1865 (MCP Apps spec)](https://modelcontextprotocol.io/specification/2025-11-25) — the upstream protocol
+- [Tools reference](/tools/): every tool, including which ones ship a widget
+- [Architecture](/architecture/): how the server, client, and SWSD API fit together
+- [SEP-1865 (MCP Apps spec)](https://modelcontextprotocol.io/specification/2025-11-25): the upstream protocol

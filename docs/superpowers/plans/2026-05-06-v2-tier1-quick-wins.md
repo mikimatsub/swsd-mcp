@@ -1,19 +1,19 @@
-# swsd-mcp v2 — Tier 1 Quick Wins Implementation Plan
+# swsd-mcp v2: Tier 1 Quick Wins Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Land 5 high-leverage low-cost improvements to swsd-mcp v1.0.1 — `?layout=long` opt-in on detail tools, expanded list filters, a new `swsd_get_record_audits` tool, rate-limit info in `swsd_get_server_info`, plus retroactive cleanup (SDK floor bump for security backport, `outputSchema` declarations on read tools, tool-name format audit).
+**Goal:** Land 5 high-leverage low-cost improvements to swsd-mcp v1.0.1: `?layout=long` opt-in on detail tools, expanded list filters, a new `swsd_get_record_audits` tool, rate-limit info in `swsd_get_server_info`, plus retroactive cleanup (SDK floor bump for security backport, `outputSchema` declarations on read tools, tool-name format audit).
 
-**Architecture:** Each task is an additive change to v1's existing surface — no breaking changes to tool inputs, no new transport behavior. The new audit tool follows v1's established pattern (zod schema → mapper → tool registration → profile inclusion → registry registration). Tests are vitest, focused on mappers and helpers (v1 has no tool-handler tests by convention; that pattern is preserved here). The Copilot Studio Swagger YAMLs are auto-generated from `PROFILE_TOOLS` and must be regenerated whenever a profile changes.
+**Architecture:** Each task is an additive change to v1's existing surface: no breaking changes to tool inputs, no new transport behavior. The new audit tool follows v1's established pattern (zod schema → mapper → tool registration → profile inclusion → registry registration). Tests are vitest, focused on mappers and helpers (v1 has no tool-handler tests by convention; that pattern is preserved here). The Copilot Studio Swagger YAMLs are auto-generated from `PROFILE_TOOLS` and must be regenerated whenever a profile changes.
 
 **Tech Stack:** TypeScript 6.0.3 (ESM, NodeNext modules), Node ≥24.15.0, Zod 4.4+, `@modelcontextprotocol/sdk@^1.26.0` (bumping floor from 1.29.0 exact pin), vitest 4.1+, Express 5.2+. Husky + lint-staged enforce `eslint --fix --max-warnings=0` on staged TS files. `prepublishOnly` runs `npm run lint && npm run typecheck && npm test && npm run build`.
 
 **Reference reading before starting:**
-- `D:\Repos\Github\MCP-SWSD\V2-PROPOSAL.md` — the proposal this plan implements (Tier 1 section)
-- `D:\Repos\Github\MCP-SWSD\.research\v2\06-swsd-api-broad.md` — Stream 3 evidence for `?layout=long`, expanded filters, audits, rate limits
-- `D:\Repos\Github\MCP-SWSD\src\schemas\incident.ts` — existing schema patterns
-- `D:\Repos\Github\MCP-SWSD\src\tools\incidents\listIncidents.ts` — existing tool pattern
-- `D:\Repos\Github\MCP-SWSD\tests\unit\mappers\incident.test.ts` — existing test pattern
+- `D:\Repos\Github\MCP-SWSD\V2-PROPOSAL.md`: the proposal this plan implements (Tier 1 section)
+- `D:\Repos\Github\MCP-SWSD\.research\v2\06-swsd-api-broad.md`: Stream 3 evidence for `?layout=long`, expanded filters, audits, rate limits
+- `D:\Repos\Github\MCP-SWSD\src\schemas\incident.ts`: existing schema patterns
+- `D:\Repos\Github\MCP-SWSD\src\tools\incidents\listIncidents.ts`: existing tool pattern
+- `D:\Repos\Github\MCP-SWSD\tests\unit\mappers\incident.test.ts`: existing test pattern
 
 ---
 
@@ -24,12 +24,12 @@
 **Files:**
 - Modify: `package.json` line 69 (the dependency declaration)
 
-- [ ] **Step 1: Verify current SDK version** — confirm baseline before changing.
+- [ ] **Step 1: Verify current SDK version**: confirm baseline before changing.
 
 Run from repo root: `npm view @modelcontextprotocol/sdk version`
 Expected output (one line): `1.29.0`
 
-- [ ] **Step 2: Edit `package.json`** — change the SDK pin to a range.
+- [ ] **Step 2: Edit `package.json`**: change the SDK pin to a range.
 
 Replace exactly:
 ```json
@@ -63,7 +63,7 @@ git commit -m "deps: relax @modelcontextprotocol/sdk to ^1.26.0 (picks up GHSA-3
 
 ## Task 2: Add `detail_level` parameter to `swsd_get_incident`
 
-**Why:** SWSD's `?layout=long` adds 12 top-level fields including `comments[]`, `attachments[]`, `audits[]`, `statistics`, `tags`, `associated_sla_names`, `is_customer_satisfied`, `customer_satisfaction_response`, `request_variables`, `resolution`, `resolution_type`, `total_time_spent` — verified live on May 6, 2026 against incident 181197546. Today the model needs 2–3 round-trips to assemble this; with one parameter it's one call.
+**Why:** SWSD's `?layout=long` adds 12 top-level fields including `comments[]`, `attachments[]`, `audits[]`, `statistics`, `tags`, `associated_sla_names`, `is_customer_satisfied`, `customer_satisfaction_response`, `request_variables`, `resolution`, `resolution_type`, `total_time_spent`: verified live on May 6, 2026 against incident 181197546. Today the model needs 2–3 round-trips to assemble this; with one parameter it's one call.
 
 **Files:**
 - Modify: `src/schemas/incident.ts` (extend `GetIncidentInput`)
@@ -131,13 +131,13 @@ Also update the tool's `description` field in the same file to mention the new p
 - [ ] **Step 5: Run typecheck + tests.**
 
 Run: `npm run typecheck && npm test`
-Expected: typecheck passes; all 146 existing tests pass (no test changes yet — the new parameter has a default so no caller breaks).
+Expected: typecheck passes; all 146 existing tests pass (no test changes yet: the new parameter has a default so no caller breaks).
 
 - [ ] **Step 6: Commit.**
 
 ```bash
 git add src/schemas/incident.ts src/tools/incidents/getIncident.ts
-git commit -m "feat(incidents): add detail_level=long to swsd_get_incident — folds layout=long fields (comments, attachments, audits, SLA, tags, satisfaction, resolution) into one call"
+git commit -m "feat(incidents): add detail_level=long to swsd_get_incident: folds layout=long fields (comments, attachments, audits, SLA, tags, satisfaction, resolution) into one call"
 ```
 
 ---
@@ -202,14 +202,14 @@ Expected: all pass.
 
 ```bash
 git add src/schemas/solution.ts src/tools/solutions/getSolution.ts
-git commit -m "feat(solutions): add detail_level=long to swsd_get_solution — same pattern as get_incident"
+git commit -m "feat(solutions): add detail_level=long to swsd_get_solution: same pattern as get_incident"
 ```
 
 ---
 
 ## Task 4: Expand list filters on `swsd_list_incidents`
 
-**Why:** v1 exposes only state, priority, category, assignee_email, requester_email, updated_from. Stream 3 documents richer filters: `created_from`/`created_to`, `updated_to`, `sites[]`, `departments[]`, `assigned_to_group` (group ID), `state_is_not[]`, `sort_by`, `sort_order`, plus full-text `query=` (live-verified May 6 against the user's tenant: returned 200 with X-Total-Count=2680 for "test"). All forward-only — no breaking changes.
+**Why:** v1 exposes only state, priority, category, assignee_email, requester_email, updated_from. Stream 3 documents richer filters: `created_from`/`created_to`, `updated_to`, `sites[]`, `departments[]`, `assigned_to_group` (group ID), `state_is_not[]`, `sort_by`, `sort_order`, plus full-text `query=` (live-verified May 6 against the user's tenant: returned 200 with X-Total-Count=2680 for "test"). All forward-only: no breaking changes.
 
 **Files:**
 - Modify: `src/schemas/incident.ts` (extend `ListIncidentsInput`)
@@ -265,7 +265,7 @@ In `src/schemas/incident.ts`, locate `ListIncidentsInput` (lines 3–45) and add
     .string()
     .min(1)
     .optional()
-    .describe('Free-text search across incident title and description. Same async-indexing caveat as solution search — just-created tickets may not appear for a few minutes.'),
+    .describe('Free-text search across incident title and description. Same async-indexing caveat as solution search: just-created tickets may not appear for a few minutes.'),
 ```
 
 (Existing fields above `updated_from` stay unchanged.)
@@ -306,7 +306,7 @@ Expected: all pass. The new params have no required fields and are gated by `if 
 
 ```bash
 git add src/schemas/incident.ts src/tools/incidents/listIncidents.ts
-git commit -m "feat(incidents): expand list filters — sites, departments, assigned_to_group, created/updated ranges, sort, state_is_not, query"
+git commit -m "feat(incidents): expand list filters: sites, departments, assigned_to_group, created/updated ranges, sort, state_is_not, query"
 ```
 
 ---
@@ -329,7 +329,7 @@ export interface AuditSummary {
   id: number;
   /** Human-readable change description, e.g. "State changed from New to On Hold". */
   message: string;
-  /** Action taken — typically "Update", "Create", or "Delete". */
+  /** Action taken: typically "Update", "Create", or "Delete". */
   action?: string;
   created_at?: string;
   /** The user who performed the action (display name; user_id is separate). */
@@ -399,7 +399,7 @@ describe('toAuditSummary', () => {
     expect(a?.id).toBe(42);
   });
 
-  it('does not leak verbose nested fields (department, site) — those belong on the parent record', () => {
+  it('does not leak verbose nested fields (department, site): those belong on the parent record', () => {
     const a = toAuditSummary({
       id: 1,
       message: 'x',
@@ -434,10 +434,10 @@ describe('toAuditSummary', () => {
 });
 ```
 
-- [ ] **Step 3: Run the test — verify it fails.**
+- [ ] **Step 3: Run the test: verify it fails.**
 
 Run: `npx vitest run tests/unit/mappers/audit.test.ts`
-Expected: ALL tests FAIL (the mapper file doesn't exist yet — Vitest will report a module-not-found error).
+Expected: ALL tests FAIL (the mapper file doesn't exist yet: Vitest will report a module-not-found error).
 
 - [ ] **Step 4: Implement the mapper.**
 
@@ -448,7 +448,7 @@ import type { AuditSummary } from '../types.js';
 
 /**
  * Project a raw SWSD audit entry into a compact summary.
- * Strips department/site nested fields — those belong on the parent record,
+ * Strips department/site nested fields: those belong on the parent record,
  * not on each audit. Preserves empty-string note as distinct from missing.
  */
 export function toAuditSummary(raw: unknown): AuditSummary | null {
@@ -496,7 +496,7 @@ function stringOrUndefined(v: unknown): string | undefined {
 }
 ```
 
-- [ ] **Step 5: Run the test — verify it passes.**
+- [ ] **Step 5: Run the test: verify it passes.**
 
 Run: `npx vitest run tests/unit/mappers/audit.test.ts`
 Expected: ALL 8 tests PASS.
@@ -637,7 +637,7 @@ Then add to the `REGISTRARS` object (after the `swsd_describe_custom_fields` ent
 
 Open `D:\Repos\Github\MCP-SWSD\src\config\profiles.ts`. In the `agent` profile array, add `'swsd_get_record_audits',` after the `'swsd_describe_custom_fields',` entry. In the `full` profile array, add the same entry at an appropriate position (after `'swsd_describe_custom_fields',`).
 
-Do NOT add to `triage` or `knowledge` profiles — first-line triage and KB-author workflows don't typically need audit-log access.
+Do NOT add to `triage` or `knowledge` profiles: first-line triage and KB-author workflows don't typically need audit-log access.
 
 - [ ] **Step 5: Typecheck + lint + tests.**
 
@@ -658,14 +658,14 @@ Expected: all tests pass; no drift.
 
 ```bash
 git add src/schemas/audit.ts src/tools/audits/getRecordAudits.ts src/config/toolRegistry.ts src/config/profiles.ts copilot-studio/agent.swagger.yaml copilot-studio/full.swagger.yaml
-git commit -m "feat(audits): add swsd_get_record_audits tool — wraps GET /{type}/{id}/audits.json with pagination"
+git commit -m "feat(audits): add swsd_get_record_audits tool: wraps GET /{type}/{id}/audits.json with pagination"
 ```
 
 ---
 
 ## Task 7: Surface SWSD upstream rate limit in `swsd_get_server_info`
 
-**Why:** SWSD documents 1000 calls/min on Advanced Plan, 1500 calls/min on Premier Plan, with no `X-RateLimit-*` headers — only 429 + `Retry-After`. Putting this in `swsd_get_server_info` saves the model from guessing.
+**Why:** SWSD documents 1000 calls/min on Advanced Plan, 1500 calls/min on Premier Plan, with no `X-RateLimit-*` headers: only 429 + `Retry-After`. Putting this in `swsd_get_server_info` saves the model from guessing.
 
 **Files:**
 - Modify: `src/tools/utility/getServerInfo.ts`
@@ -682,7 +682,7 @@ In `src/tools/utility/getServerInfo.ts`, locate the `data` object construction. 
         upstream_rate_limit: {
           advanced_plan: '1000 calls/min (account-wide)',
           premier_plan: '1500 calls/min (account-wide)',
-          signal: '429 + Retry-After only — SWSD does not return X-RateLimit-* headers',
+          signal: '429 + Retry-After only: SWSD does not return X-RateLimit-* headers',
           client_behavior: `auto-retry with exponential backoff (max attempts: ${String(ctx.env.SWSD_RETRY_MAX_ATTEMPTS)})`,
         },
 ```
@@ -782,7 +782,7 @@ In the `registerTool` call, add an `outputSchema` field next to `inputSchema`:
 
 - [ ] **Step 3: Repeat for each read tool listed in the Files section above.**
 
-For each, declare an `outputSchema` whose shape exactly matches what `structuredResult(data, summary)` is currently emitting. Use the existing types in `src/swsd/types.ts` as the source of truth — every output schema field should map to a `*Summary` type field.
+For each, declare an `outputSchema` whose shape exactly matches what `structuredResult(data, summary)` is currently emitting. Use the existing types in `src/swsd/types.ts` as the source of truth: every output schema field should map to a `*Summary` type field.
 
 For `swsd_get_incident` and `swsd_get_solution`, the output shape is `{ incident: Record<string, unknown> }` / `{ solution: Record<string, unknown> }`. Use:
 
@@ -839,7 +839,7 @@ For each lookup tool, mirror the existing `*Summary` shape from `src/swsd/types.
 - [ ] **Step 4: Typecheck + tests.**
 
 Run: `npm run typecheck && npm test`
-Expected: all 146+ tests pass; no typecheck errors. The SDK validates that the structured response matches the declared output schema at runtime — if any tool's actual emit doesn't match the declared schema, that's a real bug surfaced by this change.
+Expected: all 146+ tests pass; no typecheck errors. The SDK validates that the structured response matches the declared output schema at runtime: if any tool's actual emit doesn't match the declared schema, that's a real bug surfaced by this change.
 
 - [ ] **Step 5: Lint.**
 
@@ -850,7 +850,7 @@ Expected: clean. Husky's pre-commit hook will also run `eslint --fix --max-warni
 
 ```bash
 git add src/schemas/output.ts src/tools/
-git commit -m "feat(tools): declare outputSchema on all read tools — enables client-side response validation (notably Copilot Studio)"
+git commit -m "feat(tools): declare outputSchema on all read tools: enables client-side response validation (notably Copilot Studio)"
 ```
 
 ---
@@ -860,7 +860,7 @@ git commit -m "feat(tools): declare outputSchema on all read tools — enables c
 **Why:** Spec 2025-11-25 standardized the tool-name regex `^[a-zA-Z][a-zA-Z0-9_-]{0,127}$`. v1's tool names (all `swsd_*` snake_case) appear compliant; verify and document.
 
 **Files:**
-- Modify: `tests/unit/copilotSwagger.test.ts` (add a tool-name regex assertion) — alternative: a new dedicated test file
+- Modify: `tests/unit/copilotSwagger.test.ts` (add a tool-name regex assertion): alternative: a new dedicated test file
 
 - [ ] **Step 1: Write a test that asserts every PROFILE_TOOLS name matches the regex.**
 
@@ -924,7 +924,7 @@ In the Tools table, after the **Custom fields** row, add:
 | **Audits** | `swsd_get_record_audits` |
 ```
 
-And update the table header from "23 across 6 categories" to "24 across 7 categories" (or whatever the new total is — recount based on `PROFILE_TOOLS.full`).
+And update the table header from "23 across 6 categories" to "24 across 7 categories" (or whatever the new total is: recount based on `PROFILE_TOOLS.full`).
 
 - [ ] **Step 3: Run the doc drift test.**
 
@@ -995,10 +995,10 @@ Edit `CHANGELOG.md`, add an `Unreleased → Added` block:
 ```markdown
 ## [Unreleased]
 
-### Added (Tier 1 — v2 quick wins)
+### Added (Tier 1: v2 quick wins)
 
-- `detail_level` parameter on `swsd_get_incident` and `swsd_get_solution` — opt into SWSD's `?layout=long` to fold comments, attachments, audits, SLA data, tags, satisfaction, and resolution into one call. Replaces the previous 2–3 round-trip pattern.
-- New `swsd_get_record_audits` tool — wraps `GET /{type}/{id}/audits.json` for incidents, problems, changes, releases, solutions, hardwares, other_assets. Lets the model answer "who changed this and when?" without parsing layout=long.
+- `detail_level` parameter on `swsd_get_incident` and `swsd_get_solution`: opt into SWSD's `?layout=long` to fold comments, attachments, audits, SLA data, tags, satisfaction, and resolution into one call. Replaces the previous 2–3 round-trip pattern.
+- New `swsd_get_record_audits` tool: wraps `GET /{type}/{id}/audits.json` for incidents, problems, changes, releases, solutions, hardwares, other_assets. Lets the model answer "who changed this and when?" without parsing layout=long.
 - Expanded `swsd_list_incidents` filters: `sites`, `departments`, `assigned_to_group`, `created_from`/`created_to`, `updated_to`, `state_is_not`, `sort_by`, `sort_order`, free-text `query`. All forward-only.
 - `outputSchema` declared on all read tools for client-side response validation.
 - `upstream_rate_limit` info on `swsd_get_server_info` (1000 cpm Advanced / 1500 cpm Premier; signal: 429 + Retry-After only).
@@ -1009,8 +1009,8 @@ Edit `CHANGELOG.md`, add an `Unreleased → Added` block:
 
 ### Tests
 
-- New `tests/unit/mappers/audit.test.ts` — full edge-case coverage for `toAuditSummary`.
-- New `tests/unit/toolNames.test.ts` — asserts SEP-986 compliance of every `PROFILE_TOOLS` entry.
+- New `tests/unit/mappers/audit.test.ts`: full edge-case coverage for `toAuditSummary`.
+- New `tests/unit/toolNames.test.ts`: asserts SEP-986 compliance of every `PROFILE_TOOLS` entry.
 ```
 
 - [ ] **Step 8: Commit CHANGELOG.**
@@ -1033,12 +1033,12 @@ gh pr create --title "v2 Tier 1 quick wins: layout=long, expanded filters, audit
 - Relax `@modelcontextprotocol/sdk` floor to `^1.26.0` (security backport)
 
 ## Test plan
-- [x] `npm test` — all pass (146 + new tests)
-- [x] `npm run typecheck` — zero errors
-- [x] `npm run lint` — zero warnings
-- [x] `npm run build` — clean
-- [x] `npm run prepublishOnly` — full gate passes
-- [ ] Manual smoke against live tenant — `swsd_get_record_audits` returns audit entries; `swsd_get_incident` with `detail_level=long` includes comments/attachments/audits
+- [x] `npm test`: all pass (146 + new tests)
+- [x] `npm run typecheck`: zero errors
+- [x] `npm run lint`: zero warnings
+- [x] `npm run build`: clean
+- [x] `npm run prepublishOnly`: full gate passes
+- [ ] Manual smoke against live tenant: `swsd_get_record_audits` returns audit entries; `swsd_get_incident` with `detail_level=long` includes comments/attachments/audits
 
 Closes the Tier 1 deliverables in the v2 proposal at `V2-PROPOSAL.md`.
 EOF
