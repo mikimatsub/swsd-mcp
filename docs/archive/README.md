@@ -1,7 +1,7 @@
 # Archive
 
 Historical planning artifacts kept for project provenance. These are
-**not** current documentation — see the top-level [`README.md`](../../README.md)
+**not** current documentation: see the top-level [`README.md`](../../README.md)
 and [`docs/`](../) for the live docs.
 
 | File | Purpose |

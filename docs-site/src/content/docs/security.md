@@ -5,10 +5,10 @@ description: Threat model, supply-chain hardening, and how to report vulnerabili
 
 swsd-mcp's security model is built around four principles:
 
-1. **Zero credentials at rest** — the server never persists or logs API tokens
-2. **Defense in depth** — multiple independent controls so any single bypass isn't compromise
-3. **Verifiable supply chain** — published artifacts tied to specific commits via SLSA provenance attestations
-4. **Transparent governance** — open source, explicit disclosure process, code review, change-management tooling
+1. **Zero credentials at rest**: the server never persists or logs API tokens
+2. **Defense in depth**: multiple independent controls so any single bypass isn't compromise
+3. **Verifiable supply chain**: published artifacts tied to specific commits via SLSA provenance attestations
+4. **Transparent governance**: open source, explicit disclosure process, code review, change-management tooling
 
 For deep compliance-grade details (every claim mapped to source-code verification), see [`SECURITY-POSTURE.md`](https://github.com/mikimatsub/swsd-mcp/blob/main/docs/SECURITY-POSTURE.md). This page is the user-facing summary.
 
@@ -48,7 +48,7 @@ Tokens exist only in process memory for the lifetime of a single request. They a
 
 `/mcp` requests are rate-limited per `sha256(token + IP)` using `express-rate-limit`. Conservative defaults shipped; tunable per deployment via `SWSD_RATE_LIMIT_MAX` and `SWSD_RATE_LIMIT_WINDOW_MS`. Standards-compliant `RateLimit-Policy` and `RateLimit` headers in responses (draft-7 spec) so well-behaved clients can self-regulate.
 
-The token is hashed (never stored as a key) for memory safety. `/healthz` is deliberately exempted — health probes from orchestrators hit it constantly.
+The token is hashed (never stored as a key) for memory safety. `/healthz` is deliberately exempted: health probes from orchestrators hit it constantly.
 
 ### Origin validation (DNS rebinding defense)
 
@@ -69,7 +69,7 @@ All outbound SWSD calls have a configurable timeout (default 30 seconds) via `Ab
 
 ### Health endpoint information disclosure
 
-`/healthz` returns `{"ok":true}` only — deliberately omits version information to avoid leaking stack details to anonymous callers. Server metadata (name, version, profile, enabled tools) is available via the `swsd_get_server_info` MCP tool, which is behind the authenticated MCP transport.
+`/healthz` returns `{"ok":true}` only: deliberately omits version information to avoid leaking stack details to anonymous callers. Server metadata (name, version, profile, enabled tools) is available via the `swsd_get_server_info` MCP tool, which is behind the authenticated MCP transport.
 
 ## Supply chain
 
@@ -99,13 +99,13 @@ Every push and PR runs three security workflows in parallel:
 | **CodeQL** | JavaScript/TypeScript static analysis with the security-extended query pack |
 | **OSV-Scanner** | Dependency vulnerabilities against [Google's OSV database](https://osv.dev/) |
 
-A weekly scheduled run catches newly disclosed CVEs against unchanged dependencies — the killer feature, since your code didn't change but the upstream world did.
+A weekly scheduled run catches newly disclosed CVEs against unchanged dependencies: the killer feature, since your code didn't change but the upstream world did.
 
 [![Security](https://github.com/mikimatsub/swsd-mcp/actions/workflows/security.yml/badge.svg)](https://github.com/mikimatsub/swsd-mcp/actions/workflows/security.yml)
 
 ## Standards alignment
 
-Reference frameworks we've drawn from. **We don't claim formal certification against any of these** — they're the languages we use to describe what we do, not audits we've passed.
+Reference frameworks we've drawn from. **We don't claim formal certification against any of these**: they're the languages we use to describe what we do, not audits we've passed.
 
 | Framework | Where we align |
 |---|---|
@@ -145,9 +145,9 @@ Reference frameworks we've drawn from. **We don't claim formal certification aga
 
 Every claim above includes a path to verification. The general approach:
 
-1. **Source code claims** — clone the repo, navigate to the cited file, read the implementation. The TypeScript source under `src/` is about 9,400 lines not counting tests.
-2. **Dependency claims** — `cat package.json package-lock.json` shows exact pinned versions; `cat .github/workflows/*.yml` shows pinned action SHAs.
-3. **Provenance claims** — `npm view swsd-mcp --json | jq .dist.attestations` shows SLSA attestations; `npm audit signatures` verifies.
-4. **CI claims** — workflow runs are public at [Actions tab](https://github.com/mikimatsub/swsd-mcp/actions); logs are inspectable.
+1. **Source code claims**: clone the repo, navigate to the cited file, read the implementation. The TypeScript source under `src/` is about 9,400 lines not counting tests.
+2. **Dependency claims**: `cat package.json package-lock.json` shows exact pinned versions; `cat .github/workflows/*.yml` shows pinned action SHAs.
+3. **Provenance claims**: `npm view swsd-mcp --json | jq .dist.attestations` shows SLSA attestations; `npm audit signatures` verifies.
+4. **CI claims**: workflow runs are public at [Actions tab](https://github.com/mikimatsub/swsd-mcp/actions); logs are inspectable.
 
 The full posture doc (longer, more thorough, with code-line citations for every control) lives at [`docs/SECURITY-POSTURE.md`](https://github.com/mikimatsub/swsd-mcp/blob/main/docs/SECURITY-POSTURE.md).

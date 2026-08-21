@@ -3,12 +3,12 @@ title: Deployment
 description: Self-host swsd-mcp via Docker, Azure Container Apps, or any container platform.
 ---
 
-The [Quick start](/quickstart/) covers `npx`-based local stdio installs — one user, one machine, the right answer for individual use.
+The [Quick start](/quickstart/) covers `npx`-based local stdio installs: one user, one machine, the right answer for individual use.
 
 **Self-hosting in HTTP mode** is required for two scenarios:
 
-1. **[Microsoft Copilot Studio](#microsoft-copilot-studio)** — Copilot Studio can't spawn local processes, so it needs a hosted HTTP endpoint
-2. **Shared team instance** — one deploy, many users, each providing their own SWSD token per request
+1. **[Microsoft Copilot Studio](#microsoft-copilot-studio)**: Copilot Studio can't spawn local processes, so it needs a hosted HTTP endpoint
+2. **Shared team instance**: one deploy, many users, each providing their own SWSD token per request
 
 This page covers Docker (works anywhere) and a complete Azure Container Apps walkthrough (the recommended path for Copilot Studio integration).
 
@@ -61,8 +61,8 @@ The `/mcp` endpoint accepts MCP requests with the user's token in the `Authoriza
 
 Image tags:
 
-- `:latest` — the latest main-branch commit
-- `:sha-XXXXXXX` — pinned to a specific commit (recommended for production)
+- `:latest`: the latest main-branch commit
+- `:sha-XXXXXXX`: pinned to a specific commit (recommended for production)
 
 Browse all tags at [GitHub Packages](https://github.com/mikimatsub/swsd-mcp/pkgs/container/swsd-mcp).
 
@@ -77,7 +77,7 @@ Typical cost for a single team's usage: **$0–5/month**.
 ### Prerequisites
 
 - An **Azure subscription** ([free tier available](https://azure.microsoft.com/free/))
-- **Azure CLI** installed locally — verify with `az --version`. [Install instructions](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli).
+- **Azure CLI** installed locally: verify with `az --version`. [Install instructions](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli).
 - A SolarWinds Service Desk **admin token** for verification (each end user will use their own; this is just for the smoke test)
 
 ### Step 1: Login to Azure
@@ -158,7 +158,7 @@ az containerapp show \
   --output tsv
 ```
 
-Outputs something like `swsd-mcp.bluepebble-12345abc.eastus.azurecontainerapps.io`. Save this — you'll need it for Copilot Studio in the next step.
+Outputs something like `swsd-mcp.bluepebble-12345abc.eastus.azurecontainerapps.io`. Save this: you'll need it for Copilot Studio in the next step.
 
 ### Step 6: Verify
 
@@ -231,10 +231,10 @@ az group delete --name swsd-mcp-rg --yes --no-wait
 
 The recipe above is suitable for team use within a trusted network. For broader exposure:
 
-- **Azure AD authentication** at the Container Apps level (Easy Auth) — restrict who can even reach `/mcp` before the SWSD token check
-- **VNet integration + private endpoints** — bring the endpoint inside your corporate network
-- **IP allowlisting** via Container Apps ingress restrictions — limit to known office/VPN IPs
-- **Custom domain + your own TLS certificate** — looks more polished, allows custom DNS-rebinding-prevention
+- **Azure AD authentication** at the Container Apps level (Easy Auth): restrict who can even reach `/mcp` before the SWSD token check
+- **VNet integration + private endpoints**: bring the endpoint inside your corporate network
+- **IP allowlisting** via Container Apps ingress restrictions: limit to known office/VPN IPs
+- **Custom domain + your own TLS certificate**: looks more polished, allows custom DNS-rebinding-prevention
 
 Each of these adds operational complexity in exchange for security.
 
@@ -291,11 +291,11 @@ Successful response: a JSON-RPC object with the tools array containing the entri
 
 ### Notes
 
-- `x-ms-agentic-protocol: mcp-streamable-1.0` is the Microsoft extension declaring the endpoint speaks MCP over Streamable HTTP — already present in the bundled Swagger files.
+- `x-ms-agentic-protocol: mcp-streamable-1.0` is the Microsoft extension declaring the endpoint speaks MCP over Streamable HTTP: already present in the bundled Swagger files.
 - Copilot Studio dropped MCP-over-SSE support in August 2025; only Streamable HTTP is supported, which is what these connectors declare.
 
 ---
 
 ## Other platforms
 
-The Docker image runs anywhere — AWS App Runner, GCP Cloud Run, Render, Fly.io, your own VM. Concrete recipes for those platforms are not yet written; PRs welcome.
+The Docker image runs anywhere: AWS App Runner, GCP Cloud Run, Render, Fly.io, your own VM. Concrete recipes for those platforms are not yet written; PRs welcome.

@@ -4,21 +4,21 @@ End-to-end recipe for hosting the swsd-mcp HTTP transport on **Azure Container A
 
 ## Why Azure Container Apps for this use case
 
-- **Same Microsoft ecosystem** as Copilot Studio — auth flows, networking, identity all integrate cleanly
-- **Scale-to-zero pricing** — when nobody's using the server, you pay nothing for compute
-- **Public HTTPS endpoint** with auto-managed TLS — no certificate management
-- **Container-native** — uses our published Docker image as-is, no rebuild
-- **Simple ops** — no Kubernetes complexity, no VM patching
+- **Same Microsoft ecosystem** as Copilot Studio: auth flows, networking, identity all integrate cleanly
+- **Scale-to-zero pricing**: when nobody's using the server, you pay nothing for compute
+- **Public HTTPS endpoint** with auto-managed TLS: no certificate management
+- **Container-native**: uses our published Docker image as-is, no rebuild
+- **Simple ops**: no Kubernetes complexity, no VM patching
 
 Typical cost for a single team's usage: **$0–5/month**.
 
 ## Prerequisites
 
 - An **Azure subscription** ([free tier available](https://azure.microsoft.com/free/))
-- **Azure CLI** installed locally — verify with `az --version`. Install: [docs.microsoft.com/cli/azure/install-azure-cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
+- **Azure CLI** installed locally: verify with `az --version`. Install: [docs.microsoft.com/cli/azure/install-azure-cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - A SolarWinds Service Desk **admin token** for verification (each end user will use their own; this is just for the smoke test)
 
-> **Shell note:** examples below use bash line continuation (`\`). On Windows PowerShell, either replace `\` with backtick (`` ` ``), or run the same commands inside Git Bash / WSL — they work verbatim there.
+> **Shell note:** examples below use bash line continuation (`\`). On Windows PowerShell, either replace `\` with backtick (`` ` ``), or run the same commands inside Git Bash / WSL: they work verbatim there.
 
 ## Step 1: Login to Azure
 
@@ -103,7 +103,7 @@ az containerapp show \
   --output tsv
 ```
 
-Outputs something like `swsd-mcp.bluepebble-12345abc.eastus.azurecontainerapps.io`. Save this — you'll need it for Copilot Studio in the next step.
+Outputs something like `swsd-mcp.bluepebble-12345abc.eastus.azurecontainerapps.io`. Save this: you'll need it for Copilot Studio in the next step.
 
 ## Step 6: Verify the deployment
 
@@ -122,7 +122,7 @@ If both responses match, the deployment is healthy.
 
 ## Step 7: Connect Microsoft Copilot Studio
 
-1. Open one of the Swagger files in [`copilot-studio/`](../../copilot-studio/) — pick the one matching your `SWSD_PROFILE` (we set `operations` above, so use `operations.swagger.yaml`).
+1. Open one of the Swagger files in [`copilot-studio/`](../../copilot-studio/): pick the one matching your `SWSD_PROFILE` (we set `operations` above, so use `operations.swagger.yaml`).
 2. Edit the `host:` line:
    ```yaml
    host: REPLACE_WITH_YOUR_HOST.example.com
@@ -197,9 +197,9 @@ az group delete --name swsd-mcp-rg --yes --no-wait
 
 The recipe above is suitable for team use within a trusted network. For broader exposure, consider:
 
-- **Azure AD authentication** at the Container Apps level (Easy Auth) — restrict who can even reach `/mcp` before the SWSD token check
-- **VNet integration** + private endpoints — bring the endpoint inside your corporate network
-- **IP allowlisting** via Container Apps ingress restrictions — limit to known office/VPN IPs
-- **Custom domain** + your own TLS certificate — looks more polished, allows custom DNS-rebinding-prevention
+- **Azure AD authentication** at the Container Apps level (Easy Auth): restrict who can even reach `/mcp` before the SWSD token check
+- **VNet integration** + private endpoints: bring the endpoint inside your corporate network
+- **IP allowlisting** via Container Apps ingress restrictions: limit to known office/VPN IPs
+- **Custom domain** + your own TLS certificate: looks more polished, allows custom DNS-rebinding-prevention
 
 Each of these adds operational complexity in exchange for security. For most internal-team use cases, the basic recipe above is sufficient.

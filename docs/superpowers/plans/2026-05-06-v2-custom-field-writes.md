@@ -1,19 +1,19 @@
-# swsd-mcp v2 — Custom-Field Writes Implementation Plan
+# swsd-mcp v2: Custom-Field Writes Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add `custom_fields` parameter to `swsd_create_incident`, `swsd_update_incident`, `swsd_create_solution`, and `swsd_update_solution`, using the SAManage-confirmed nested-wrapper write shape (`{entity: {custom_fields_values: {custom_fields_value: [{name, value}]}}}`). Standardize on `name`-keyed entries for cross-entity portability. Retract v1's incorrect "writes don't work" claim from the `swsd_describe_custom_fields` description and CHANGELOG.
 
-**Architecture:** Schema additions to 4 input types. Mapper extensions to `buildIncidentWritePayload` and `buildSolutionWritePayload` — both already exist; both have well-tested unit tests in v1; both follow the same "include only if defined" pattern. Tool description updates. Documentation/CHANGELOG correction. No new files except the test additions go inline in existing test files.
+**Architecture:** Schema additions to 4 input types. Mapper extensions to `buildIncidentWritePayload` and `buildSolutionWritePayload`: both already exist; both have well-tested unit tests in v1; both follow the same "include only if defined" pattern. Tool description updates. Documentation/CHANGELOG correction. No new files except the test additions go inline in existing test files.
 
 **Tech Stack:** TypeScript 6.0.3 (ESM, NodeNext modules), Node ≥24.15.0, Zod 4.4+, vitest 4.1+.
 
 **Critical context (read before starting):**
-- `D:\Repos\Github\MCP-SWSD\.research\v2\03-swsd-custom-field-writes.md` — full research findings, including live test transcripts and the discovered nested-wrapper shape. **The single most important reference for this plan.**
-- `D:\Repos\Github\MCP-SWSD\.research\v2\cf-tests\` — actual JSON test transcripts from the live tenant (May 6, 2026): all 3 keying variants pass for incidents; only `name`-keyed works for solutions.
-- v1 commit `06e9cf6` — the historical context: v1 tested 4 array-direct variants (all 500), reverted, and documented the limitation. **That documentation is now wrong; this plan retracts it.**
+- `D:\Repos\Github\MCP-SWSD\.research\v2\03-swsd-custom-field-writes.md`: full research findings, including live test transcripts and the discovered nested-wrapper shape. **The single most important reference for this plan.**
+- `D:\Repos\Github\MCP-SWSD\.research\v2\cf-tests\`: actual JSON test transcripts from the live tenant (May 6, 2026): all 3 keying variants pass for incidents; only `name`-keyed works for solutions.
+- v1 commit `06e9cf6`: the historical context: v1 tested 4 array-direct variants (all 500), reverted, and documented the limitation. **That documentation is now wrong; this plan retracts it.**
 
-**Why the shape:** SWSD's API is Rails-XML-fossilized-into-JSON. Rails' default `to_xml` on `has_many :custom_fields_values` produces `<custom_fields_values type="array"><custom_fields_value>...</custom_fields_value></custom_fields_values>` — a singular-named child element under a plural-named parent. When JSON support was added, Samanage preserved the structure literally as a hash with a singular inner key. The v1 attempts at `custom_fields_values: [array]` (without the inner singular wrapper) hit Samanage's nested-attribute parser, which couldn't find the row attributes and 500'd.
+**Why the shape:** SWSD's API is Rails-XML-fossilized-into-JSON. Rails' default `to_xml` on `has_many :custom_fields_values` produces `<custom_fields_values type="array"><custom_fields_value>...</custom_fields_value></custom_fields_values>`: a singular-named child element under a plural-named parent. When JSON support was added, Samanage preserved the structure literally as a hash with a singular inner key. The v1 attempts at `custom_fields_values: [array]` (without the inner singular wrapper) hit Samanage's nested-attribute parser, which couldn't find the row attributes and 500'd.
 
 **Why `name` keying universally:** Live tests show Incidents accept either `name`, `custom_field_id`, or both. Solutions accept ONLY `name` (the `custom_field_id`-only variant returns 400). Standardizing on `name` works across both entity types and any future entities (Hardware, etc.) the API supports the same way.
 
@@ -98,7 +98,7 @@ git commit -m "feat(custom-fields): add shared CustomFieldWrite schema for use i
 
 ## Task 2: Extend `buildIncidentWritePayload` with `custom_fields` (TDD)
 
-**Why:** This is the meat of the change — the mapper that constructs the payload SWSD requires. Tests come first per v1's mapper-test convention.
+**Why:** This is the meat of the change: the mapper that constructs the payload SWSD requires. Tests come first per v1's mapper-test convention.
 
 **Files:**
 - Modify: `tests/unit/mappers/incident.test.ts` (add new test cases)
@@ -192,7 +192,7 @@ In `tests/unit/mappers/incident.test.ts`, append the following new `it` blocks I
   });
 ```
 
-- [ ] **Step 2: Run the tests — verify they fail.**
+- [ ] **Step 2: Run the tests: verify they fail.**
 
 Run: `npx vitest run tests/unit/mappers/incident.test.ts`
 Expected: 6 NEW tests FAIL with messages about `custom_fields` not being a recognized field on `IncidentWriteFields`, OR returning a payload without `custom_fields_values`. The existing tests still pass.
@@ -227,7 +227,7 @@ Then in `buildIncidentWritePayload` (function body, lines 60–72), append BEFOR
   }
 ```
 
-- [ ] **Step 4: Run the tests — verify they pass.**
+- [ ] **Step 4: Run the tests: verify they pass.**
 
 Run: `npx vitest run tests/unit/mappers/incident.test.ts`
 Expected: all tests PASS (existing + 6 new).
@@ -236,7 +236,7 @@ Expected: all tests PASS (existing + 6 new).
 
 ```bash
 git add src/swsd/mappers/incident.ts tests/unit/mappers/incident.test.ts
-git commit -m "feat(incidents): support custom_fields in buildIncidentWritePayload — emits SAManage nested wrapper {custom_fields_values:{custom_fields_value:[...]}}"
+git commit -m "feat(incidents): support custom_fields in buildIncidentWritePayload: emits SAManage nested wrapper {custom_fields_values:{custom_fields_value:[...]}}"
 ```
 
 ---
@@ -299,12 +299,12 @@ git commit -m "feat(incidents): expose custom_fields parameter on swsd_create_in
 In `src/tools/incidents/createIncident.ts`, locate the `description` field (currently a multi-line string). Append to the end of the description string (BEFORE the closing quote/backtick):
 
 ```
- To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.
+ To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`: call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.
 ```
 
 - [ ] **Step 2: Update `swsd_update_incident` description.**
 
-Same change in `src/tools/incidents/updateIncident.ts` — append the same paragraph to the description.
+Same change in `src/tools/incidents/updateIncident.ts`: append the same paragraph to the description.
 
 - [ ] **Step 3: Typecheck + tests.**
 
@@ -403,7 +403,7 @@ import {
 } from '../../../src/swsd/mappers/solution.js';
 ```
 
-- [ ] **Step 2: Run the tests — verify they fail.**
+- [ ] **Step 2: Run the tests: verify they fail.**
 
 Run: `npx vitest run tests/unit/mappers/solution.test.ts`
 Expected: 5 NEW tests FAIL.
@@ -415,7 +415,7 @@ In `src/swsd/mappers/solution.ts`, locate the `SolutionWriteFields` interface (l
 ```ts
   /**
    * Tenant-specific custom field values. Each row is `{name, value}`.
-   * IMPORTANT: solutions REQUIRE name keying — the custom_field_id-only
+   * IMPORTANT: solutions REQUIRE name keying: the custom_field_id-only
    * variant returns 400 (verified live May 6, 2026). For incidents either
    * works; standardize on name for cross-entity portability.
    */
@@ -435,7 +435,7 @@ Then in `buildSolutionWritePayload` (lines 47–56), append BEFORE the `return` 
   }
 ```
 
-- [ ] **Step 4: Run the tests — verify they pass.**
+- [ ] **Step 4: Run the tests: verify they pass.**
 
 Run: `npx vitest run tests/unit/mappers/solution.test.ts`
 Expected: all pass.
@@ -444,7 +444,7 @@ Expected: all pass.
 
 ```bash
 git add src/swsd/mappers/solution.ts tests/unit/mappers/solution.test.ts
-git commit -m "feat(solutions): support custom_fields in buildSolutionWritePayload — same SAManage nested-wrapper shape as incidents"
+git commit -m "feat(solutions): support custom_fields in buildSolutionWritePayload: same SAManage nested-wrapper shape as incidents"
 ```
 
 ---
@@ -497,7 +497,7 @@ git commit -m "feat(solutions): expose custom_fields parameter on swsd_create_so
 Append to the description (same pattern as Task 4):
 
 ```
- To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names. Solutions require `name` keying (custom_field_id alone is rejected with HTTP 400). Validated for Text, Dropdown, Number, Checkbox, and Date types.
+ To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`: call swsd_describe_custom_fields first to discover field names. Solutions require `name` keying (custom_field_id alone is rejected with HTTP 400). Validated for Text, Dropdown, Number, Checkbox, and Date types.
 ```
 
 - [ ] **Step 2: Update `swsd_update_solution` description.**
@@ -529,7 +529,7 @@ git commit -m "docs(solutions): announce custom_fields parameter availability (w
 
 Open `D:\Repos\Github\MCP-SWSD\src\tools\customFields\describeCustomFields.ts`. The `description` field currently includes (around lines 21–25):
 
-> NOTE: writing custom field values via the incident or solution write tools is not currently supported (SWSD returns 500 on every payload variant tested) — set custom field values via the SWSD UI or service catalog forms for now.
+> NOTE: writing custom field values via the incident or solution write tools is not currently supported (SWSD returns 500 on every payload variant tested): set custom field values via the SWSD UI or service catalog forms for now.
 
 - [ ] **Step 2: Replace the NOTE block.**
 
@@ -538,7 +538,7 @@ Replace the exact text:
 ```
 NOTE: writing custom field values via the incident ' +
         'or solution write tools is not currently supported (SWSD returns 500 ' +
-        'on every payload variant tested) — set custom field values via the ' +
+        'on every payload variant tested): set custom field values via the ' +
         'SWSD UI or service catalog forms for now.
 ```
 
@@ -550,7 +550,7 @@ v2 NOTE: custom field WRITES are now supported via the `custom_fields` ' +
         'swsd_create_solution, and swsd_update_solution. Pass ' +
         '`custom_fields: [{name, value}]` (name-keyed for portability). ' +
         'Validated field types: Text, Dropdown, Number, Checkbox, Date. ' +
-        'Multi_picklist and User-type writes are not yet supported — set ' +
+        'Multi_picklist and User-type writes are not yet supported: set ' +
         'those via the SWSD UI.
 ```
 
@@ -563,7 +563,7 @@ Expected: all pass.
 
 ```bash
 git add src/tools/customFields/describeCustomFields.ts
-git commit -m "docs(custom-fields): retract v1's incorrect 'writes not supported' claim — v2 supports custom_fields parameter on 4 write tools"
+git commit -m "docs(custom-fields): retract v1's incorrect 'writes not supported' claim: v2 supports custom_fields parameter on 4 write tools"
 ```
 
 ---
@@ -613,20 +613,20 @@ Note the returned `id`. Then call `swsd_get_incident` with `detail_level: "long"
 Append to `CHANGELOG.md` under `## [Unreleased]`:
 
 ```markdown
-### Added (Tier 1 — v2 custom-field writes)
+### Added (Tier 1: v2 custom-field writes)
 
 - `custom_fields` parameter on `swsd_create_incident`, `swsd_update_incident`, `swsd_create_solution`, and `swsd_update_solution`. Accepts `[{name, value}]` rows. Name-keyed for cross-entity portability (Solutions reject `custom_field_id`-only keying with HTTP 400; Incidents accept either). Validated field types: Text, Dropdown, Number, Checkbox, Date.
 
 ### Fixed / Retracted
 
-- The v0.5 documented limitation that "SWSD returns 500 on every payload variant tested" for custom-field writes was **incorrect**. v1's investigation tested only the array-direct shape `{custom_fields_values: [{name, value}]}`. The actual shape SWSD requires is the SAManage-documented nested wrapper `{custom_fields_values: {custom_fields_value: [{name, value}]}}` — confirmed live against the user's tenant on May 6, 2026 and against the official `SAManage/Samples` Ruby code. The `swsd_describe_custom_fields` tool description has been updated accordingly.
+- The v0.5 documented limitation that "SWSD returns 500 on every payload variant tested" for custom-field writes was **incorrect**. v1's investigation tested only the array-direct shape `{custom_fields_values: [{name, value}]}`. The actual shape SWSD requires is the SAManage-documented nested wrapper `{custom_fields_values: {custom_fields_value: [{name, value}]}}`: confirmed live against the user's tenant on May 6, 2026 and against the official `SAManage/Samples` Ruby code. The `swsd_describe_custom_fields` tool description has been updated accordingly.
 ```
 
 - [ ] **Step 6: Commit CHANGELOG.**
 
 ```bash
 git add CHANGELOG.md
-git commit -m "docs: CHANGELOG entry for v2 custom-field writes — retracts v0.5 documented limitation"
+git commit -m "docs: CHANGELOG entry for v2 custom-field writes: retracts v0.5 documented limitation"
 ```
 
 - [ ] **Step 7: Open a PR.**
@@ -640,18 +640,18 @@ gh pr create --title "v2: custom-field WRITES on 4 tools (retracts v1's document
 - Retract v0.5's "writes don't work" claim from `swsd_describe_custom_fields` description and CHANGELOG
 
 ## Why this fix
-v1's investigation (commit 06e9cf6) tested four variants of `{custom_fields_values: [array]}` and got 500s — concluded the API didn't support writes. Live testing on May 6, 2026 confirms the API DOES support writes; v1 just had the wrong envelope. The actual shape is the Rails-XML-fossilized-into-JSON nested wrapper used by Samanage's official sample scripts (https://github.com/SAManage/Samples/blob/master/Sync%20Users/sync_users.rb).
+v1's investigation (commit 06e9cf6) tested four variants of `{custom_fields_values: [array]}` and got 500s: concluded the API didn't support writes. Live testing on May 6, 2026 confirms the API DOES support writes; v1 just had the wrong envelope. The actual shape is the Rails-XML-fossilized-into-JSON nested wrapper used by Samanage's official sample scripts (https://github.com/SAManage/Samples/blob/master/Sync%20Users/sync_users.rb).
 
 ## Field-type coverage
 Validated for Text, Dropdown, Number, Checkbox, Date. Multi_picklist and User-type are not yet validated (no Global-scope examples in the test tenant); documented in tool descriptions.
 
 ## Test plan
-- [x] `npm test` — all pass (146 + 11 new mapper tests)
-- [x] `npm run typecheck` — zero errors
-- [x] `npm run lint` — zero warnings
-- [x] `npm run build` — clean
-- [x] `npm run prepublishOnly` — full gate passes
-- [ ] Manual smoke test against live tenant — create incident with custom_fields, GET to verify persistence, manual cleanup
+- [x] `npm test`: all pass (146 + 11 new mapper tests)
+- [x] `npm run typecheck`: zero errors
+- [x] `npm run lint`: zero warnings
+- [x] `npm run build`: clean
+- [x] `npm run prepublishOnly`: full gate passes
+- [ ] Manual smoke test against live tenant: create incident with custom_fields, GET to verify persistence, manual cleanup
 
 Closes the custom-field-writes deliverable in `V2-PROPOSAL.md`. Detailed research findings at `.research/v2/03-swsd-custom-field-writes.md` (gitignored).
 EOF
@@ -677,6 +677,6 @@ EOF
 
 **Placeholder scan:** No "TBD" / "implement later" / "appropriate handling" stubs. Every code block is concrete.
 
-**Type consistency:** `CustomFieldWrite` and `CustomFieldsArray` defined in Task 1 are imported in Tasks 3 and 6. The mapper field shape `{name, value}` matches the Zod schema field names exactly. Both `IncidentWriteFields.custom_fields` (Task 2) and `SolutionWriteFields.custom_fields` (Task 5) use the same `{name, value}` shape — symmetric across entities.
+**Type consistency:** `CustomFieldWrite` and `CustomFieldsArray` defined in Task 1 are imported in Tasks 3 and 6. The mapper field shape `{name, value}` matches the Zod schema field names exactly. Both `IncidentWriteFields.custom_fields` (Task 2) and `SolutionWriteFields.custom_fields` (Task 5) use the same `{name, value}` shape: symmetric across entities.
 
-**Cross-plan consistency:** This plan is independent of Plan A (`2026-05-06-v2-tier1-quick-wins.md`). They touch overlapping files (`src/schemas/incident.ts`, `src/schemas/solution.ts`) but in different additive ways — there are no merge conflicts as long as both plans use unique field names (Plan A adds `detail_level`, `created_from`, `sites`, etc.; Plan C adds `custom_fields`). Recommended merge order: either plan can land first; the second will rebase cleanly.
+**Cross-plan consistency:** This plan is independent of Plan A (`2026-05-06-v2-tier1-quick-wins.md`). They touch overlapping files (`src/schemas/incident.ts`, `src/schemas/solution.ts`) but in different additive ways: there are no merge conflicts as long as both plans use unique field names (Plan A adds `detail_level`, `created_from`, `sites`, etc.; Plan C adds `custom_fields`). Recommended merge order: either plan can land first; the second will rebase cleanly.

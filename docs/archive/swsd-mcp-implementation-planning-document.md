@@ -1,9 +1,9 @@
-# SolarWinds Service Desk MCP Server — Implementation Planning Document
+# SolarWinds Service Desk MCP Server: Implementation Planning Document
 
-**Document status:** Research-backed implementation plan. Living artifact — revise as live validation resolves open items.  
+**Document status:** Research-backed implementation plan. Living artifact: revise as live validation resolves open items.
 **Last updated:** 2026-05-03  
 **Phase:** Planning only; no implementation code is included.  
-**Validation environment:** Operator's production SWSD tenant with full admin token. All coworkers who will use the finished server share the same tenant. v0.0 validation runs against production using a controlled test-data convention (see the v0.0 Validation Runbook companion document) — this means every endpoint, response shape, custom field, and error path can be verified directly rather than inferred from public documentation.
+**Validation environment:** Operator's production SWSD tenant with full admin token. All coworkers who will use the finished server share the same tenant. v0.0 validation runs against production using a controlled test-data convention (see the v0.0 Validation Runbook companion document). This means every endpoint, response shape, custom field, and error path can be verified directly rather than inferred from public documentation.
 
 ---
 
@@ -165,7 +165,7 @@ The brief states that SWSD uses repeated-key array query params such as `state[]
 
 **Decision:**
 
-- v0.0 introspects the operator's production tenant and captures the actual custom-field schema as a reference fixture (`fixtures/tenant/custom-fields.json`). This works because the v1 distribution scope is a single tenant — coworkers using this package share the operator's SWSD instance and inherit the same fields.
+- v0.0 introspects the operator's production tenant and captures the actual custom-field schema as a reference fixture (`fixtures/tenant/custom-fields.json`). This works because the v1 distribution scope is a single tenant: coworkers using this package share the operator's SWSD instance and inherit the same fields.
 - v0.1/v1: outputs return `custom_fields` as a generic array/dictionary passthrough. Writes accept a `custom_fields` object keyed by field name or field id, mapped to SWSD's required write shape (confirmed in v0.0).
 - Ship a `swsd_describe_custom_fields` tool in `triage` and above that returns the captured schema. Agents can introspect available fields before writes and self-correct on validation errors.
 - Ship `scripts/dump-custom-fields.ts` for any future operator on a different tenant who needs to regenerate the reference fixture.
@@ -433,7 +433,7 @@ swsd-mcp/
 
 ## 6. Milestones
 
-### v0.0 — Live validation pass
+### v0.0: Live validation pass
 
 **Goal:** resolve every endpoint, response shape, and tenant-specific behavior question against the operator's production SWSD tenant before any implementation code is written.
 
@@ -441,12 +441,12 @@ swsd-mcp/
 
 Deliverables:
 
-- API validation matrix fully resolved — every row marked verified with date and fixture path.
+- API validation matrix fully resolved: every row marked verified with date and fixture path.
 - Header negotiation probe completed: canonical Accept version locked.
 - Custom-field schema for the operator's tenant captured as a reference fixture (`fixtures/tenant/custom-fields.json`).
 - Recorded response fixtures for every endpoint the four profiles will touch, with secrets and PII scrubbed.
 - Tenant-specific quirks documented in `docs/tenant-notes.md`.
-- Cleanup pass executed — no orphaned test data left in production.
+- Cleanup pass executed: no orphaned test data left in production.
 
 Exit criteria:
 
@@ -457,7 +457,7 @@ Exit criteria:
 - Custom-field write payload shape is confirmed.
 - No generated Copilot schema advertises a tool without a verified endpoint.
 
-### v0.1 — Incident read MVP
+### v0.1: Incident read MVP
 
 Deliverables:
 
@@ -478,7 +478,7 @@ Exit criteria:
 - Invalid/missing token errors are clear.
 - Pagination output is stable and compact.
 
-### v0.2 — Agent ticket workflow
+### v0.2: Agent ticket workflow
 
 Deliverables:
 
@@ -495,7 +495,7 @@ Exit criteria:
 - Writes are never retried automatically unless proven idempotent.
 - Agent-facing errors name invalid fields.
 
-### v0.3 — Comments and triage profile
+### v0.3: Comments and triage profile
 
 Deliverables:
 
@@ -509,7 +509,7 @@ Exit criteria:
 - Public/private comment behavior is documented.
 - Add-comment is confirmed not to leak private comments in summaries.
 
-### v0.4 — Streamable HTTP and Docker
+### v0.4: Streamable HTTP and Docker
 
 Deliverables:
 
@@ -524,7 +524,7 @@ Exit criteria:
 - HTTP mode passes MCP Inspector or equivalent streamable-client smoke test.
 - Token redaction confirmed in logs.
 
-### v0.5 — Copilot Studio artifacts
+### v0.5: Copilot Studio artifacts
 
 Deliverables:
 
@@ -539,7 +539,7 @@ Exit criteria:
 - POST `/mcp` includes `x-ms-agentic-protocol: mcp-streamable-1.0`.
 - Connector auth passes token header correctly to server.
 
-### v0.6 — Knowledge profile
+### v0.6: Knowledge profile
 
 Deliverables:
 
@@ -552,7 +552,7 @@ Exit criteria:
 - Solution tools pass live sandbox tests.
 - Draft/published/status behavior is documented.
 
-### v1.0 — Public release
+### v1.0: Public release
 
 Deliverables:
 
@@ -575,15 +575,15 @@ Exit criteria:
 
 The first three items below are now scheduled for resolution during v0.0 rather than carrying forward as architectural risks, since the operator has full admin access to the production tenant. They remain listed for visibility.
 
-1. **`link_solution_to_incident` relationship model — resolve in v0.0.** Validation runbook will probe the actual relationship (incident attribute, separate join, or attached-solutions field). Promote to `full` profile or drop entirely based on findings.
-2. **Comments and solutions endpoint shapes — resolve in v0.0.** Live probes against the tenant will replace the "partially validated" status with documented endpoint specs and recorded fixtures.
-3. **Accept header version — resolve in v0.0.** Probe both `v1.1` and `v2.1` against the tenant, document any response-shape differences, lock the default. `SWSD_API_VERSION` env var stays in the design as an override.
+1. **`link_solution_to_incident` relationship model: resolve in v0.0.** Validation runbook will probe the actual relationship (incident attribute, separate join, or attached-solutions field). Promote to `full` profile or drop entirely based on findings.
+2. **Comments and solutions endpoint shapes: resolve in v0.0.** Live probes against the tenant will replace the "partially validated" status with documented endpoint specs and recorded fixtures.
+3. **Accept header version: resolve in v0.0.** Probe both `v1.1` and `v2.1` against the tenant, document any response-shape differences, lock the default. `SWSD_API_VERSION` env var stays in the design as an override.
 4. **Use an alternate HTTP token header option.** `Authorization` should be default, but Copilot deployments may be simpler with a configurable API-key header name.
 5. **Treat custom-field writes as best-effort validated pass-through.** v0.0 will introspect the operator's tenant and capture the actual custom-field schema as a reference fixture. Coworkers on the same tenant inherit the same fields, so for this distribution scope a single captured schema is sufficient. A regeneration script (`scripts/dump-custom-fields.ts`) ships with the package for any future cross-tenant deployment.
 6. **Document that rate limits are unknown.** Implement robust behavior but do not claim SWSD-specific rate limits. v0.0 may surface practical limits empirically; record what you find but do not depend on them.
 7. **Generate Copilot artifacts only from verified tools.** This prevents accidental connector exposure of experimental operations.
-8. **Convenience wrapper tools — keep or drop?** `swsd_assign_incident` and `swsd_update_incident_state` are functional subsets of `swsd_update_incident`. They exist to narrow agent decision-making on the two most common write operations, which improves reliability for smaller models but expands the tool surface. Decide before v0.2 whether the reliability gain justifies the extra registrations, or drop them and rely on `swsd_update_incident` alone. Either choice is defensible.
-9. **`delete_comment` revised out of `full`.** The original research brief included `delete_comment` in the `full` profile, which conflicted with the same brief's no-hard-deletes policy. This doc resolves the inconsistency by deferring `delete_comment` to a future `admin-destructive` profile alongside other destructive operations. This is a deliberate safety choice, not an oversight — flagged here so the deviation is visible and reversible if the operator disagrees.
+8. **Convenience wrapper tools: keep or drop?** `swsd_assign_incident` and `swsd_update_incident_state` are functional subsets of `swsd_update_incident`. They exist to narrow agent decision-making on the two most common write operations, which improves reliability for smaller models but expands the tool surface. Decide before v0.2 whether the reliability gain justifies the extra registrations, or drop them and rely on `swsd_update_incident` alone. Either choice is defensible.
+9. **`delete_comment` revised out of `full`.** The original research brief included `delete_comment` in the `full` profile, which conflicted with the same brief's no-hard-deletes policy. This doc resolves the inconsistency by deferring `delete_comment` to a future `admin-destructive` profile alongside other destructive operations. This is a deliberate safety choice, not an oversight: flagged here so the deviation is visible and reversible if the operator disagrees.
 
 ---
 

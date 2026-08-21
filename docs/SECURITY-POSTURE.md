@@ -1,8 +1,8 @@
-# swsd-mcp — Security Posture
+# swsd-mcp: Security Posture
 
 This document describes the security controls and practices in place for
 this project. It exists for stakeholders, reviewers, and security-minded
-users who want to understand what's been done — and how to verify it.
+users who want to understand what's been done and how to verify it.
 
 For **vulnerability reporting**, see [SECURITY.md](../SECURITY.md). This
 document is the *posture*; SECURITY.md is the *process*.
@@ -15,17 +15,17 @@ document is the *posture*; SECURITY.md is the *process*.
 Service Desk API calls on behalf of the calling user. Its security model is
 built around four principles:
 
-1. **Zero credentials at rest** — the server never persists or logs API
+1. **Zero credentials at rest**: the server never persists or logs API
    tokens; they exist only in process memory for the lifetime of a single
    request.
-2. **Defense in depth** — multiple independent controls (origin validation,
+2. **Defense in depth**: multiple independent controls (origin validation,
    rate limiting, request timeouts, hostname allowlisting) so any single
    bypass doesn't constitute compromise.
-3. **Verifiable supply chain** — published artifacts are tied to a specific
+3. **Verifiable supply chain**: published artifacts are tied to a specific
    commit and CI workflow via SLSA provenance attestations; all build
    inputs (GitHub Actions, Docker base images, npm dependencies) are
    pinned to immutable identifiers.
-4. **Transparent governance** — open source under MIT license with explicit
+4. **Transparent governance**: open source under MIT license with explicit
    disclosure process, code review requirements, and change-management
    tooling (Renovate, CODEOWNERS, branch protection).
 
@@ -73,7 +73,7 @@ verified.
 The server has no concept of "its own" SWSD identity. Every API call is
 made using the calling user's token, which arrives via:
 
-- `SWSD_TOKEN` environment variable (stdio transport only — for local
+- `SWSD_TOKEN` environment variable (stdio transport only, for local
   agent use)
 - `Authorization: Bearer <token>` HTTP header (Streamable HTTP transport)
 - `X-SWSD-Token: <token>` HTTP header (alternate for Copilot Studio
@@ -84,7 +84,7 @@ anywhere other than the configured SWSD base URL.** Verify by:
 
 ```bash
 grep -rn "SWSD_TOKEN\|Bearer" src/ --include="*.ts" | grep -v "process.env\|header"
-# (no matches — token references are only in env loading and header building)
+# (no matches: token references are only in env loading and header building)
 ```
 
 ### Stateless HTTP transport
@@ -96,7 +96,7 @@ data persistence. See [`src/transports/http.ts`](../src/transports/http.ts).
 
 ### Defensive parsing of upstream responses
 
-All SWSD responses are parsed defensively — fields can be missing,
+All SWSD responses are parsed defensively: fields can be missing,
 wrong-typed, or unexpected without crashing the tool. See the mapper
 helpers in [`src/swsd/mappers/`](../src/swsd/mappers/).
 
@@ -153,10 +153,10 @@ shouldn't see and minimizes context window cost.
 | GitHub Actions | Commit SHAs, not version tags | `grep -E 'uses:.+@[a-f0-9]{40}' .github/workflows/` |
 | Docker base image | SHA256 digest, not version tag | `head -10 Dockerfile` |
 
-### npm publishing — OIDC trusted publishing
+### npm publishing: OIDC trusted publishing
 
 The npm publish workflow in [`.github/workflows/publish-npm.yml`](../.github/workflows/publish-npm.yml)
-uses **OIDC trusted publishing** — no long-lived `NPM_TOKEN` secret
+uses **OIDC trusted publishing**: no long-lived `NPM_TOKEN` secret
 exists in the repository. Each publish derives a short-lived (minutes)
 token from the GitHub Actions OIDC identity, scoped to the specific
 workflow + commit + repo.
@@ -196,7 +196,7 @@ badge on packages with attestations.
 
 ### Reproducible builds
 
-The build is deterministic — same source + same lockfile produces
+The build is deterministic: same source + same lockfile produces
 byte-identical published tarball:
 
 ```bash
@@ -217,9 +217,9 @@ which builds on the upstream `config:best-practices` preset:
 - GitHub Actions auto-PRs for new commit SHAs
 - Docker base image digest tracking
 - Weekly lock-file refresh (picks up transitive security fixes)
-- **3-day minimum-release-age** on npm packages — supply-chain attack
+- **3-day minimum-release-age** on npm packages: supply-chain attack
   defense; recently published versions wait before being proposed
-- Abandonment detection — flags dependencies that have stopped
+- Abandonment detection: flags dependencies that have stopped
   receiving updates upstream
 
 Security-flagged updates bypass the minimum-release-age and get
@@ -270,14 +270,14 @@ CI workflows declare minimum required permissions:
 - `contents: read` + `id-token: write` on the npm publish workflow
   (OIDC token minting only)
 
-No workflow has `write` permission on repository contents — bots
+No workflow has `write` permission on repository contents: bots
 can't push commits or modify code.
 
 ### No `pull_request_target` triggers
 
 CI uses only the `pull_request` event for PR validation, never
 `pull_request_target`. This means PRs from forks run with no access
-to repository secrets — the documented mitigation for "fork PR
+to repository secrets: the documented mitigation for "fork PR
 secret exfiltration" attacks.
 
 ### 2FA on maintainer accounts
@@ -287,7 +287,7 @@ Hardware 2FA (WebAuthn / FIDO2) enabled on:
 - GitHub account (maintainer)
 - npm account (maintainer)
 
-Phishing-resistant by design — an attacker with the password cannot
+Phishing-resistant by design: an attacker with the password cannot
 authenticate without physical possession of the security key.
 
 ---
@@ -301,7 +301,7 @@ Every push to `main` and every PR runs:
 1. Install dependencies (`npm ci` against locked versions)
 2. Lint (`eslint .`)
 3. Typecheck (`tsc --noEmit`)
-4. Unit tests with V8 coverage regression gates (`npm run test:coverage` — 72%
+4. Unit tests with V8 coverage regression gates (`npm run test:coverage`: 72%
    statements, 66% branches, 80% functions, and 76% lines minimum)
 5. Docker build (multi-stage, Alpine base)
 6. Container smoke test (boot, `/healthz` 200, `/mcp` 401-on-no-auth)
@@ -354,7 +354,7 @@ See [`Dockerfile`](../Dockerfile).
 - Uses [express-rate-limit](https://github.com/express-rate-limit/express-rate-limit)
 - Standards-compliant `RateLimit-Policy` and `RateLimit` headers in
   responses (draft-7 spec) so well-behaved clients can self-regulate
-- `/healthz` deliberately exempted — health probes from orchestrators
+- `/healthz` deliberately exempted: health probes from orchestrators
   hit it constantly
 
 The token is hashed (never stored as a key) for memory safety.
@@ -393,7 +393,7 @@ trusted reverse proxy).
 
 ### Health endpoint information disclosure
 
-`/healthz` returns `{"ok":true}` only — deliberately omits version
+`/healthz` returns `{"ok":true}` only: deliberately omits version
 information to avoid leaking stack details to attackers. Server
 metadata (name, version, profile, enabled tools) is available via
 the `swsd_get_server_info` MCP tool, which is behind the
@@ -424,7 +424,7 @@ See [SECURITY.md](../SECURITY.md) for the full process. Summary:
 | [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) | V13 (API and Web Service): authentication, rate limiting, input validation, output encoding |
 | [npm package signing](https://docs.npmjs.com/about-package-signatures) | All releases signed; users verify with `npm audit signatures` |
 
-We don't claim formal certification against any of these — they're
+We don't claim formal certification against any of these: they're
 reference frameworks we've drawn from, not audits we've passed.
 
 ---

@@ -35,7 +35,7 @@ Instead, use **[GitHub Security Advisories](https://github.com/mikimatsub/swsd-m
 
 We follow standard coordinated disclosure: we ask reporters not to publicly disclose the vulnerability until a patched release is available and downstream users have a reasonable window to upgrade. We will credit you in the release notes unless you prefer to remain anonymous.
 
-## Threat Model — what this server is and isn't
+## Threat Model: what this server is and isn't
 
 For the comprehensive security posture (controls, supply-chain hardening,
 standards alignment, verification methods), see [`docs/SECURITY-POSTURE.md`](./docs/SECURITY-POSTURE.md).

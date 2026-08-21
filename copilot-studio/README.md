@@ -35,7 +35,7 @@ configured with.
    etc.). For internal-only deployments, see Microsoft's docs on the
    [on-premises data gateway](https://learn.microsoft.com/en-us/data-integration/gateway/service-gateway-onprem).
 
-   > **Don't have one yet?** Follow the [Azure Container Apps deployment recipe](../docs/deployment/azure-container-apps.md) — same Microsoft ecosystem as Copilot Studio, scale-to-zero pricing (~$0–5/month for typical team usage), public HTTPS endpoint with auto-managed TLS.
+   > **Don't have one yet?** Follow the [Azure Container Apps deployment recipe](../docs/deployment/azure-container-apps.md). It uses the same Microsoft ecosystem as Copilot Studio and provides scale-to-zero pricing (~$0–5/month for typical team usage) plus a public HTTPS endpoint with auto-managed TLS.
 
 2. **An SWSD API token (JWT)** for each user who'll connect. In the
    SWSD UI: **Setup → Users & Groups → Users** → click the user → **Actions**
@@ -75,7 +75,7 @@ The default is `/` and the endpoint stays at `/mcp`.
    - **Host / base URL:** confirm it matches what you set in step 1.
    - **Authentication type:** API Key.
      - Parameter label: `SWSD API Token` (or anything user-friendly).
-     - Parameter name: **`X-SWSD-Token`** — must match exactly.
+     - Parameter name: **`X-SWSD-Token`**: must match exactly.
      - Parameter location: **Header**.
    - Save the connector.
 

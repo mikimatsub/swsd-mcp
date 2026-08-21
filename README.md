@@ -19,8 +19,8 @@ The server holds **zero credentials at rest**. Tokens are forwarded per-request,
 
 You need:
 
-- An MCP client installed — any MCP-compatible client works ([compatibility matrix](https://mcp-swsd.pages.dev/compatibility/))
-- A SolarWinds Service Desk **admin token (JWT)** — generate one in the SWSD UI: **Setup → Users & Groups → Users** → click your user → **Actions** → **Generate JSON Web Token** (Service Desk administrator rights required)
+- An MCP client installed: any MCP-compatible client works ([compatibility matrix](https://mcp-swsd.pages.dev/compatibility/))
+- A SolarWinds Service Desk **admin token (JWT)**: generate one in the SWSD UI: **Setup → Users & Groups → Users** → click your user → **Actions** → **Generate JSON Web Token** (Service Desk administrator rights required)
 
 ### VS Code
 
@@ -31,8 +31,8 @@ You need:
 
 3. Install with either supported local option:
 
-   - **Command (stdio)** — enter `npx -y swsd-mcp`.
-   - **NPM Package** — enter `swsd-mcp`, confirm that the publisher is **`mikimatsub`**, then select **Allow**.
+   - **Command (stdio)**: enter `npx -y swsd-mcp`.
+   - **NPM Package**: enter `swsd-mcp`, confirm that the publisher is **`mikimatsub`**, then select **Allow**.
 
 <img src="./docs-site/public/vscode/vscode-stdio-command.png" alt="The swsd-mcp stdio command entered in VS Code" width="600">
 
@@ -71,17 +71,17 @@ Replace `your-jwt-here` with your token. EU tenants use `https://apieu.samanage.
 | Claude Desktop (Linux) | `~/.config/Claude/claude_desktop_config.json` |
 | Claude Code | `~/.claude.json` (or use the shortcut below) |
 | Cursor | `~/.cursor/mcp.json` |
-| Continue, Cline, other clients | check your client's docs — same JSON shape |
+| Continue, Cline, other clients | check your client's docs: same JSON shape |
 
 Create the file if it doesn't exist. Then restart your client.
 
-**Claude Code shortcut** — skip editing the file by hand. This single line pastes verbatim into any shell (bash, zsh, PowerShell, cmd):
+**Claude Code shortcut**: skip editing the file by hand. This single line pastes verbatim into any shell (bash, zsh, PowerShell, cmd):
 
 ```bash
 claude mcp add swsd --env SWSD_TOKEN="your-jwt-here" --env SWSD_BASE_URL="https://api.samanage.com" -- npx -y swsd-mcp
 ```
 
-**Microsoft Copilot Studio** — different path. Copilot Studio can't spawn local processes, so it needs an HTTP-transport server. See [`copilot-studio/README.md`](./copilot-studio/README.md) and the [Azure Container Apps recipe](./docs/deployment/azure-container-apps.md).
+**Microsoft Copilot Studio**: different path. Copilot Studio can't spawn local processes, so it needs an HTTP-transport server. See [`copilot-studio/README.md`](./copilot-studio/README.md) and the [Azure Container Apps recipe](./docs/deployment/azure-container-apps.md).
 
 ### 3. Verify it works
 
@@ -91,9 +91,9 @@ In your MCP client, ask:
 
 The agent should call `swsd_health_check` and report success. If it does, you're set up. Try a few more:
 
-- _"Show me incident 60310"_ — id-keyed tools accept either the internal id (≥7 digits) or the human-facing number visible in the SWSD UI (≤6 digits).
-- _"List incidents updated in the last 7 days"_ — `updated_within: "7d"` (also `"24h"`, `"1w"`, `"30d"`).
-- _"What tickets are assigned to me?"_ — `swsd_list_my_incidents` calls `swsd_get_me` internally, so you don't have to spell out an email.
+- _"Show me incident 60310"_: id-keyed tools accept either the internal id (≥7 digits) or the human-facing number visible in the SWSD UI (≤6 digits).
+- _"List incidents updated in the last 7 days"_: `updated_within: "7d"` (also `"24h"`, `"1w"`, `"30d"`).
+- _"What tickets are assigned to me?"_: `swsd_list_my_incidents` calls `swsd_get_me` internally, so you don't have to spell out an email.
 
 ---
 
@@ -127,7 +127,7 @@ Seven read tools ship interactive UI bundles using the [MCP Apps capability](htt
 
 ![incident-list widget rendering a sortable table of synthetic Acme Corp tickets](docs-site/public/widgets/incident-list-dark.png)
 
-*Example — `swsd_list_incidents` rendering the `incident-list` widget. Synthetic data; no real tenant info. See the [full gallery](https://mcp-swsd.pages.dev/widgets/) for screenshots of all seven widgets.*
+*Example: `swsd_list_incidents` rendering the `incident-list` widget. Synthetic data; no real tenant info. See the [full gallery](https://mcp-swsd.pages.dev/widgets/) for screenshots of all seven widgets.*
 
 | Tool | Widget | What it renders |
 |---|---|---|
@@ -149,11 +149,11 @@ Most users only need `SWSD_TOKEN` and `SWSD_BASE_URL`:
 
 | Variable | Default | Notes |
 |---|---|---|
-| `SWSD_TOKEN` | — | Required. Your SWSD admin token (JWT). |
+| `SWSD_TOKEN` | None | Required. Your SWSD admin token (JWT). |
 | `SWSD_BASE_URL` | `https://api.samanage.com` | EU tenant: `https://apieu.samanage.com` |
-| `SWSD_PROFILE` | `agent` | `triage`, `agent`, `knowledge`, `operations`, or `full` — see [Profiles](https://mcp-swsd.pages.dev/configuration/#profiles) |
-| `SWSD_WRITE_MODE` | `live` | `live`, `dry-run`, or `disabled` — preview or block write tools without changing profiles |
-| `SWSD_ATTACHMENT_ROOT` | — | Optional real-path boundary for local `file_path` uploads in stdio mode |
+| `SWSD_PROFILE` | `agent` | `triage`, `agent`, `knowledge`, `operations`, or `full`: see [Profiles](https://mcp-swsd.pages.dev/configuration/#profiles) |
+| `SWSD_WRITE_MODE` | `live` | `live`, `dry-run`, or `disabled`: preview or block write tools without changing profiles |
+| `SWSD_ATTACHMENT_ROOT` | None | Optional real-path boundary for local `file_path` uploads in stdio mode |
 
 For the full env-var reference (HTTP transport, retries, rate limits, allowlists), see [Configuration](https://mcp-swsd.pages.dev/configuration/).
 
@@ -177,32 +177,32 @@ Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a pro
 
 ## Hosting an HTTP server (advanced)
 
-Quick Start above runs swsd-mcp on your own machine — your MCP client spawns it on demand via `npx`. **Most users stop there.**
+Quick Start above runs swsd-mcp on your own machine: your MCP client spawns it on demand via `npx`. **Most users stop there.**
 
 Set up an HTTP-mode server only if you need:
 
-- **Microsoft Copilot Studio integration** — Copilot Studio can't spawn local processes
-- **One shared instance for a team** — one deploy, many users, each providing their own token per-request
-- **Stricter network control** — private VNet, IP allowlist, custom domain
+- **Microsoft Copilot Studio integration**: Copilot Studio can't spawn local processes
+- **One shared instance for a team**: one deploy, many users, each providing their own token per-request
+- **Stricter network control**: private VNet, IP allowlist, custom domain
 
-The Docker image runs anywhere — Azure, AWS, GCP, Render, Fly.io, your own VM. See [Deployment](https://mcp-swsd.pages.dev/deployment/) for the full guide and the [Azure Container Apps recipe](./docs/deployment/azure-container-apps.md) (recommended for Copilot Studio; scale-to-zero pricing).
+The Docker image runs anywhere: Azure, AWS, GCP, Render, Fly.io, your own VM. See [Deployment](https://mcp-swsd.pages.dev/deployment/) for the full guide and the [Azure Container Apps recipe](./docs/deployment/azure-container-apps.md) (recommended for Copilot Studio; scale-to-zero pricing).
 
 ---
 
 ## Documentation
 
-- [`SECURITY.md`](./SECURITY.md) — vulnerability reporting via GitHub Security Advisories
-- [`docs/SECURITY-POSTURE.md`](./docs/SECURITY-POSTURE.md) — security controls, supply-chain hardening, verification methods
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — bug reports, PR review criteria, local development setup
-- [`CHANGELOG.md`](./CHANGELOG.md) — version history
-- [`copilot-studio/`](./copilot-studio/) — Microsoft Copilot Studio Swagger connector specs and import guide
-- [`docs/deployment/`](./docs/deployment/) — cloud deployment recipes
+- [`SECURITY.md`](./SECURITY.md): vulnerability reporting via GitHub Security Advisories
+- [`docs/SECURITY-POSTURE.md`](./docs/SECURITY-POSTURE.md): security controls, supply-chain hardening, verification methods
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md): bug reports, PR review criteria, local development setup
+- [`CHANGELOG.md`](./CHANGELOG.md): version history
+- [`copilot-studio/`](./copilot-studio/): Microsoft Copilot Studio Swagger connector specs and import guide
+- [`docs/deployment/`](./docs/deployment/): cloud deployment recipes
 
 ---
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). Provided "as is" without warranty.
+MIT: see [LICENSE](./LICENSE). Provided "as is" without warranty.
 
 ## Trademarks
 

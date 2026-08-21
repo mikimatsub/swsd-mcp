@@ -24,7 +24,7 @@ Thanks for contributing! A few notes before you fill this in:
 - [ ] `npm run lint` passes
 - [ ] `npm run typecheck` passes
 - [ ] `npm test` passes
-- [ ] (if touching tools) tested against a live SWSD tenant — describe what you ran
+- [ ] (if touching tools) tested against a live SWSD tenant: describe what you ran
 - [ ] (if touching the HTTP transport) Docker smoke test still passes
 - [ ] (if changing public behavior) README / docs updated
 

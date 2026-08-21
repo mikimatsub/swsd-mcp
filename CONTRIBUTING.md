@@ -7,12 +7,12 @@ issues or pull requests.
 
 Please file a GitHub issue with:
 
-- **What you tried** — exact tool call, environment (stdio vs http), profile in use
-- **What happened** — actual response or error, with sensitive data redacted
-- **What you expected** — what behavior you were aiming for
-- **Version** — `npm view swsd-mcp version` or commit SHA
+- **What you tried**: exact tool call, environment (stdio vs http), profile in use
+- **What happened**: actual response or error, with sensitive data redacted
+- **What you expected**: what behavior you were aiming for
+- **Version**: `npm view swsd-mcp version` or commit SHA
 
-For security issues, see [SECURITY.md](./SECURITY.md) — do not file public issues for vulnerabilities.
+For security issues, see [SECURITY.md](./SECURITY.md). Do not file public issues for vulnerabilities.
 
 ## Suggesting features
 
@@ -36,8 +36,8 @@ PRs are welcome. Before submitting:
    ```
 3. **Add tests** for new behavior. The existing test suite is hermetic (no live API calls); follow that pattern.
 4. **Smoke against your tenant** for changes touching SWSD interactions. Use the `[MCP-VAL]` prefix convention for any test data you create, and clean up after yourself.
-5. **Commit messages** follow the conventional-commit style used in `git log` — `feat:`, `fix:`, `ci:`, `docs:`, etc., with a clear "why" in the body.
-6. **Don't bump the package version** in your PR — releases are tagged separately.
+5. **Commit messages** follow the conventional-commit style used in `git log`: `feat:`, `fix:`, `ci:`, `docs:`, etc., with a clear "why" in the body.
+6. **Don't bump the package version** in your PR: releases are tagged separately.
 
 ### What I look for in code review
 
