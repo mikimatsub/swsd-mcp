@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "swsd": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "$p=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'GAIConsultants/SWSD-MCP/client/2.3.2/Start-Swsd.ps1'; if(Test-Path -LiteralPath $p){ & $p } else { [Console]::Error.WriteLine('SWSD setup required. In a new local chat, ask: Set up SolarWinds Service Desk on this computer.'); exit 1 }"
+      ],
+      "startup_timeout_sec": 60
+    }
+  }
+}
