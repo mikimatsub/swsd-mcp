@@ -1,17 +1,17 @@
-// Real STDIO startup with a temporary Windows credential. No SolarWinds API calls.
+// Real launcher/STDIO startup with an in-process credential reader fixture.
+// No Credential Manager writes, desktop installation, or SolarWinds API calls.
 import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
 
 const root = fileURLToPath(new URL('../../plugins/swsd/', import.meta.url));
 const temporary = await mkdtemp(join(tmpdir(), 'swsd-stdio-'));
-const target = `GAIConsultants/SWSD-MCP-test-${randomUUID()}`;
 const fakeToken = 'test-only-not-a-real-token';
-const runtime = join(process.env.LOCALAPPDATA, 'GAIConsultants/SWSD-MCP/runtime/2.3.1/node_modules/swsd-mcp/dist');
+const runtimeVersion = JSON.parse(await readFile(join(root, 'runtime/package.json'), 'utf8')).dependencies['swsd-mcp'];
+const runtime = process.argv[2] ? resolve(process.argv[2]) : join(process.env.LOCALAPPDATA, 'GAIConsultants/SWSD-MCP/runtime', runtimeVersion, 'node_modules/swsd-mcp/dist');
 const { PROFILE_TOOLS } = await import(pathToFileURL(join(runtime, 'config/profiles.js')).href);
 const quotePs = s => s.replaceAll("'", "''");
 const ps = (file) => new Promise((resolvePromise, reject) => {
@@ -33,14 +33,19 @@ const stopServer = async () => {
 };
 try {
   const common = (await readFile(join(root, 'scripts/Common.ps1'), 'utf8'))
-    .replace("$script:SwsdCredentialTarget = 'GAIConsultants/SWSD-MCP'", `$script:SwsdCredentialTarget = '${target}'`)
     .replace("$script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'GAIConsultants\\SWSD-MCP'", `$script:SwsdHome = '${quotePs(temporary)}'`)
     .replace('return Join-Path $script:SwsdHome "runtime\\$script:SwsdPackageVersion\\node_modules\\swsd-mcp\\dist\\cli.js"', `return '${quotePs(join(runtime, 'cli.js'))}'`);
-  await writeFile(join(temporary, 'Common.ps1'), common);
+  const readerFixture = `Add-Type -TypeDefinition @'
+namespace SwsdDesktop {
+  public static class Credentials {
+    public static string Read(string target) { return "test-only-not-a-real-token"; }
+    public static void Save(string target, string secret) { throw new System.InvalidOperationException("Credential writes are forbidden in this test."); }
+    public static void Remove(string target) { throw new System.InvalidOperationException("Credential deletes are forbidden in this test."); }
+  }
+}
+'@\n`;
+  await writeFile(join(temporary, 'Common.ps1'), readerFixture + common);
   await writeFile(join(temporary, 'Start-Swsd.ps1'), await readFile(join(root, 'scripts/Start-Swsd.ps1')));
-  await writeFile(join(temporary, 'prepare.ps1'), `. (Join-Path $PSScriptRoot 'Common.ps1')\n[SwsdDesktop.Credentials]::Save('${target}', '${fakeToken}')`);
-  await writeFile(join(temporary, 'cleanup.ps1'), `. (Join-Path $PSScriptRoot 'Common.ps1')\n[SwsdDesktop.Credentials]::Remove('${target}')`);
-  await ps(join(temporary, 'prepare.ps1'));
   for (const profile of ['triage','agent','knowledge','operations','full']) {
   // Save through the same function as the dropdown, then launch a separate server process.
   await writeFile(join(temporary, 'profile.ps1'), `. (Join-Path $PSScriptRoot 'Common.ps1')\nSave-SwsdProfile -Profile '${profile}'`);
@@ -84,7 +89,6 @@ try {
   }
 } finally {
   await stopServer();
-  await ps(join(temporary, 'cleanup.ps1'));
   assert.ok(resolve(temporary).startsWith(resolve(tmpdir()) + '\\'), 'Cleanup must stay within the temporary directory');
   assert.ok(temporary.includes('swsd-stdio-'), 'Cleanup must target this test folder');
   await rm(temporary, {recursive:true,force:true});

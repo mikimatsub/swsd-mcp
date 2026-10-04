@@ -45,7 +45,7 @@ This version does not use any old `SWSD_TOKEN` environment variable. If you prev
 - Network access to the npm registry and the selected SWSD API host.
 - A personal SWSD token authorized for your intended work. Workspace installation does not grant SolarWinds permissions.
 - Corporate script-signing, AppLocker, or WDAC requirements may require IT deployment/signing. The plugin does not bypass them.
-- Server release is pinned to `swsd-mcp@2.3.1`, with locked dependency versions. Plugin package version is `2.3.2`.
+- Server release is pinned to `swsd-mcp@2.3.2`, with locked dependency versions. Plugin package version is `2.3.2`.
 - The default is `agent`. Available profiles are `triage`, `agent`, `knowledge`, `operations`, and `full`. Write tools remain subject to the authenticated account's permissions and the host's tool approvals.
 - This is a desktop-only local integration. Uploading it does not create a hosted app, OAuth sign-in button, automatic install-time wizard, or web/mobile connection.
 - Setup data and runtime live under `%LOCALAPPDATA%\GAIConsultants\SWSD-MCP`. Uninstalling the plugin does not automatically erase credentials or these files: remove the saved token first, then quit the app.

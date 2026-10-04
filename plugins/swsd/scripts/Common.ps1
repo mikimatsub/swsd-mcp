@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$script:SwsdPackageVersion = '2.3.1'
+$script:SwsdPackageVersion = '2.3.2'
 $script:SwsdClientVersion = '2.3.2'
 $script:SwsdCredentialTarget = 'GAIConsultants/SWSD-MCP'
 $script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'GAIConsultants\SWSD-MCP'
