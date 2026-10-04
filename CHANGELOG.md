@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added real CLI HTTP/STDIO checks for all four deployed protocol versions,
   exact tools, safety annotations, metadata calls, seven widget resources, and
   unknown/invalid-known tool error behavior. CI runs them after the server build.
+- Updated development `globals` to 17.13.0 after its publication-age gate
+  elapsed on October 4 at 03:57 UTC; final combined checks were rerun.
 - Retained TypeScript 6 and the Node 24 LTS production policy. SDK 2.3.0 and other
   ordinary updates inside the publication-age gate remain deferred. TypeScript 7
   exceeds the current stable lint parser's supported peer range.
