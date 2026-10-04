@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { ListLookupInput } from '../../schemas/lookup.js';
 import { PaginationOutput } from '../../schemas/output.js';
@@ -21,11 +21,11 @@ export function registerListDepartments(server: McpServer, ctx: ToolContext): vo
       description:
         'List SWSD departments (organizational divisions). Returns id, name, description. ' +
         'Use this to validate department_name before incident write tools.',
-      inputSchema: ListLookupInput.shape,
+      inputSchema: ListLookupInput,
       outputSchema: z.object({
         departments: z.array(DepartmentSummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

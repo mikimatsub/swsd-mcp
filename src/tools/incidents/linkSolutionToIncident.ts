@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { LinkSolutionToIncidentInput } from '../../schemas/incident.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -50,7 +50,7 @@ export function registerLinkSolutionToIncident(
         'the read shape `solutions`). Idempotent — if the solution is already linked, ' +
         'returns success without modifying the record. WRITE — does not retry on ' +
         'transient failure.',
-      inputSchema: LinkSolutionToIncidentInput.shape,
+      inputSchema: LinkSolutionToIncidentInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async ({ incident_id, solution_id }) => {

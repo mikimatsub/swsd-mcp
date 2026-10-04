@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { ListProblemsInput } from '../../schemas/problem.js';
 import { PaginationWithScopeOutput } from '../../schemas/output.js';
@@ -50,7 +50,7 @@ export function registerListProblems(server: McpServer, ctx: ToolContext): void 
         'detail of any one row. Filters use SWSD repeated-key array semantics ' +
         '(multiple values within a filter are OR-ed). Use this when investigating ' +
         'recurring incidents or identifying root causes that span multiple tickets.',
-      inputSchema: ListProblemsInput.shape,
+      inputSchema: ListProblemsInput,
       outputSchema: z.object({
         problems: z.array(ProblemSummaryOutput),
         pagination: PaginationWithScopeOutput,
@@ -59,7 +59,7 @@ export function registerListProblems(server: McpServer, ctx: ToolContext): void 
           .describe(
             'Echo of the filters applied to this query — empty object if none. Use this to reason about whether the result count reflects your filters or the tenant total.',
           ),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

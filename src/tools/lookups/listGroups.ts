@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { ListLookupInput } from '../../schemas/lookup.js';
 import { PaginationOutput } from '../../schemas/output.js';
@@ -23,11 +23,11 @@ export function registerListGroups(server: McpServer, ctx: ToolContext): void {
       description:
         'List SWSD groups (assignment teams). Returns id, name, description, disabled, ' +
         'member_count. Useful for understanding team structure when triaging tickets.',
-      inputSchema: ListLookupInput.shape,
+      inputSchema: ListLookupInput,
       outputSchema: z.object({
         groups: z.array(GroupSummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

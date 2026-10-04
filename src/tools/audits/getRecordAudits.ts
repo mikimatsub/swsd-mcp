@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import {
   registerAppTool,
   registerAppResource,
@@ -53,11 +53,11 @@ export function registerGetRecordAudits(server: McpServer, ctx: ToolContext): vo
         "I last looked?\". Cheaper than swsd_get_incident with detail_level=long " +
         'when you only need the audit history. object_type accepts incidents, ' +
         'problems, changes, releases, solutions, hardwares, other_assets.',
-      inputSchema: GetRecordAuditsInput.shape,
+      inputSchema: GetRecordAuditsInput,
       outputSchema: z.object({
         audits: z.array(AuditSummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },

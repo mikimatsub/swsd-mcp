@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { UpdateIncidentStateInput } from '../../schemas/incident.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -21,7 +21,7 @@ export function registerUpdateIncidentState(server: McpServer, ctx: ToolContext)
         'names are tenant-specific; common ones: "New - Unassigned", "Assigned", "In Progress", ' +
         '"Awaiting Input", "Resolved", "Closed". Call swsd_get_incident first to see the current state. ' +
         'WRITE — does not retry on transient failure.',
-      inputSchema: UpdateIncidentStateInput.shape,
+      inputSchema: UpdateIncidentStateInput,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async ({ id, state }) => {

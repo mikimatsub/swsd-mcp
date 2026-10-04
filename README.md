@@ -15,6 +15,16 @@ The server holds **zero credentials at rest**. Tokens are forwarded per-request,
 
 ---
 
+## Upgrading to 3.0.0
+
+MCP SDK v2 preserves all 66 tools, five profiles, seven widgets and four legacy
+HTTP/STDIO protocol revisions. Unknown tool names now raise JSON-RPC `-32602`
+errors; SDK callers should catch those rejected calls. Known-tool validation
+errors still return `isError: true`, with updated error text. Strict schema
+validators and tool-list snapshots should accept the new JSON Schema 2020-12
+serialization. Node 24 requirements and launch configuration are unchanged.
+See [the changelog](./CHANGELOG.md#300---2026-10-04) for details.
+
 ## Quick start
 
 You need:

@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import {
   registerAppTool,
   registerAppResource,
@@ -26,10 +26,10 @@ export function registerGetIncident(server: McpServer, ctx: ToolContext): void {
         'as returned by SWSD (passthrough), including custom_fields_values when present. ' +
         'Use swsd_list_incidents first if you only have a name or filter — IDs are not guessable.' +
         ' Pass detail_level: "long" to include comments, attachments, audits, SLA data, and resolution in one call.',
-      inputSchema: GetIncidentInput.shape,
+      inputSchema: GetIncidentInput,
       outputSchema: z.object({
         incident: z.record(z.string(), z.unknown()),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },

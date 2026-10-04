@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { GetMeInput } from '../../schemas/me.js';
 import { structuredResult } from '../../mcp/output.js';
@@ -20,7 +20,7 @@ export function registerGetMe(server: McpServer, ctx: ToolContext): void {
         'assignee_email or requester_email filters on swsd_list_incidents (or use ' +
         'swsd_list_my_incidents which does this in one call). Without this step, ' +
         '"my X" queries cannot be answered correctly.',
-      inputSchema: GetMeInput.shape,
+      inputSchema: GetMeInput,
       outputSchema: z.object({
         user: z.object({
           id: z.number().int(),
@@ -41,7 +41,7 @@ export function registerGetMe(server: McpServer, ctx: ToolContext): void {
         jwt_claims: z.record(z.string(), z.unknown()).describe(
           'All claims found in the JWT payload. SWSD typically includes user_id (modern; observed in 2026 production tokens) or user_ic (legacy; cited in older API docs samples), plus generated_at. ESM tenants may include service_provider_id or similar.',
         ),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async () => {

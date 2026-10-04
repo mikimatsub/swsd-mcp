@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { CreateSolutionInput } from '../../schemas/solution.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -21,7 +21,7 @@ export function registerCreateSolution(server: McpServer, ctx: ToolContext): voi
         'Returns the created solution\'s ID for follow-up calls. ' +
         'WRITE — does not retry on transient failure; verify with swsd_get_solution before retrying.' +
         ' To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Solutions require `name` keying (custom_field_id alone is rejected with HTTP 400). Validated for Text, Dropdown, Number, Checkbox, and Date types.',
-      inputSchema: CreateSolutionInput.shape,
+      inputSchema: CreateSolutionInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async (input) => {

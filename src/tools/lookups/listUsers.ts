@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { ListUsersInput } from '../../schemas/lookup.js';
 import { PaginationOutput } from '../../schemas/output.js';
@@ -28,11 +28,11 @@ export function registerListUsers(server: McpServer, ctx: ToolContext): void {
         'List SWSD users. Returns id, name, email, disabled, available_for_assignment, role, ' +
         'site, department, title. Set `available_for_assignment_only: true` to find valid ' +
         'assignees for swsd_assign_incident. Set `email` to look up one user exactly.',
-      inputSchema: ListUsersInput.shape,
+      inputSchema: ListUsersInput,
       outputSchema: z.object({
         users: z.array(UserSummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

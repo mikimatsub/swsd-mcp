@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/server';
 import { registerListCatalogItems } from '../../../src/tools/catalog/listCatalogItems.js';
 import type { ToolContext } from '../../../src/config/toolRegistry.js';
 import type { SwsdClient, SwsdGetResult } from '../../../src/swsd/client.js';

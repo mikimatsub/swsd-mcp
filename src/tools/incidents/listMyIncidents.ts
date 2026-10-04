@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
 import { z } from 'zod';
 import { ListMyIncidentsInput } from '../../schemas/listMyIncidents.js';
@@ -50,7 +50,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         'the entire tenant). The client-side filter is the only correct way to ' +
         'scope to a specific user. For broader queries use swsd_list_incidents ' +
         'with assigned_to=<group_id> (group filtering does work server-side).',
-      inputSchema: ListMyIncidentsInput.shape,
+      inputSchema: ListMyIncidentsInput,
       outputSchema: z.object({
         incidents: z.array(IncidentSummaryOutput),
         pagination: PaginationWithScopeOutput,
@@ -79,7 +79,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
               .describe('True if more candidate pages exist server-side. Increase per_page or paginate to scan more.'),
           })
           .describe('Honest accounting of the client-side filter: what was scanned vs matched.'),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },

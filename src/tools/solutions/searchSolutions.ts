@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { SearchSolutionsInput } from '../../schemas/solution.js';
 import { PaginationOutput } from '../../schemas/output.js';
@@ -35,11 +35,11 @@ export function registerSearchSolutions(server: McpServer, ctx: ToolContext): vo
         'NOTE: search is asynchronously indexed — articles created or updated in the ' +
         'last few minutes (sometimes hours) may not appear yet. To verify a just-created ' +
         'article, use swsd_get_solution with the ID returned by swsd_create_solution.',
-      inputSchema: SearchSolutionsInput.shape,
+      inputSchema: SearchSolutionsInput,
       outputSchema: z.object({
         solutions: z.array(SolutionSummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

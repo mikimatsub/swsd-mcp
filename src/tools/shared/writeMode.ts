@@ -1,4 +1,4 @@
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolResult } from '@modelcontextprotocol/server';
 import type { ToolContext } from '../../config/toolRegistry.js';
 import { toolError } from '../../mcp/errors.js';
 import { structuredResult } from '../../mcp/output.js';
