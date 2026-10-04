@@ -1,7 +1,7 @@
-param([switch]$CheckOnly, [switch]$ValidateUi)
+param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [ValidateRange(1,15)][int]$WindowTestSeconds = 2)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Common.ps1')
-if ($ValidateUi) {
+if ($ValidateUi -or $ValidateWindow) {
     # Exercise the real controls and save handler without touching a user's settings or credential.
     $script:SwsdHome = Join-Path ([IO.Path]::GetTempPath()) ('swsd-ui-test-' + [guid]::NewGuid().ToString('N'))
 }
@@ -20,6 +20,31 @@ if ($CheckOnly) {
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+namespace SwsdDesktop {
+  public static class Windows {
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr window);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
+    [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
+    public static bool IsBehindForeground(IntPtr window) {
+      IntPtr foreground = GetForegroundWindow();
+      if (foreground == IntPtr.Zero || foreground == window) return false;
+      IntPtr previous = GetWindow(window, 3);
+      for (int count = 0; previous != IntPtr.Zero && count < 1000; count++) {
+        if (previous == foreground) return true;
+        previous = GetWindow(previous, 3);
+      }
+      if (previous != IntPtr.Zero) throw new InvalidOperationException("Window stacking check did not converge.");
+      return false;
+    }
+  }
+}
+'@
 $form = New-Object Windows.Forms.Form
 $form.Text = 'SolarWinds Service Desk Setup'
 $form.ClientSize = New-Object Drawing.Size(650, 660)
@@ -27,6 +52,24 @@ $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
 $form.Font = New-Object Drawing.Font('Segoe UI', 10)
+$script:SwsdPresentationCount = 0
+$form.Add_Shown({
+    # Present once after the dialog has a visible handle, even when its console is hidden.
+    [void]$form.BeginInvoke([Action]{
+        $script:SwsdPresentationCount++
+        $form.WindowState = 'Normal'
+        try {
+            $form.TopMost = $true
+            [void][SwsdDesktop.Windows]::ShowWindow($form.Handle, 9)
+            $form.BringToFront()
+            $form.Activate()
+            [void][SwsdDesktop.Windows]::SetForegroundWindow($form.Handle)
+        } finally {
+            # Other applications can cover the settings window normally afterwards.
+            $form.TopMost = $false
+        }
+    })
+})
 
 function Add-Label($Text, $Y, $Height) {
     $label = New-Object Windows.Forms.Label
@@ -170,7 +213,43 @@ $saveProfile.Add_Click({ Invoke-SetupAction {
     $currentProfile.Text = 'Saved profile: ' + $selection.name
     $status.Text = 'Profile saved. Fully quit and reopen the desktop app, then start a new chat to load this tool set. Your saved token is unchanged.'
 } })
-if ($ValidateUi) {
+if ($ValidateWindow) {
+    # Visible lifecycle probe: no token entry, installation, settings or credential actions.
+    foreach ($control in @($install,$region,$tokenBox,$save,$test,$remove,$profile,$saveProfile)) { $control.Enabled = $false }
+    $script:SwsdWindowResult = $null
+    $probe = New-Object Windows.Forms.Timer
+    $probe.Interval = 200
+    $probe.Add_Tick({
+        $probe.Stop()
+        $script:SwsdWindowResult = @{
+            visible = $form.Visible
+            foreground = ([SwsdDesktop.Windows]::GetForegroundWindow() -eq $form.Handle)
+            foregroundAvailable = ([SwsdDesktop.Windows]::GetForegroundWindow() -ne [IntPtr]::Zero)
+            behindForeground = [SwsdDesktop.Windows]::IsBehindForeground($form.Handle)
+            alwaysOnTop = $form.TopMost
+            presentationCount = $script:SwsdPresentationCount
+            consoleVisible = [SwsdDesktop.Windows]::IsWindowVisible([SwsdDesktop.Windows]::GetConsoleWindow())
+            tokenEntryEnabled = $tokenBox.Enabled
+        }
+    })
+    $close = New-Object Windows.Forms.Timer
+    $close.Interval = $WindowTestSeconds * 1000
+    $close.Add_Tick({ $close.Stop(); $form.Close() })
+    $form.Add_Shown({ $probe.Start(); $close.Start() })
+    try {
+        [void]$form.ShowDialog()
+        $script:SwsdWindowResult | ConvertTo-Json
+        if (-not $script:SwsdWindowResult -or -not $script:SwsdWindowResult.visible -or
+            -not $script:SwsdWindowResult.foregroundAvailable -or $script:SwsdWindowResult.behindForeground -or
+            $script:SwsdWindowResult.alwaysOnTop -or
+            $script:SwsdPresentationCount -ne 1 -or $script:SwsdWindowResult.consoleVisible -or
+            $script:SwsdWindowResult.tokenEntryEnabled) { throw 'Setup window presentation check failed.' }
+    } finally {
+        $probe.Dispose(); $close.Dispose()
+        $tokenBox.Clear(); $form.Dispose()
+    }
+    exit 0
+} elseif ($ValidateUi) {
     try {
         if (-not $tokenBox.UseSystemPasswordChar) { throw 'Token field must be masked.' }
         if ($profile.Items.Count -ne 5) { throw 'Five profile choices are required.' }

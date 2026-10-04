@@ -32,3 +32,13 @@ storage, workplace plugin delivery, or successful clean coworker setup. The
 separate `check-credentials.ps1` test creates/replaces/deletes a temporary Windows
 credential and must only be run with explicit authorization for those changes.
 Use the pilot acceptance procedure in `plugins/swsd/ADMIN.md` before deployment.
+
+On an interactive Windows desktop, `Manage-Swsd.ps1 -ValidateWindow` opens a
+credential-disabled window, checks visibility and placement above the active
+application after the real Shown handler, verifies normal stacking and a hidden
+console, then closes. It reports keyboard foreground activation separately;
+Windows may deny that request from a background process.
+Launch it through the same hidden-console Start-Process arguments as setup and
+capture its JSON output in a temporary file. `-WindowTestSeconds 1..15` controls
+its lifetime for overlapping launch checks. This is a visible development probe,
+not part of unattended CI; it never enables token entry or saves credentials.

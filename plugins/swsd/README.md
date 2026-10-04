@@ -29,6 +29,8 @@ Profiles select tools, not account permissions. The selection belongs to the cur
 
 Open **SolarWinds Service Desk Setup** from the Windows Start menu, or ask **Manage my SolarWinds connection** in a local chat.
 
+Setup presents its settings window in front once when opened, while keeping the PowerShell console hidden. It does not remain always on top or repeatedly take focus. Windows still controls keyboard-focus permission for background launches. Each launch opens a separate settings window; close unused windows before changing a connection.
+
 - **Test saved connection** checks the saved credential without revealing it.
 - **Test and save token** validates a replacement before saving it.
 - **Remove saved token** deletes this computer's credential. Fully quit the desktop app afterwards so running servers stop using their in-memory copy. Revoke the token in SolarWinds separately if needed.
