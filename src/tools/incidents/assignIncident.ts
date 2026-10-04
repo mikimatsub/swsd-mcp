@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { AssignIncidentInput } from '../../schemas/incident.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -20,7 +20,7 @@ export function registerAssignIncident(server: McpServer, ctx: ToolContext): voi
         'narrows the agent decision surface to "who gets this ticket." Use swsd_list_users with ' +
         'available_for_assignment_only=true to find valid assignees first. ' +
         'WRITE — does not retry on transient failure.',
-      inputSchema: AssignIncidentInput.shape,
+      inputSchema: AssignIncidentInput,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async ({ id, assignee_email }) => {

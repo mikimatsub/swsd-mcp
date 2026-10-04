@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import {
   registerAppTool,
   registerAppResource,
@@ -58,11 +58,11 @@ export function registerDescribeCustomFields(
         'Validated field types: Text, Dropdown, Number, Checkbox, Date. ' +
         'Multi_picklist and User-type writes are not yet supported — set ' +
         'those via the SWSD UI.',
-      inputSchema: DescribeCustomFieldsInput.shape,
+      inputSchema: DescribeCustomFieldsInput,
       outputSchema: z.object({
         custom_fields: z.array(CustomFieldSummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },

@@ -73,6 +73,9 @@ jobs:
       - name: Test with coverage gates
         run: npm run test:coverage
 
+      - name: Build and verify legacy HTTP and STDIO clients
+        run: npm run build && node scripts/smoke-protocols.mjs
+
   docs:
     name: Build docs site
     runs-on: ubuntu-latest

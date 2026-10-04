@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import {
   registerAppTool,
   registerAppResource,
@@ -28,10 +28,10 @@ export function registerGetSolution(server: McpServer, ctx: ToolContext): void {
         'count, and attachment metadata. Use swsd_search_solutions first if you ' +
         'only have a topic — IDs are not guessable.' +
         ' Pass detail_level: "long" to include attachments, audits, and tags in one call.',
-      inputSchema: GetSolutionInput.shape,
+      inputSchema: GetSolutionInput,
       outputSchema: z.object({
         solution: z.record(z.string(), z.unknown()),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },

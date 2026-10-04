@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { ListLookupInput } from '../../schemas/lookup.js';
 import { PaginationOutput } from '../../schemas/output.js';
@@ -23,11 +23,11 @@ export function registerListSites(server: McpServer, ctx: ToolContext): void {
       description:
         'List SWSD sites (physical office/branch locations). Returns id, name, location code, ' +
         'description, time_zone. Use this to validate site_name before incident write tools.',
-      inputSchema: ListLookupInput.shape,
+      inputSchema: ListLookupInput,
       outputSchema: z.object({
         sites: z.array(SiteSummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { ListCatalogItemsInput } from '../../schemas/catalogItem.js';
 import { PaginationWithScopeOutput } from '../../schemas/output.js';
@@ -30,7 +30,7 @@ export function registerListCatalogItems(server: McpServer, ctx: ToolContext): v
         'Onboarding", "Software Request") with a defined set of input variables ' +
         '(form fields). Use swsd_get_catalog_item to inspect a single item\'s ' +
         'variables, then swsd_create_service_request to submit a request.',
-      inputSchema: ListCatalogItemsInput.shape,
+      inputSchema: ListCatalogItemsInput,
       outputSchema: z.object({
         items: z.array(CatalogItemSummaryOutput),
         pagination: PaginationWithScopeOutput,
@@ -39,7 +39,7 @@ export function registerListCatalogItems(server: McpServer, ctx: ToolContext): v
           .describe(
             'Echo of the filters applied to this query — empty object if none. Use this to reason about whether the result count reflects your filters or the tenant total.',
           ),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

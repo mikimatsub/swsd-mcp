@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import {
   registerAppTool,
   registerAppResource,
@@ -42,7 +42,7 @@ export function registerGetCatalogItem(
         "drop_down_menu / multi_select / date / user / null), and `options` " +
         '(newline-separated allowed values for dropdowns). The full top-level ' +
         'item is passed through for power users (description, category, etc.).',
-      inputSchema: GetCatalogItemInput.shape,
+      inputSchema: GetCatalogItemInput,
       outputSchema: z.object({
         item: z
           .record(z.string(), z.unknown())
@@ -52,7 +52,7 @@ export function registerGetCatalogItem(
               variables: z.array(CatalogItemVariableOutput).optional(),
             }),
           ),
-      }).shape,
+      }),
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,

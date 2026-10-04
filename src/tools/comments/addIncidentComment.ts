@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { AddIncidentCommentInput } from '../../schemas/comment.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -16,7 +16,7 @@ export function registerAddIncidentComment(server: McpServer, ctx: ToolContext):
         'Add a comment to a SWSD incident. Set `is_private: true` to make the comment ' +
         'internal-only (default false = visible to the requester). To edit a comment ' +
         'after posting, use `swsd_update_comment`. WRITE — does not retry on transient failure.',
-      inputSchema: AddIncidentCommentInput.shape,
+      inputSchema: AddIncidentCommentInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async ({ incident_id, body, is_private }) => {

@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import type { Env, ProfileName } from './env.js';
 import { PROFILE_TOOLS } from './profiles.js';
 import type { SwsdClient } from '../swsd/client.js';

@@ -1,4 +1,4 @@
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import type { Env } from '../config/env.js';
 import { createMcpServer } from '../mcp/server.js';
 import { createSwsdClient } from '../swsd/client.js';

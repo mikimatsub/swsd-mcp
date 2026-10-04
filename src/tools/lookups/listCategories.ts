@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { ListLookupInput } from '../../schemas/lookup.js';
 import { PaginationOutput } from '../../schemas/output.js';
@@ -26,11 +26,11 @@ export function registerListCategories(server: McpServer, ctx: ToolContext): voi
         'List SWSD incident/solution categories. Returns id, name, parent_id, immediate ' +
         'children, and default_assignee_id. Categories form a hierarchy (parent_id links). ' +
         'Use this to validate category_name before swsd_create_incident or swsd_update_incident.',
-      inputSchema: ListLookupInput.shape,
+      inputSchema: ListLookupInput,
       outputSchema: z.object({
         categories: z.array(CategorySummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

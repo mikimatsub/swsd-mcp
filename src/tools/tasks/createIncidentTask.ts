@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { CreateIncidentTaskInput } from '../../schemas/task.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -17,7 +17,7 @@ export function registerCreateIncidentTask(server: McpServer, ctx: ToolContext):
         'Optional: `description` (plain text or HTML), `due_at` (ISO 8601), ' +
         '`assignee_email`. The created task is returned for follow-up calls. ' +
         'WRITE — does not retry on transient failure.',
-      inputSchema: CreateIncidentTaskInput.shape,
+      inputSchema: CreateIncidentTaskInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async ({ incident_id, name, description, due_at, assignee_email }) => {

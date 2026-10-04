@@ -1,8 +1,8 @@
 // Run against an existing personal token. Output contains counts and labels only.
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Client } from '@modelcontextprotocol/client';
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { PROFILE_TOOLS } from '../dist/config/profiles.js';
 import { SERVER_VERSION } from '../dist/mcp/server.js';
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/server';
 import { registerCreateServiceRequest } from '../../../src/tools/catalog/createServiceRequest.js';
 import { CreateServiceRequestInput } from '../../../src/schemas/serviceRequest.js';
 import type { ToolContext } from '../../../src/config/toolRegistry.js';

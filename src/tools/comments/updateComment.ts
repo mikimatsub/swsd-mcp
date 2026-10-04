@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { UpdateCommentInput } from '../../schemas/comment.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -17,7 +17,7 @@ export function registerUpdateComment(server: McpServer, ctx: ToolContext): void
         '`comment_id`, and the new `body`. The is_private flag cannot be changed by ' +
         'this tool — to change visibility, delete and re-create. ' +
         'WRITE — does not retry on transient failure.',
-      inputSchema: UpdateCommentInput.shape,
+      inputSchema: UpdateCommentInput,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async ({ incident_id, comment_id, body }) => {

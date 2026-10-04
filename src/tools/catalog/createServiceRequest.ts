@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { CreateServiceRequestInput } from '../../schemas/serviceRequest.js';
 import { structuredResult } from '../../mcp/output.js';
@@ -46,8 +46,8 @@ export function registerCreateServiceRequest(
         '[{name, value}]` — call swsd_describe_custom_fields first to discover ' +
         'field names and (for Dropdowns) allowed values. Validated for Text, ' +
         'Dropdown, Number, Checkbox, and Date types.',
-      inputSchema: CreateServiceRequestInput.shape,
-      outputSchema: z.object({ incident: IncidentResponseOutput }).shape,
+      inputSchema: CreateServiceRequestInput,
+      outputSchema: z.object({ incident: IncidentResponseOutput }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,

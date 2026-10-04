@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import {
   ListTimeTracksInput,
@@ -43,13 +43,12 @@ export function registerListTimeTracks(server: McpServer, ctx: ToolContext): voi
       description:
         'List SWSD time entries for an incident, problem, change, or release. ' +
         'Use this before adding/updating time when you need existing work-log context.',
-      inputSchema: ListTimeTracksInput.shape,
+      inputSchema: ListTimeTracksInput,
       outputSchema: z
         .object({
           time_tracks: z.array(TimeTrackOutput),
           pagination: PaginationOutput,
-        })
-        .shape,
+        }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async ({ object_type, id, page, per_page }) => {
@@ -78,7 +77,7 @@ export function registerLogTime(server: McpServer, ctx: ToolContext): void {
       description:
         'Log time against a SWSD incident, problem, change, or release. Required: object_type, id, name, minutes_parsed. ' +
         'WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.',
-      inputSchema: LogTimeInput.shape,
+      inputSchema: LogTimeInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async ({ object_type, id, name, minutes_parsed }) => {
@@ -114,7 +113,7 @@ export function registerUpdateTimeTrack(server: McpServer, ctx: ToolContext): vo
       description:
         'Update an existing SWSD time entry on an incident, problem, change, or release. ' +
         'Pass name and/or minutes_parsed. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.',
-      inputSchema: UpdateTimeTrackInput.shape,
+      inputSchema: UpdateTimeTrackInput,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async ({ object_type, id, time_track_id, name, minutes_parsed }) => {

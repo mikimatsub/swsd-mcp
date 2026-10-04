@@ -25,6 +25,27 @@ prove that today's advisory databases are clean.
 
 ## Local verification
 
+The MCP SDK v2 migration uses its separate `client`, `core`, and `server`
+packages at 2.2.0, the Node HTTP adapter at 2.1.0, and MCP Apps at 2.0.3.
+These packages are compatible peers and passed the three-day publication gate.
+SDK 2.3.0 and the Node adapter 2.1.1 were published October 2; reconsider them
+after that gate with fresh metadata and final combined tests. Keep the SDK
+client/core/server versions aligned because they share the same core schema graph.
+
+Tool input and output registrations use complete Zod objects, preserving runtime
+refinements. `node scripts/smoke-protocols.mjs` runs after the server build and
+checks all four deployed legacy protocol versions over real HTTP and STDIO CLI
+processes. It uses a fixture credential and disabled writes; no SWSD API calls.
+HTTP continues to advertise the four legacy protocol versions in its existing
+header allowlist. Adopting the 2026-07-28 HTTP binding requires its own review.
+
+TypeScript 7.0.2 is incompatible with the current stable `typescript-eslint`
+8.71.0 peer requirement `>=4.8.4 <6.1.0`. Retain TypeScript 6.0.3 until the
+stable parser supports v7; do not force peers or suppress version checks.
+Node 24 remains the supported LTS production runtime. Node 26's scheduled LTS
+start is October 28, 2026; its matching types and runtime policy are a separate
+platform migration, including the Windows plugin's Node validation.
+
 ```sh
 npm ci --strict-peer-deps
 npm audit --audit-level=low

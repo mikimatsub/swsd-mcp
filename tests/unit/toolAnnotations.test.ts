@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/server';
 import { describe, expect, it } from 'vitest';
 import { registerTools } from '../../src/config/toolRegistry.js';
 import { makeCtx, makeFakeClient } from './tools/_helpers/mockClient.js';

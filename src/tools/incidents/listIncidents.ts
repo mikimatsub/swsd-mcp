@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import {
   registerAppTool,
   registerAppResource,
@@ -46,7 +46,7 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         '/incidents.json silently ignores them server-side (verified 2026-05-08 against the ' +
         'live API). Other filters (state, category, dates, sites, departments, assigned_to_group, ' +
         'query) DO narrow server-side and are passed through.',
-      inputSchema: ListIncidentsInput.shape,
+      inputSchema: ListIncidentsInput,
       outputSchema: z.object({
         incidents: z.array(IncidentSummaryOutput),
         pagination: PaginationWithScopeOutput,
@@ -75,7 +75,7 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
               .describe('True iff assignee_email and/or requester_email triggered post-fetch narrowing.'),
           })
           .describe('Honest accounting of what was scanned vs matched.'),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },

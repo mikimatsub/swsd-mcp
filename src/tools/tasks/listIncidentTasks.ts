@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { ListIncidentTasksInput } from '../../schemas/task.js';
 import { structuredResult } from '../../mcp/output.js';
@@ -37,12 +37,12 @@ export function registerListIncidentTasks(server: McpServer, ctx: ToolContext): 
         'due_at, created_at, updated_at. Use swsd_create_incident_task to add a sub-task ' +
         'and swsd_update_task_state to mark one complete. Sub-tasks also appear inline in ' +
         '`swsd_get_incident detail_level: "long"`.',
-      inputSchema: ListIncidentTasksInput.shape,
+      inputSchema: ListIncidentTasksInput,
       outputSchema: z.object({
         tasks: z.array(TaskOutput),
         count: z.number().int(),
         incident_id: z.number().int(),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async ({ incident_id }) => {
