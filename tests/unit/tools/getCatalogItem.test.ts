@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/server';
 import { registerGetCatalogItem } from '../../../src/tools/catalog/getCatalogItem.js';
 import { GetCatalogItemInput } from '../../../src/schemas/catalogItem.js';
 import type { ToolContext } from '../../../src/config/toolRegistry.js';

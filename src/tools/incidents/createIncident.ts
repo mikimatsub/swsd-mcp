@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { CreateIncidentInput } from '../../schemas/incident.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -20,7 +20,7 @@ export function registerCreateIncident(server: McpServer, ctx: ToolContext): voi
         'for follow-up calls (swsd_assign_incident, swsd_add_incident_comment, etc.). ' +
         'WRITE — does not retry on transient failure; the agent should verify with swsd_get_incident before retrying.' +
         ' To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.',
-      inputSchema: CreateIncidentInput.shape,
+      inputSchema: CreateIncidentInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async (input) => {

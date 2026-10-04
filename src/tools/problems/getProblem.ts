@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { GetProblemInput } from '../../schemas/problem.js';
 import { structuredResult } from '../../mcp/output.js';
@@ -18,10 +18,10 @@ export function registerGetProblem(server: McpServer, ctx: ToolContext): void {
         'first if you only have a name or filter — IDs are not guessable. Pass ' +
         'detail_level: "long" to include comments, audits, tasks, and time_tracks ' +
         'in one call.',
-      inputSchema: GetProblemInput.shape,
+      inputSchema: GetProblemInput,
       outputSchema: z.object({
         problem: z.record(z.string(), z.unknown()),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

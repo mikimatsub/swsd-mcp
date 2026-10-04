@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Migrate MCP Apps to 2.0.3 and replace the monolithic SDK with the compatible
+  SDK v2 client/core/server 2.2.0 packages and Node HTTP adapter 2.1.0.
+- Register complete Zod input/output schemas, preserving validation refinements
+  and updating the Node HTTP transport and SDK imports.
+- Add CI checks for legacy HTTP and STDIO negotiation, exact tools, safety
+  annotations, metadata calls, and all seven UI resources across four protocol
+  versions. The fixture checks require no real token or SolarWinds requests.
+- Retain the supported TypeScript 6/Node 24 toolchain and publication-age gates.
+
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),

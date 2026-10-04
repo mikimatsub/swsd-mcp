@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { SERVER_NAME, SERVER_VERSION } from '../../mcp/server.js';
 import { structuredResult } from '../../mcp/output.js';
@@ -26,7 +26,7 @@ export function registerGetServerInfo(server: McpServer, ctx: ToolContext): void
           signal: z.string(),
           client_behavior: z.string(),
         }),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true },
     },
     () => {

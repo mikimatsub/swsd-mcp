@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { structuredResult } from '../../mcp/output.js';
 import { mapSwsdError } from '../../swsd/errors.js';
@@ -16,7 +16,7 @@ export function registerHealthCheck(server: McpServer, ctx: ToolContext): void {
         ok: z.boolean(),
         base_url: z.string(),
         api_version: z.string(),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async () => {

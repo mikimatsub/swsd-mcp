@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/server';
 
 export const SERVER_NAME = 'swsd-mcp';
 export const SERVER_VERSION = '2.3.2';

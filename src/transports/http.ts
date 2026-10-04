@@ -6,14 +6,14 @@ import express, {
 } from 'express';
 import helmet from 'helmet';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { NodeStreamableHTTPServerTransport } from '@modelcontextprotocol/node';
 import type { Env } from '../config/env.js';
 import { createMcpServer, SERVER_NAME, SERVER_VERSION } from '../mcp/server.js';
 import { createSwsdClient } from '../swsd/client.js';
 import { registerTools } from '../config/toolRegistry.js';
 import { extractToken, AuthError } from './auth.js';
 
-// MCP protocol versions known to work with SDK 1.29.x.
+// Legacy MCP protocol versions supported by SDK v2.
 // When upgrading the SDK, re-check the spec versions it supports.
 const SUPPORTED_PROTOCOL_VERSIONS = new Set<string>([
   '2024-11-05',
@@ -129,7 +129,7 @@ export async function runHttp(env: Env): Promise<void> {
       token,
     });
 
-    const transport = new StreamableHTTPServerTransport({
+    const transport = new NodeStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless
     });
     res.on('close', () => {

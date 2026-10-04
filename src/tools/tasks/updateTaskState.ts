@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { UpdateTaskStateInput } from '../../schemas/task.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -18,7 +18,7 @@ export function registerUpdateTaskState(server: McpServer, ctx: ToolContext): vo
         'finer state control (e.g., "In Progress"), use the SWSD UI directly — this tool ' +
         'is the safer wrapper for the common done/not-done transition. ' +
         'WRITE — idempotent: re-applying the same value is a no-op on SWSD.',
-      inputSchema: UpdateTaskStateInput.shape,
+      inputSchema: UpdateTaskStateInput,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: true },
     },
     async ({ incident_id, task_id, completed }) => {

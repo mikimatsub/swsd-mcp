@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/server';
 import { registerListMyIncidents } from '../../../src/tools/incidents/listMyIncidents.js';
 import { registerListIncidents } from '../../../src/tools/incidents/listIncidents.js';
 import type { ToolContext } from '../../../src/config/toolRegistry.js';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/server';
 import { registerDescribeCustomFields } from '../../../src/tools/customFields/describeCustomFields.js';
 import type { ToolContext } from '../../../src/config/toolRegistry.js';
 

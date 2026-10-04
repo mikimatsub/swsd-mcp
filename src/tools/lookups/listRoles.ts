@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { ListLookupInput } from '../../schemas/lookup.js';
 import { PaginationOutput } from '../../schemas/output.js';
@@ -21,11 +21,11 @@ export function registerListRoles(server: McpServer, ctx: ToolContext): void {
       description:
         'List SWSD roles (permission profiles). Returns id, name, description. Useful for ' +
         'understanding what users can do in SWSD when triaging permission-related tickets.',
-      inputSchema: ListLookupInput.shape,
+      inputSchema: ListLookupInput,
       outputSchema: z.object({
         roles: z.array(RoleSummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {

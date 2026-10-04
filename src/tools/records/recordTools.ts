@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import {
   CreateChangeInput,
@@ -217,11 +217,11 @@ function registerListTool(server: McpServer, ctx: ToolContext, cfg: ReadConfig):
         `List SWSD ${cfg.labelPlural}. ${cfg.descriptionUse} Returns compact summaries` +
         (cfg.toolGet ? `; call ${cfg.toolGet} for full detail.` : '.') +
         ' Only documented pagination/layout parameters are exposed for this endpoint.',
-      inputSchema: (cfg.supportsLayout ? ListRecordsInput : ListAssetsInput).shape,
+      inputSchema: (cfg.supportsLayout ? ListRecordsInput : ListAssetsInput),
       outputSchema: z.object({
         [cfg.summaryKey]: z.array(GenericSummaryOutput),
         pagination: PaginationOutput,
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
@@ -261,10 +261,10 @@ function registerGetTool(server: McpServer, ctx: ToolContext, cfg: ReadConfig): 
         `Fetch one SWSD ${cfg.labelSingular} by internal id. ` +
         (cfg.supportsLayout ? 'Pass detail_level: "long" for SWSD layout=long extras. ' : '') +
         'Returns the upstream detail payload defensively parsed as a JSON object.',
-      inputSchema: (cfg.supportsLayout ? GetRecordInput : GetAssetInput).shape,
+      inputSchema: (cfg.supportsLayout ? GetRecordInput : GetAssetInput),
       outputSchema: z.object({
         [detailKey]: z.record(z.string(), z.unknown()),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
     },
     async (input) => {
@@ -302,7 +302,7 @@ function registerCreateTool(
     {
       description:
         `Create a SWSD ${cfg.labelSingular}. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.`,
-      inputSchema: cfg.input.shape,
+      inputSchema: cfg.input,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async (input: z.infer<typeof CreateChangeInput> | z.infer<typeof CreateReleaseInput>) => {
@@ -341,7 +341,7 @@ function registerUpdateTool(
     {
       description:
         `Update a SWSD ${cfg.labelSingular}. Pass only fields to change. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.`,
-      inputSchema: cfg.input.shape,
+      inputSchema: cfg.input,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: false },
     },
     async (input: z.infer<typeof UpdateChangeInput> | z.infer<typeof UpdateReleaseInput>) => {

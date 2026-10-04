@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/server';
 import { registerAddIncidentComment } from '../../../src/tools/comments/addIncidentComment.js';
 import {
   makeFakeClient,

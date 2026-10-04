@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { CreateProblemInput } from '../../schemas/problem.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -22,7 +22,7 @@ export function registerCreateProblem(server: McpServer, ctx: ToolContext): void
         'tracking can be tied to multiple incidents. ' +
         'WRITE — does not retry on transient failure; the agent should verify with ' +
         'swsd_get_problem before retrying.',
-      inputSchema: CreateProblemInput.shape,
+      inputSchema: CreateProblemInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
     async (input) => {

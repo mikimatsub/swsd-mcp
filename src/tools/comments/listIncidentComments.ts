@@ -1,4 +1,4 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import {
   registerAppTool,
   registerAppResource,
@@ -34,12 +34,12 @@ export function registerListIncidentComments(server: McpServer, ctx: ToolContext
       description:
         'List comments on a SWSD incident. Returns id, body, is_private, author_email, ' +
         'author_name, created_at. Use swsd_add_incident_comment to add a new comment.',
-      inputSchema: ListIncidentCommentsInput.shape,
+      inputSchema: ListIncidentCommentsInput,
       outputSchema: z.object({
         comments: z.array(CommentSummaryOutput),
         pagination: PaginationOutput,
         incident_id: z.number().int(),
-      }).shape,
+      }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
     },
