@@ -26,9 +26,9 @@ describe('UI build artifacts', () => {
       expect(existsSync(path)).toBe(true);
       const html = readFileSync(path, 'utf8');
       expect(html).toContain(sentinel);
-      // vite-plugin-singlefile inlines all <script>/<link> assets — no external src should remain.
-      expect(html).not.toMatch(/<script[^>]+src=["']\/[^"']+["']/);
-      expect(html).not.toMatch(/<link[^>]+href=["']\/[^"']+\.css["']/);
+      // Every bundle must work in an isolated MCP frame without external assets.
+      expect(html).not.toMatch(/<script\b[^>]*\bsrc\s*=/i);
+      expect(html).not.toMatch(/<link\b[^>]*\bhref=["'][^"']+\.css(?:\?[^"']*)?["']/i);
     });
 
     it(`${name}.html stays under the 500 KB single-tool budget`, () => {

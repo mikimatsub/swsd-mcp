@@ -1,27 +1,24 @@
 import { defineConfig, type Plugin } from 'vite';
-import { viteSingleFile } from 'vite-plugin-singlefile';
+import { inlineUiAssets } from './scripts/inline-ui-assets.mjs';
 import { resolve } from 'node:path';
 import { UI_TOOLS } from './scripts/ui-tools.mjs';
 
 /**
- * `vite-plugin-singlefile` enables `output.inlineDynamicImports: true` on
- * Vite ≤ 7. Rollup rejects that flag whenever the build has more than one
- * input, so each UI must be its own Vite invocation. `scripts/build-ui.mjs`
- * loops over `UI_TOOLS` and drives one build per entry, passing the entry
- * name via the `UI_ENTRY` env var which this config reads here.
+ * Each widget is built separately with code splitting disabled, then its
+ * JavaScript and CSS are inlined by our dependency-free build plugin.
+ * `scripts/build-ui.mjs` drives one build per UI_TOOLS entry and supplies
+ * the entry name through UI_ENTRY.
  *
  * If `UI_ENTRY` isn't set (e.g. someone runs `vite build` by hand) we fall
- * back to all entries — the build will fail loudly with the
- * `inlineDynamicImports` error, which is the correct signal: drive via
- * `npm run build:ui`, not raw vite.
+ * back to all entries. Shared external chunks fail the inliner's integrity
+ * check; use `npm run build:ui` for the supported build.
  */
 
 /**
  * Flattens Vite's default multi-page HTML output (`<input-relative-path>/index.html`)
  * to `<entry-name>.html` at the outDir root. This keeps `dist/ui/<name>.html`
- * predictable for `loadUiResource(name)` while letting Rollup name JS chunks
- * however it wants — the singlefile plugin's classifier picks the right HTML
- * asset because the entry-name chunk is no longer in the bundle.
+ * predictable for `loadUiResource(name)` after the inliner consumes the
+ * JavaScript and CSS assets.
  */
 function flattenHtmlOutput(): Plugin {
   return {
@@ -44,15 +41,21 @@ const activeEntry = process.env.UI_ENTRY;
 const entries = activeEntry ? [activeEntry] : UI_TOOLS;
 
 export default defineConfig({
-  plugins: [viteSingleFile(), flattenHtmlOutput()],
+  base: './',
+  plugins: [inlineUiAssets(), flattenHtmlOutput()],
   build: {
-    outDir: resolve(__dirname, 'dist', 'ui'),
+    assetsInlineLimit: () => true,
+    assetsDir: '',
+    cssCodeSplit: false,
+    modulePreload: false,
+    outDir: resolve(import.meta.dirname, 'dist', 'ui'),
     // emptyOutDir is overridden per-invocation by scripts/build-ui.mjs so the
     // first entry clears the dir and subsequent entries append.
     emptyOutDir: true,
     rollupOptions: {
+      output: { codeSplitting: false },
       input: Object.fromEntries(
-        entries.map((name) => [name, resolve(__dirname, 'src', 'ui', name, 'index.html')]),
+        entries.map((name) => [name, resolve(import.meta.dirname, 'src', 'ui', name, 'index.html')]),
       ),
     },
   },
