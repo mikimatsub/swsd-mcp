@@ -48,7 +48,7 @@ permissions:
 # Only one publish job at a time per release version. This also prevents a
 # manual recovery run from racing the original tag-triggered run.
 concurrency:
-  group: publish-${{ inputs.version || github.ref_name }}
+  group: publish-${{ inputs.version && format('v{0}', inputs.version) || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -57,14 +57,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      MCP_PUBLISHER_VERSION: v1.7.9
+      MCP_PUBLISHER_VERSION: v1.8.1
       RELEASE_REF: ${{ inputs.version || github.ref_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # Recovery must rebuild the immutable release tag, even after main advances.
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/v{0}', inputs.version) || github.ref }}
 
       - name: Setup Node 24 with npm registry
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38  # v6.5.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -72,6 +75,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=low
 
       - name: Lint
         run: npm run lint
@@ -136,8 +142,11 @@ jobs:
       - name: Publish to MCP Registry
         run: |
           VERSION="${RELEASE_REF#v}"
-          if VERSION="${VERSION}" node --input-type=module -e "const version=process.env.VERSION; const res=await fetch('https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.mikimatsub/swsd'); if (!res.ok) process.exit(1); const data=await res.json(); const exists=data.servers?.some(({server}) => server?.name === 'io.github.mikimatsub/swsd' && server?.version === version); process.exit(exists ? 0 : 1);"; then
+          if VERSION="${VERSION}" node --input-type=module -e "try { const version=process.env.VERSION; const res=await fetch('https://registry.modelcontextprotocol.io/v0.1/servers/io.github.mikimatsub%2Fswsd/versions/' + encodeURIComponent(version)); if (res.status === 404) process.exit(1); if (!res.ok) throw new Error('HTTP ' + res.status); const data=await res.json(); if (data.server?.name !== 'io.github.mikimatsub/swsd' || data.server?.version !== version) throw new Error('Unexpected release metadata'); } catch (error) { console.error('Registry lookup failed:', error.message); process.exit(2); }"; then
             echo "io.github.mikimatsub/swsd ${VERSION} is already published; skipping MCP Registry publish."
           else
+            status=$?
+            # Only a confirmed 404 authorizes publishing; outages fail closed.
+            if [ "$status" -ne 1 ]; then exit "$status"; fi
             ./mcp-publisher publish
           fi
