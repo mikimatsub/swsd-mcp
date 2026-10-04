@@ -1,0 +1,13 @@
+{
+  "name": "gaiconsultants-swsd",
+  "interface": { "displayName": "GAIConsultants SWSD" },
+  "plugins": [
+    {
+      "name": "swsd",
+      "pluginId": "Plugin_34a7385a24b48191aa5a13fae34120b4",
+      "source": { "source": "local", "path": "./plugins/swsd" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

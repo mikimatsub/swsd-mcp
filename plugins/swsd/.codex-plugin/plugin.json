@@ -1,0 +1,39 @@
+{
+  "name": "swsd",
+  "version": "2.3.2",
+  "description": "SolarWinds Service Desk for Windows desktop, with guided setup and private credential management.",
+  "author": {
+    "name": "mikimatsub",
+    "url": "https://github.com/mikimatsub"
+  },
+  "homepage": "https://mcp-swsd.pages.dev/",
+  "repository": "https://github.com/mikimatsub/swsd-mcp",
+  "license": "MIT",
+  "keywords": [
+    "solarwinds",
+    "service-desk",
+    "swsd",
+    "windows"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "SolarWinds Service Desk",
+    "shortDescription": "SWSD with guided Windows setup",
+    "longDescription": "Windows desktop only. After installing, start a new local Work or Codex chat and ask: Set up SolarWinds Service Desk on this computer. The private Windows setup window installs tools, saves your personal API token in Windows Credential Manager, and lets you choose Triage, Agent, Knowledge, Operations, or Full from a dropdown. Change profiles or manage your token later from SolarWinds Service Desk Setup in the Windows Start menu. Restart the desktop app and start a new chat after changing profiles. Requires Node.js 24.15 or newer within version 24. SolarWinds account permissions determine access.",
+    "developerName": "mikimatsub",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://mcp-swsd.pages.dev/",
+    "defaultPrompt": [
+      "Set up SolarWinds Service Desk on this computer.",
+      "Manage my SolarWinds connection.",
+      "Show the incidents assigned to me in SolarWinds Service Desk."
+    ],
+    "brandColor": "#F99D1C"
+  }
+}
