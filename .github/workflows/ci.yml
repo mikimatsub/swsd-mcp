@@ -35,6 +35,9 @@ jobs:
       - name: Audit pinned plugin runtime
         run: npm audit --audit-level=low --prefix plugins/swsd/runtime
 
+      - name: Verify isolated Windows install and repair
+        run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-install.ps1
+
       - name: Validate profile persistence without credential writes
         run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-profiles.ps1
 

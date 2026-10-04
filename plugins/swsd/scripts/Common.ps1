@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:SwsdPackageVersion = '2.3.2'
-$script:SwsdClientVersion = '2.3.2'
+$script:SwsdClientVersion = '2.3.3'
 $script:SwsdCredentialTarget = 'GAIConsultants/SWSD-MCP'
 $script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'GAIConsultants\SWSD-MCP'
 $script:SwsdProfiles = @(
@@ -158,17 +158,31 @@ function Test-SwsdToken {
 }
 
 function Install-SwsdTools {
-    param([Parameter(Mandatory)][string]$SourceRoot)
+    param(
+        [Parameter(Mandatory)][string]$SourceRoot,
+        [string]$ShortcutDirectory = ([Environment]::GetFolderPath('Programs'))
+    )
     $node = Get-SwsdNode
     $npmCli = Join-Path (Split-Path $node) 'node_modules\npm\bin\npm-cli.js'
     if (-not (Test-Path -LiteralPath $npmCli)) { throw 'npm is missing from this Node.js installation. Ask IT to repair Node.js.' }
+    # Reject a stale or mismatched recipe before changing the existing installation.
+    $recipe = Get-Content -LiteralPath (Join-Path $SourceRoot 'runtime\package.json') -Raw | ConvertFrom-Json
+    # Windows PowerShell 5.1's ConvertFrom-Json cannot read npm's empty root key.
+    Add-Type -AssemblyName System.Web.Extensions
+    $parser = New-Object Web.Script.Serialization.JavaScriptSerializer
+    $lock = $parser.DeserializeObject((Get-Content -LiteralPath (Join-Path $SourceRoot 'runtime\package-lock.json') -Raw))
+    if ($recipe.dependencies.'swsd-mcp' -ne $script:SwsdPackageVersion -or
+        $lock['packages']['']['dependencies']['swsd-mcp'] -ne $script:SwsdPackageVersion -or
+        $lock['packages']['node_modules/swsd-mcp']['version'] -ne $script:SwsdPackageVersion) {
+        throw 'The SWSD runtime recipe does not match this setup version. Ask IT to sync the reviewed plugin package.'
+    }
     $runtime = Join-Path $script:SwsdHome "runtime\$script:SwsdPackageVersion"
     New-Item -ItemType Directory -Path $runtime -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $SourceRoot 'runtime\package.json') -Destination $runtime -Force
     Copy-Item -LiteralPath (Join-Path $SourceRoot 'runtime\package-lock.json') -Destination $runtime -Force
     $start = New-Object Diagnostics.ProcessStartInfo
     $start.FileName = $node
-    $start.Arguments = '"' + $npmCli + '" ci --ignore-scripts --no-audit --no-fund'
+    $start.Arguments = '"' + $npmCli + '" ci --ignore-scripts --strict-peer-deps --no-audit --no-fund'
     $start.WorkingDirectory = $runtime
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $true
@@ -187,6 +201,8 @@ function Install-SwsdTools {
         if ($process.ExitCode -ne 0) { throw 'Tool installation failed. Ask IT to check access to registry.npmjs.org and npm proxy configuration.' }
     } finally { $process.Dispose() }
     if (-not (Test-Path -LiteralPath (Get-SwsdEntryPoint))) { throw 'The SWSD server installation is incomplete.' }
+    $installed = Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
+    if ($installed.version -ne $script:SwsdPackageVersion) { throw 'The installed SWSD server version does not match this setup version.' }
     $clientDir = Join-Path $script:SwsdHome "client\$script:SwsdClientVersion"
     New-Item -ItemType Directory -Path $clientDir -Force | Out-Null
     foreach ($name in @('Common.ps1', 'Start-Swsd.ps1', 'Manage-Swsd.ps1')) {
@@ -197,7 +213,7 @@ function Install-SwsdTools {
     New-Item -ItemType Directory -Path $recipeDir -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $SourceRoot 'runtime\package.json'), (Join-Path $SourceRoot 'runtime\package-lock.json') -Destination $recipeDir -Force
     $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Programs')) 'SolarWinds Service Desk Setup.lnk'))
+    $shortcut = $shell.CreateShortcut((Join-Path $ShortcutDirectory 'SolarWinds Service Desk Setup.lnk'))
     $shortcut.TargetPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $shortcut.Arguments = '-NoProfile -STA -WindowStyle Hidden -File "' + (Join-Path $clientDir 'Manage-Swsd.ps1') + '"'
     $shortcut.Description = 'Set up, test, replace, or remove your SWSD connection'

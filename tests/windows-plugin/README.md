@@ -7,18 +7,23 @@ entry, or Windows Credential Manager writes:
 ```powershell
 npm ci --ignore-scripts --strict-peer-deps --prefix plugins/swsd/runtime
 npm audit --audit-level=low --prefix plugins/swsd/runtime
+powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-install.ps1
 powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-profiles.ps1
 powershell.exe -NoProfile -NonInteractive -STA -File plugins/swsd/scripts/Manage-Swsd.ps1 -ValidateUi
 node tests/windows-plugin/check-stdio.mjs plugins/swsd/runtime/node_modules/swsd-mcp/dist
 ```
 
 The UI self-test never shows the form and saves only temporary profile settings.
-The private runtime recipe keeps SDK 1.31.0, matching the verified release build;
-SDK 1.32.0 was published October 2 and remains inside the three-day age gate.
-Revisit that pin during a later reviewed runtime update.
+The installation check uses a GUID-named temporary runtime and shortcut folder.
+It tests installation, the retained repair recipe, exact copied files, settings
+preservation, and rejection of a stale recipe before any installation changes.
+Its credential methods throw, and it never touches the real Start menu or desktop
+installation. The private runtime recipe keeps server 2.3.2 and SDK 1.31.0,
+matching the verified pre-migration build. Revisit the runtime pin during a
+separate review of server 3.0.0's SDK v2 and protocol changes.
 The STDIO check uses an in-process credential reader fixture whose write/delete
 methods throw. It launches the real PowerShell launcher for each profile, checks
-the exact tool list, and verifies the fixture token stays out of protocol output.
+the server version and exact tool list, and verifies the fixture token stays out of protocol output.
 The optional argument is the absolute or repository-relative server `dist`
 directory; without it, the check uses the recipe's version in the per-user runtime.
 

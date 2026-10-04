@@ -77,6 +77,7 @@ namespace SwsdDesktop {
   };
   const initialized = await request(1, 'initialize', {protocolVersion:'2025-03-26', capabilities:{}, clientInfo:{name:'swsd-plugin-check',version:'1.0'}});
   assert.ok(initialized.result?.serverInfo);
+  assert.equal(initialized.result.serverInfo.version, runtimeVersion);
   server.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
   const listing = await request(2, 'tools/list', {});
   assert.ok(listing.result.tools.some(t => t.name === 'swsd_health_check'));
