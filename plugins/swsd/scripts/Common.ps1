@@ -2,8 +2,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:SwsdPackageVersion = '2.3.2'
 $script:SwsdClientVersion = '2.3.3'
-$script:SwsdCredentialTarget = 'GAIConsultants/SWSD-MCP'
-$script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'GAIConsultants\SWSD-MCP'
+$script:SwsdCredentialTarget = 'swsd-mcp/api-token'
+$script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'swsd-mcp'
 $script:SwsdProfiles = @(
     @{ id = 'triage'; name = 'Triage'; description = 'Review incidents and catalog items, view tasks and problems, and add incident comments.' },
     @{ id = 'agent'; name = 'Agent'; description = 'Everyday ticket handling, tasks, problems, time entries, attachments, and knowledge searches.' },

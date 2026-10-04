@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $root = Resolve-Path (Join-Path $PSScriptRoot '../../plugins/swsd')
 . (Join-Path $root 'scripts/Common.ps1')
-$target = 'GAIConsultants/SWSD-MCP-test-' + [guid]::NewGuid().ToString('N')
+$target = 'swsd-mcp/test/' + [guid]::NewGuid().ToString('N')
 try {
     if ($null -ne [SwsdDesktop.Credentials]::Read($target)) { throw 'Test target must start empty.' }
     [SwsdDesktop.Credentials]::Save($target, 'test-only-not-a-real-token')

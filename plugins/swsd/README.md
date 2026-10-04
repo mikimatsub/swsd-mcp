@@ -34,7 +34,7 @@ Open **SolarWinds Service Desk Setup** from the Windows Start menu, or ask **Man
 - **Remove saved token** deletes this computer's credential. Fully quit the desktop app afterwards so running servers stop using their in-memory copy. Revoke the token in SolarWinds separately if needed.
 - **Install / repair tools** reinstalls the pinned server and refreshes the launcher.
 
-The token is stored as a generic Windows Credential Manager credential named `GAIConsultants/SWSD-MCP`. It belongs to the current Windows user on this computer. Other processes running as the same user can access it; it is not a boundary against software already running under that account. It is not written to the plugin, repository, settings file, or persistent environment variables. The server receives it only in its process environment at launch.
+The token is stored as a generic Windows Credential Manager credential named `swsd-mcp/api-token`. It belongs to the current Windows user on this computer. Other processes running as the same user can access it; it is not a boundary against software already running under that account. It is not written to the plugin, repository, settings file, or persistent environment variables. The server receives it only in its process environment at launch.
 
 This version does not use any old `SWSD_TOKEN` environment variable. If you previously configured that separately, review and remove the obsolete value through your existing setup process after the new connection works.
 
@@ -48,7 +48,7 @@ This version does not use any old `SWSD_TOKEN` environment variable. If you prev
 - Server release is pinned to `swsd-mcp@2.3.2`, with locked dependency versions. Plugin/client package version is `2.3.3`; these versions are independent. This pilot has not yet adopted the server 3.0.0 protocol changes.
 - The default is `agent`. Available profiles are `triage`, `agent`, `knowledge`, `operations`, and `full`. Write tools remain subject to the authenticated account's permissions and the host's tool approvals.
 - This is a desktop-only local integration. Uploading it does not create a hosted app, OAuth sign-in button, automatic install-time wizard, or web/mobile connection.
-- Setup data and runtime live under `%LOCALAPPDATA%\GAIConsultants\SWSD-MCP`. Uninstalling the plugin does not automatically erase credentials or these files: remove the saved token first, then quit the app.
+- Setup data and runtime live under `%LOCALAPPDATA%\swsd-mcp`. Uninstalling the plugin does not automatically erase credentials or these files: remove the saved token first, then quit the app.
 
 ## Sources
 

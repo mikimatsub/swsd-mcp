@@ -1,18 +1,16 @@
-# Organization rollout and updates
+# Windows plugin deployment and updates
 
-## What the previous archive lacked
-
-Version 2.2.0 declared `npx -y swsd-mcp` and forwarded `SWSD_TOKEN` from the desktop environment. That is an environment dependency, not a request for the application to show a credential form. A README inside a ZIP does not create an in-app setup flow. The bundle had no setup skill or registered app dependency.
+## Package capabilities
 
 Version 2.3.3 adds a setup skill, visible setup copy and starter prompts, a Windows settings window, a Start menu shortcut, a five-profile dropdown, and a Credential Manager-backed launcher. It keeps the native compatibility manifest supported by OpenAI. No hosted service is required.
 
-The plugin/client package and server runtime have separate versions. This pilot deliberately keeps the reviewed `swsd-mcp@2.3.2` runtime and SDK 1.31.0 lock. The main project has released server 3.0.0 with an SDK v2 migration and changed protocol error behavior; adopting that runtime needs its own Windows launcher and live-access verification. Plugin 2.3.3 distinguishes the corrected recipe from an older workspace cache labeled 2.3.2 that still bundled server 2.3.1. Installation now rejects a recipe that disagrees with the setup script and checks the installed server version.
+The plugin/client package and server runtime have separate versions. This pilot deliberately keeps the reviewed `swsd-mcp@2.3.2` runtime and SDK 1.31.0 lock. The main project has released server 3.0.0 with an SDK v2 migration and changed protocol error behavior; adopting that runtime needs its own Windows launcher and live-access verification. Installation rejects a recipe that disagrees with the setup script and checks the installed server version.
 
-## Manage the existing workspace plugin through GitHub
+## Optional workspace deployment through GitHub
 
-OpenAI supports adopting an uploaded plugin through the `pluginId` field in a GitHub marketplace. Use the existing ID, not a second plugin with the same name. The adoption preserves sharing and workspace policy; afterwards, updates come from GitHub and archive upload no longer replaces that plugin.
+The public marketplace at `.agents/plugins/marketplace.json` points to `plugins/swsd` and can be imported into a workspace. A deploying administrator manages that workspace's availability and authentication policy; plugin installation does not grant SolarWinds account access.
 
-The marketplace at `.agents/plugins/marketplace.json` points to `plugins/swsd`. Its entry includes the existing GAIConsultants plugin ID.
+For an existing uploaded plugin, follow OpenAI's documented `pluginId` adoption process using the workspace's own deployment configuration. Confirm identity before import to avoid a duplicate. Adoption preserves sharing and workspace policy; afterwards, updates come from GitHub and archive upload no longer replaces that plugin.
 
 In **Admin > Plugins > Add > Import marketplace** use:
 
@@ -20,7 +18,7 @@ In **Admin > Plugins > Add > Import marketplace** use:
 - Path: leave empty.
 - Branch: the reviewed branch containing these files. Start with `codex/windows-plugin-setup`; use a release branch or main after your review/merge process.
 
-Authorize the importing administrator's GitHub connection if required. Review the result and confirm that the existing plugin is now version 2.3.3 with a setup skill. Keep its existing **Available** policy during the pilot. The import does not automatically grant SolarWinds access.
+Use the administrator's supported GitHub connection flow if required. Review the result and confirm plugin version 2.3.3 and the setup skill. Start with an **Available** policy during the pilot.
 
 For later updates, commit reviewed plugin changes to the selected branch and use **Admin > Plugins > Marketplaces > Sync now**, or wait for the daily sync. Review import errors; an invalid update should leave the last working version in place. Do not delete the marketplace to repair access; OpenAI documents that deleting a marketplace deletes its imported plugins.
 
@@ -32,7 +30,7 @@ The plugin cannot silently show an install-time wizard through an undocumented m
 
 ## Pilot acceptance
 
-On a coworker's Windows account without a personal SWSD plugin or preexisting token:
+On a clean Windows user account without another SWSD plugin or preexisting token:
 
 1. Install the workspace plugin and open a new local chat.
 2. Confirm the setup skill is present even before a token exists.
@@ -44,9 +42,9 @@ On a coworker's Windows account without a personal SWSD plugin or preexisting to
 8. Test replacement and local removal; after quitting/reopening, removal must prevent SWSD access.
 9. Confirm organization enable/disable policy works for the pilot user.
 
-Package validation and a server handshake alone do not prove workspace delivery or a coworker's authorization. Record those results separately before wider rollout.
+Package validation and a server handshake alone do not prove desktop delivery or user authorization. Record those results separately before wider rollout.
 
-GM1 can verify per-user install, repair, the private setup window, and live launcher access. It cannot substitute for the clean coworker account or organization enable/disable checks. After a marketplace sync, confirm the downloaded package version and its runtime recipe, fully restart the desktop app, and verify health in a new local chat. Do not manually modify the app's plugin cache to make an old package appear current.
+Verify per-user installation, repair, private setup and live launcher access separately from clean-user and optional workspace policy tests. After a marketplace sync, confirm the downloaded package version and runtime recipe, fully restart the desktop app, and verify health in a new local chat. Do not manually modify the app's plugin cache to make an old package appear current.
 
 ## Documentation reviewed
 

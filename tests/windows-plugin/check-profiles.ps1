@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 $root = Resolve-Path (Join-Path $PSScriptRoot '../../plugins/swsd')
 . (Join-Path $root 'scripts/Common.ps1')
 $script:SwsdHome = Join-Path ([IO.Path]::GetTempPath()) ('swsd-profile-test-' + [guid]::NewGuid().ToString('N'))
-$target = 'GAIConsultants/SWSD-MCP-test-' + [guid]::NewGuid().ToString('N')
+$target = 'swsd-mcp/test/' + [guid]::NewGuid().ToString('N')
 $script:SwsdCredentialTarget = $target
 try {
     if ((Get-SwsdSettings).profile -ne 'agent') { throw 'Missing settings must default to Agent.' }
