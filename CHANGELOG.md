@@ -1,22 +1,53 @@
 # Changelog
 
-## Unreleased
-
-- Migrate MCP Apps to 2.0.3 and replace the monolithic SDK with the compatible
-  SDK v2 client/core/server 2.2.0 packages and Node HTTP adapter 2.1.0.
-- Register complete Zod input/output schemas, preserving validation refinements
-  and updating the Node HTTP transport and SDK imports.
-- Add CI checks for legacy HTTP and STDIO negotiation, exact tools, safety
-  annotations, metadata calls, and all seven UI resources across four protocol
-  versions. The fixture checks require no real token or SolarWinds requests.
-- Retain the supported TypeScript 6/Node 24 toolchain and publication-age gates.
-
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [3.0.0] - 2026-10-04
+
+### Breaking changes and upgrade guidance
+
+- Unknown tool names now return a JSON-RPC `-32602` error instead of a successful
+  JSON-RPC envelope containing `CallToolResult.isError: true`. SDK clients must
+  catch the rejected call for an unknown name; list tools before choosing a name.
+- Advertised schemas use SDK v2's JSON Schema 2020-12 serialization, including
+  changed `additionalProperties` representation and omitted legacy task metadata.
+  Update golden tool-list snapshots and strict schema validators. Tool names,
+  input property names/required fields, annotations, UI metadata and resources
+  are preserved. Validation errors for known tools remain `isError: true` results,
+  with SDK v2 wording and without the old `MCP error <code>:` text prefix.
+- The major version makes these observable wire/error changes explicit and keeps
+  consumers pinned to the 2.x SemVer range on that line. The four existing legacy
+  protocol revisions work over both transports. Node requirements, profile
+  selection, environment variables and launch commands are unchanged.
+
+### Changed
+
+- Migrated MCP Apps to 2.0.3 and replaced the monolithic SDK with compatible
+  client/core/server 2.2.0 packages and Node HTTP adapter 2.1.0. All new exact
+  package versions passed the inherited three-day publication gate.
+- Registered complete Zod input/output schemas, preserving runtime refinements,
+  and updated the Node HTTP transport and public SDK imports.
+- Added real CLI HTTP/STDIO checks for all four deployed protocol versions,
+  exact tools, safety annotations, metadata calls, seven widget resources, and
+  unknown/invalid-known tool error behavior. CI runs them after the server build.
+- Retained TypeScript 6 and the Node 24 LTS production policy. SDK 2.3.0 and other
+  ordinary updates inside the publication-age gate remain deferred. TypeScript 7
+  exceeds the current stable lint parser's supported peer range.
+- Regenerated all five Copilot connector versions to match 3.0.0. The 2026-07-28
+  HTTP binding remains a separate protocol migration.
+
+### Deferred work
+
+- #140's regenerated dependency head remains open until its three-day gate has
+  elapsed and fresh combined checks pass. #141's repaired Windows plugin remains
+  draft pending native credential testing and workspace/clean coworker rollout.
+- The external local maintenance job remains paused pending approval for a
+  supported management session and a broader recurring prompt.
 
 ## [2.3.2] - 2026-10-04
 
@@ -666,7 +697,9 @@ Detailed history available via `git log`.
 * **2026-05-03**: `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.2...v3.0.0
+[2.3.2]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.0...v2.2.1

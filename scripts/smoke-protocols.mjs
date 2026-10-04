@@ -71,6 +71,10 @@ async function check(exchange, version) {
   const resources = await exchange(request(4, 'resources/list'));
   assert.equal(resources.result.resources.length, 7);
   assert.ok(resources.result.resources.every(resource => resource.mimeType === 'text/html;profile=mcp-app'));
+  const unknown = await exchange(request(5, 'tools/call', { name: '__swsd_unknown_tool__', arguments: {} }));
+  assert.equal(unknown.error?.code, -32602, 'Unknown tools must use the SDK v2 protocol error');
+  const invalid = await exchange(request(6, 'tools/call', { name: 'swsd_get_incident', arguments: { id: -1 } }));
+  assert.equal(invalid.result?.isError, true, 'Known-tool argument errors must remain tool results');
 }
 
 for (const version of versions) {
