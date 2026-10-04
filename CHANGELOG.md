@@ -49,11 +49,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   authorizes publication.
 - Added lockfile version consistency and relative external widget-asset
   checks, plus a read-only release smoke script and maintenance runbook.
+- Removed unused nested local-link records from the docs lockfile after
+  verifying the root adapter reference with strict clean installations.
 - Regenerated all five Copilot connector versions to match 2.3.2.
 
 ### Maintenance scope
 
 - Newer releases still inside the three-day soak window remain deferred.
+  Renovate regenerated #140 after the original lock update was incorporated;
+  its newer head remains open pending release age and a fresh review.
   MCP Apps 2 requires the SDK 2 migration, TypeScript 7 exceeds the current
   lint toolchain's peer range, and Node 26 is outside the supported Node 24
   runtime line. These require separate compatibility work.
