@@ -1,9 +1,7 @@
 // Drives a separate Vite build per UI entry.
 //
-// Why not a single multi-input Vite build? `vite-plugin-singlefile` enables
-// `output.inlineDynamicImports: true` (on Vite ≤ 7) so every chunk lands in
-// the same HTML. Rollup forbids that flag with multiple inputs, so each tool
-// has to be its own build invocation. The entry list lives in
+// Code splitting is disabled so each widget can be inlined into its own HTML.
+// A separate invocation per entry avoids shared external chunks. The list lives in
 // `scripts/ui-tools.mjs` (single source of truth shared with `vite.config.ts`)
 // and we loop. Each invocation reads the same `vite.config.ts`; we feed the
 // active entry via the UI_ENTRY env var which the config picks up.

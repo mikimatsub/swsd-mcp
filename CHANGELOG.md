@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-10-04
+
+### Security
+
+- Removed `vite-plugin-singlefile` and its unpatched `braces` dependency
+  ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)).
+  A dependency-free Vite plugin now inlines each widget's JavaScript and CSS,
+  escapes HTML terminators, and rejects missing or leftover external assets.
+- Replaced the docs-only, unpatched `http-cache-semantics` dependency
+  ([GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp))
+  with a private adapter that grants no cache lifetime. Remote docs images
+  expire immediately and must be revalidated. Regression checks exercise
+  Astro's real image-loading functions before every docs build.
+- Added fresh npm vulnerability audit gates for the server, documentation,
+  and release builds. No vulnerability findings are suppressed.
+
+### Changed
+
+- Consolidated the compatible Docker, Node type, `tsx`, `globals`, and lock
+  updates proposed in #136–#140 into this verified release update.
+- Updated MCP SDK 1.31.0, MCP Apps 1.7.5, DOMPurify 3.4.16,
+  `express-rate-limit` 8.7.0, Helmet 8.3.0, Zod 4.6.5, and the
+  `@hono/node-server` 2.1.3 override.
+- Updated Vitest and coverage to 5.0.3, jsdom to 30.1.1, Vite to 8.3.1,
+  ESLint to 10.11.0, and the remaining compatible development dependencies.
+- Updated the docs toolchain to Astro 7.3.5, Starlight 0.42.4,
+  `astro-d2` 0.14.0, and the matching markdown peer 7.3.1.
+- Refreshed both dependency locks with the inherited three-day release-age
+  policy and pinned the official Node 24 Alpine image and Dockerfile 1.27.1
+  frontend to reviewed digests.
+- Updated immutable GitHub Actions pins for Node setup, Docker builds and
+  publishing, CodeQL, and OSV; updated the MCP publisher to 1.8.1.
+
+### Fixed
+
+- Manual release recovery now checks out the existing release tag instead
+  of current main and shares the tag-triggered run's concurrency key.
+- MCP Registry recovery checks the canonical exact-version endpoint and
+  fails closed on outages or unexpected metadata; only a confirmed 404
+  authorizes publication.
+- Added lockfile version consistency and relative external widget-asset
+  checks, plus a read-only release smoke script and maintenance runbook.
+- Regenerated all five Copilot connector versions to match 2.3.2.
+
+### Maintenance scope
+
+- Newer releases still inside the three-day soak window remain deferred.
+  MCP Apps 2 requires the SDK 2 migration, TypeScript 7 exceeds the current
+  lint toolchain's peer range, and Node 26 is outside the supported Node 24
+  runtime line. These require separate compatibility work.
+- Draft #141 remains separate: workspace administrator import and a clean
+  coworker installation have not been verified. This release does not enable
+  or deploy that plugin.
+
 ## [2.3.1] - 2026-08-20
 
 ### Changed
