@@ -16,6 +16,37 @@ permissions:
   contents: read
 
 jobs:
+  windows-plugin:
+    name: Windows plugin checks
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Setup Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Install pinned plugin runtime without lifecycle scripts
+        run: npm ci --ignore-scripts --strict-peer-deps --prefix plugins/swsd/runtime
+
+      - name: Audit pinned plugin runtime
+        run: npm audit --audit-level=low --prefix plugins/swsd/runtime
+
+      - name: Verify isolated Windows install and repair
+        run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-install.ps1
+
+      - name: Validate profile persistence without credential writes
+        run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-profiles.ps1
+
+      - name: Validate setup controls without opening a window
+        run: powershell.exe -NoProfile -NonInteractive -STA -File plugins/swsd/scripts/Manage-Swsd.ps1 -ValidateUi
+
+      - name: Check real launcher and all five STDIO profiles
+        run: node tests/windows-plugin/check-stdio.mjs plugins/swsd/runtime/node_modules/swsd-mcp/dist
+
   test:
     name: Lint, typecheck, test
     runs-on: ubuntu-latest
