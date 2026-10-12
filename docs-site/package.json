@@ -21,6 +21,7 @@
   },
   "overrides": {
     "esbuild": "0.28.2",
-    "http-cache-semantics": "$http-cache-semantics"
+    "http-cache-semantics": "$http-cache-semantics",
+    "postcss-selector-parser": "7.1.6"
   }
 }
