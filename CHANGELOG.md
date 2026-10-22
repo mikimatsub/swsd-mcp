@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-10-19
+
+### Changed
+
+- Updated Zod to 4.6.7 and the Node HTTP adapter override to 2.1.5 after
+  verifying their declared Node and Hono compatibility and completing the
+  inherited three-day publication-age gate.
+- Updated Vitest and its coverage provider to 5.0.5, jsdom to 30.1.3,
+  `typescript-eslint` to 8.71.2, the Node 24 type line to 24.19.2, and the
+  compatible documentation and transitive dependency graph.
+- Refreshed the pinned Node 24 Alpine image digest and OSV Scanner reusable
+  workflow to v2.7.0. Public tool names, schemas, error behavior,
+  configuration, transports, and the Node 24 runtime requirement are
+  unchanged from 3.0.1.
+- Regenerated all five Copilot connector versions to match 3.0.2. The release
+  passed strict peer installs, audits and signature checks, 711 tests and
+  coverage gates, server/widget/docs builds, legacy protocol checks, live
+  read-only SWSD checks, and container build and smoke tests.
+
+### Deferred work
+
+- Astro 7.4.1, Undici 8.12.3, and other releases published on October 19 remain
+  deferred until their three-day publication-age gates elapse and a fresh
+  combined head passes review.
+- TypeScript 7 remains blocked by `typescript-eslint`'s declared `<6.1` peer
+  range. Node 26 and its type line remain deferred until the upstream LTS
+  transition on October 28. Draft #141 remains pending native credential,
+  administrator import, and clean coworker installation verification.
+
+## [3.0.1] - 2026-10-12
+
+### Security
+
+- Overrode the documentation build's transitive `postcss-selector-parser` to
+  7.1.6, fixing CVE-2026-104844 / GHSA-rj75-hqrm-r3gf without suppressing the
+  affected dependency path or weakening the OSV gate.
+- Updated Express to 5.3.0, including upstream `qs` fixes for CVE-2026-2391,
+  CVE-2026-82417, and CVE-2026-82562. The release passed the ordinary three-day
+  publication-age gate; no security exception was used.
+
+### Changed
+
+- Aligned the MCP client, core, and server packages at 2.3.1 and the Node HTTP
+  adapter at 2.1.1. The existing stateless HTTP implementation already creates
+  a server and transport per request as required by the SDK 2.3 release notes.
+- Updated `@hono/node-server` to 2.1.4, the resolved `express-rate-limit` to
+  8.7.1, jsdom to 30.1.2, ESLint to 10.12.0, `typescript-eslint` to 8.71.1,
+  Vite to 8.3.4, and the compatible documentation toolchain.
+- Updated pinned Setup Node and CodeQL Actions to reviewed immutable commits,
+  and documented the current SDK, TypeScript, Node, and protocol constraints in
+  the maintenance runbook.
+- Regenerated all five Copilot connector versions to match 3.0.1. Public tool
+  names, schemas, environment variables, transports, and runtime requirements
+  are unchanged from 3.0.0.
+
+### Deferred work
+
+- Vitest 5.0.4, DOMPurify 3.4.17, Zod 4.6.6, and OSV Scanner Action 2.7.0
+  remain deferred until every changed version has passed the inherited
+  three-day publication-age gate and the regenerated head passes fresh review.
+- Draft #141 remains separate pending native credential, administrator import,
+  and clean coworker installation verification.
+
 ## [3.0.0] - 2026-10-04
 
 ### Breaking changes and upgrade guidance
@@ -699,7 +762,9 @@ Detailed history available via `git log`.
 * **2026-05-03**: `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.2...HEAD
+[3.0.2]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.1...v3.0.2
+[3.0.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.2...v3.0.0
 [2.3.2]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.0...v2.3.1

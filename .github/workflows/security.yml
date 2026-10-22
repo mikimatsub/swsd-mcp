@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@416ff0dea110f80f0f56f0046500dbf7420e4bb0  # codeql-bundle-v2.27.1
+        uses: github/codeql-action/init@d208ec71e39ae46397cbf6569bef8439b9aab974  # codeql-bundle-v2.27.2
         with:
           languages: javascript-typescript
           # Config file scopes analysis to src/ only and excludes scripts/, tests/,
@@ -70,7 +70,7 @@ jobs:
           config-file: ./.github/codeql/codeql-config.yml
 
       - name: Run CodeQL analysis
-        uses: github/codeql-action/analyze@416ff0dea110f80f0f56f0046500dbf7420e4bb0  # codeql-bundle-v2.27.1
+        uses: github/codeql-action/analyze@d208ec71e39ae46397cbf6569bef8439b9aab974  # codeql-bundle-v2.27.2
         with:
           category: "/language:javascript-typescript"
 
@@ -83,7 +83,7 @@ jobs:
     # documented IgnoredVulns entries are respected. Without `--config`,
     # auto-detection has been observed to silently miss the config file in
     # this reusable-workflow context.
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc  # v2.6.0
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36  # v2.7.0
     permissions:
       contents: read
       security-events: write  # required to upload SARIF

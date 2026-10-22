@@ -26,11 +26,11 @@ prove that today's advisory databases are clean.
 ## Local verification
 
 The MCP SDK v2 migration uses its separate `client`, `core`, and `server`
-packages at 2.2.0, the Node HTTP adapter at 2.1.0, and MCP Apps at 2.0.3.
+packages at 2.3.1, the Node HTTP adapter at 2.1.1, and MCP Apps at 2.0.3.
 These packages are compatible peers and passed the three-day publication gate.
-SDK 2.3.0 and the Node adapter 2.1.1 were published October 2; reconsider them
-after that gate with fresh metadata and final combined tests. Keep the SDK
-client/core/server versions aligned because they share the same core schema graph.
+Keep the SDK client/core/server versions aligned because they share the same
+core schema graph. SDK 2.3 requires one server and stateless transport per HTTP
+request; `src/transports/http.ts` already creates both inside the request handler.
 
 Tool input and output registrations use complete Zod objects, preserving runtime
 refinements. `node scripts/smoke-protocols.mjs` runs after the server build and
