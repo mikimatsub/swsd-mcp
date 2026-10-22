@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$script:SwsdPackageVersion = '2.3.2'
-$script:SwsdClientVersion = '2.3.3'
+$script:SwsdPackageVersion = '3.0.2'
+$script:SwsdClientVersion = '3.1.0'
 $script:SwsdCredentialTarget = 'swsd-mcp/api-token'
 $script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'swsd-mcp'
 $script:SwsdProfiles = @(

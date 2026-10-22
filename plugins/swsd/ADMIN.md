@@ -2,9 +2,9 @@
 
 ## Package capabilities
 
-Version 2.3.3 adds a setup skill, visible setup copy and starter prompts, a Windows settings window, a Start menu shortcut, a five-profile dropdown, and a Credential Manager-backed launcher. It keeps the native compatibility manifest supported by OpenAI. No hosted service is required.
+Version 3.1.0 adds a setup skill, visible setup copy and starter prompts, a Windows settings window, a Start menu shortcut, a five-profile dropdown, and a Credential Manager-backed launcher. It keeps the native compatibility manifest supported by OpenAI. No hosted service is required.
 
-The plugin/client package and server runtime have separate versions. This pilot deliberately keeps the reviewed `swsd-mcp@2.3.2` runtime and SDK 1.31.0 lock. The main project has released server 3.0.0 with an SDK v2 migration and changed protocol error behavior; adopting that runtime needs its own Windows launcher and live-access verification. Installation rejects a recipe that disagrees with the setup script and checks the installed server version.
+The plugin/client package and server runtime have separate versions. The runtime is pinned to `swsd-mcp@3.0.2` on the MCP SDK v2 packages (`@modelcontextprotocol/server`/`core`/`node` 2.x); the former SDK 1.31.0 override is removed. Server 3.x's documented wire changes (protocol error behavior) apply to the plugin; Windows launcher and credential-backed live access must be re-verified on a clean user before promotion. Installation rejects a recipe that disagrees with the setup script and checks the installed server version.
 
 ## Optional workspace deployment through GitHub
 
@@ -18,7 +18,7 @@ In **Admin > Plugins > Add > Import marketplace** use:
 - Path: leave empty.
 - Branch: the reviewed branch containing these files. Start with `codex/windows-plugin-setup`; use a release branch or main after your review/merge process.
 
-Use the administrator's supported GitHub connection flow if required. Review the result and confirm plugin version 2.3.3 and the setup skill. Start with an **Available** policy during the pilot.
+Use the administrator's supported GitHub connection flow if required. Review the result and confirm plugin version 3.1.0 and the setup skill. Start with an **Available** policy during the pilot.
 
 For later updates, commit reviewed plugin changes to the selected branch and use **Admin > Plugins > Marketplaces > Sync now**, or wait for the daily sync. Review import errors; an invalid update should leave the last working version in place. Do not delete the marketplace to repair access; OpenAI documents that deleting a marketplace deletes its imported plugins.
 
