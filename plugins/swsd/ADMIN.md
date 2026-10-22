@@ -53,3 +53,13 @@ Verify per-user installation, repair, private setup and live launcher access sep
 - [Supported package components](https://developers.openai.com/plugins/build/plugins)
 - [MCP environment variables and desktop configuration](https://learn.chatgpt.com/docs/extend/mcp)
 - [OAuth requirements for a future hosted integration](https://developers.openai.com/plugins/build/auth)
+
+## Node.js version
+
+The plugin requires Node `>=24.15.0 <25`, matching the server's `engines`
+field, because the setup script runs npm from the user's own Node install.
+Keep that range until the server's Node 26 migration (#73) ships. When the
+server package adopts Node 26, the plugin follows in the same release: update
+the setup script's Node check, the user-facing requirement text, and the
+Windows CI Node version, then re-run the clean-user gates on Node 26. Avoid
+widening the range to allow both 24 and 26 before the server declares it.

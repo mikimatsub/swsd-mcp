@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - Unreleased
+
+### Added
+
+- Windows desktop plugin (`plugins/swsd`, client 3.1.0): private settings and
+  token window, Windows Credential Manager-backed launcher, Start menu
+  shortcut, and a five-profile dropdown (Triage, Agent, Knowledge, Operations,
+  Full). Repository marketplace entry in `.agents/plugins/marketplace.json`.
+- Windows CI job running the isolated install/repair, profile persistence and
+  real PowerShell STDIO launcher checks against the pinned runtime.
+- `tests/unit/pluginRuntimeVersion.test.ts`, which fails when the plugin
+  runtime recipe, its lockfile, or the setup script's expected version differs
+  from the root `swsd-mcp` package version, when an SDK v1 override returns,
+  or when the plugin client version drifts between manifest, launcher and setup.
+
+### Changed
+
+- The plugin runtime moved from the pilot pin `swsd-mcp@2.3.2` / SDK 1.31.0 to
+  `swsd-mcp@3.0.2` on the MCP SDK v2 packages; the SDK override was removed and
+  the runtime lockfile regenerated (strict install, 0 vulnerabilities,
+  verified registry signatures). Profile tool counts are unchanged on 3.x:
+  14 / 37 / 15 / 64 / 66.
+- Updated ESLint to 10.13.0 and Astro to 7.4.0 after their publication-age gates.
+
+### Deferred work
+
+- `typescript-eslint` 8.72.0, Astro 7.4.1/7.4.2 and Vite 8.3.5 await their
+  three-day publication-age gates.
+- Plugin promotion still requires clean-Windows-user acceptance: native
+  credential create/replace/remove, private token entry, credential-backed live
+  access, supported desktop delivery, and profile changes on new connections.
+- The plugin keeps Node `>=24.15.0 <25`; see `plugins/swsd/ADMIN.md` and #73.
+
 ## [3.0.2] - 2026-10-19
 
 ### Changed
