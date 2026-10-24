@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.1.0] - Unreleased
+## [3.1.0] - 2026-10-23
 
 ### Added
 
@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   verified registry signatures). Profile tool counts are unchanged on 3.x:
   14 / 37 / 15 / 64 / 66.
 - Updated ESLint to 10.13.0 and Astro to 7.4.0 after their publication-age gates.
+
+### Security
+
+- Updated transitive `body-parser` to 2.4.0 for GHSA-27r3-jxmh-p828 (DoS via
+  trailing bytes after a compressed body), ahead of the publication-age gate.
 
 ### Deferred work
 
