@@ -18,8 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows CI job running the isolated install/repair, profile persistence and
   real PowerShell STDIO launcher checks against the pinned runtime.
 - `tests/unit/pluginRuntimeVersion.test.ts`, which fails when the plugin
-  runtime recipe, its lockfile, or the setup script's expected version differs
-  from the root `swsd-mcp` package version, when an SDK v1 override returns,
+  runtime recipe, its lockfile, or the setup script's expected version is not
+  the latest `swsd-mcp` version published on npm (or is ahead of the root version), when an SDK v1 override returns,
   or when the plugin client version drifts between manifest, launcher and setup.
 
 ### Changed

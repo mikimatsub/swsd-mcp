@@ -19,7 +19,7 @@ It tests installation, the retained repair recipe, exact copied files, settings
 preservation, and rejection of a stale recipe before any installation changes.
 Its credential methods throw, and it never touches the real Start menu or desktop
 installation. The private runtime recipe pins server 3.0.2 on MCP SDK v2, equal to the
-root package version (enforced by `tests/unit/pluginRuntimeVersion.test.ts`).
+latest published npm version (enforced by `tests/unit/pluginRuntimeVersion.test.ts`).
 The STDIO check uses an in-process credential reader fixture whose write/delete
 methods throw. It launches the real PowerShell launcher for each profile, checks
 the server version and exact tool list, and verifies the fixture token stays out of protocol output.
