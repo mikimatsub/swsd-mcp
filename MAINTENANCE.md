@@ -91,6 +91,29 @@ counts and check names, never token values, JWT claims, or tenant records.
    tag and skips already published immutable versions. Registry outages fail
    the run rather than being interpreted as missing versions.
 
+## Windows plugin releases
+
+The plugin runtime recipe (`plugins/swsd/runtime`) installs the published
+`swsd-mcp` package, so its pin can only name a version that is already on npm.
+`tests/unit/pluginRuntimeVersion.test.ts` requires the recipe, its lock and
+`$script:SwsdPackageVersion` in `Common.ps1` to agree on one exact pin that is
+the latest `swsd-mcp` version on npm and is not ahead of the root version. The
+registry check is skipped (with a warning) when npm is unreachable or
+`SWSD_OFFLINE=1` is set; the offline checks still run.
+
+1. In the release PR, bump the root version as usual. The runtime pin stays on
+   the latest published version, so the test keeps passing.
+2. After the tag's npm publish is verified, update `plugins/swsd/runtime/package.json`
+   and `SwsdPackageVersion`, then regenerate the lock with
+   `npm install --package-lock-only --ignore-scripts --prefix plugins/swsd/runtime`.
+   Verify `npm ci --ignore-scripts --strict-peer-deps`, `npm audit` and
+   `npm audit signatures` in that folder, and the Windows CI job.
+3. Bump the plugin client version in `.codex-plugin/plugin.json`, `.mcp.json`
+   and `SwsdClientVersion` together when plugin files change; the same test
+   checks they agree.
+4. Do not promote a plugin release without the clean-Windows-user acceptance
+   gates in `plugins/swsd/ADMIN.md`.
+
 ## Scheduled work
 
 Renovate proposes updates; CI and the weekly Security workflow verify changes
