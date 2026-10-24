@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Moved the Windows plugin runtime pin to the published `swsd-mcp@3.1.0`
+  and regenerated its lock, as required by the runtime-version test.
+
 ## [3.1.0] - 2026-10-23
 
 ### Added
