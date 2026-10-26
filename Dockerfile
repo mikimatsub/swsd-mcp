@@ -4,7 +4,7 @@
 # latest node:24-alpine, copy its sha256 digest from `docker inspect`, and
 # replace below. Renovate's docker manager (via the central config in
 # mikimatsub/.github) will also propose digest bumps automatically.
-ARG NODE_IMAGE=node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f
+ARG NODE_IMAGE=node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53
 
 # === Builder stage ===
 FROM ${NODE_IMAGE} AS builder
