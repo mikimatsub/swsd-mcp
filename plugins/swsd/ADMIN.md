@@ -4,7 +4,7 @@
 
 Version 3.1.0 adds a setup skill, visible setup copy and starter prompts, a Windows settings window, a Start menu shortcut, a five-profile dropdown, and a Credential Manager-backed launcher. It keeps the native compatibility manifest supported by OpenAI. No hosted service is required.
 
-The plugin/client package and server runtime have separate versions. The runtime is pinned to `swsd-mcp@3.0.2` on the MCP SDK v2 packages (`@modelcontextprotocol/server`/`core`/`node` 2.x); the former SDK 1.31.0 override is removed. Server 3.x's documented wire changes (protocol error behavior) apply to the plugin; Windows launcher and credential-backed live access must be re-verified on a clean user before promotion. Installation rejects a recipe that disagrees with the setup script and checks the installed server version.
+The plugin/client package and server runtime have separate versions. The runtime is pinned to `swsd-mcp@3.1.0` on the MCP SDK v2 packages (`@modelcontextprotocol/server`/`core`/`node` 2.x); the former SDK 1.31.0 override is removed. Server 3.x's documented wire changes (protocol error behavior) apply to the plugin; Windows launcher and credential-backed live access must be re-verified on a clean user before promotion. Installation rejects a recipe that disagrees with the setup script and checks the installed server version.
 
 ## Optional workspace deployment through GitHub
 
