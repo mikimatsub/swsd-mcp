@@ -7,10 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Updated the MCP SDK Node adapter and made the already-reviewed
+  `@hono/node-server` 2.1.5 fix an exact public dependency for
+  GHSA-rmxm-3fg6-px4f. The Windows plugin runtime also overrides its published
+  3.1.0 dependency graph instead of retaining vulnerable adapter 1.19.17.
+- Overrode development-only `minimatch` to 11.0.1, fixing
+  GHSA-g3hv-75wg-m249 across ESLint and typescript-eslint without suppressing
+  the audit or OSV findings.
+
 ### Changed
 
 - Moved the Windows plugin runtime pin to the published `swsd-mcp@3.1.0`
   and regenerated its lock, as required by the runtime-version test.
+- Aligned the MCP client, core and server packages at 2.4.0, the Node adapter
+  at 2.1.2 and MCP Apps at 2.0.4. The public tool names, schemas, transports,
+  configuration and Node 24 runtime requirement are unchanged.
+- Updated express-rate-limit to 8.7.2, ESLint to 10.14.0,
+  typescript-eslint to 8.72.1, and the eligible Astro documentation stack.
+- Refreshed the pinned Node 24 Alpine image digest. Node 26 is now Active LTS,
+  but its runtime and Windows-plugin migration remains separately gated.
 
 ## [3.1.0] - 2026-10-23
 
