@@ -86,6 +86,12 @@ jobs:
         run: npm run typecheck
 
       - name: Test
+        # A recovery rebuilds the immutable release tag after npm may already
+        # expose that version. The Windows plugin intentionally updates in a
+        # separate post-publish PR, so skip only its live latest-version probe;
+        # every deterministic plugin check and the normal online CI gate remain.
+        env:
+          SWSD_OFFLINE: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: npm test
 
       - name: Build

@@ -94,7 +94,11 @@ counts and check names, never token values, JWT claims, or tenant records.
 5. To recover a partial publish, dispatch **Publish release artifacts** from
    main with the bare version (for example `2.3.2`). It rebuilds that existing
    tag and skips already published immutable versions. Registry outages fail
-   the run rather than being interpreted as missing versions.
+   the run rather than being interpreted as missing versions. Recovery sets
+   `SWSD_OFFLINE=1` only for the tag's test step because npm can already expose
+   the new server while the intentionally separate plugin-pin PR still names
+   the previous version; all deterministic plugin checks still run, and normal
+   PR, main, and initial tag tests retain the live latest-version assertion.
 
 ## Windows plugin releases
 
