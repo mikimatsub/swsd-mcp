@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-11-02
+
 ### Security
 
 - Updated the MCP SDK Node adapter and made the already-reviewed
