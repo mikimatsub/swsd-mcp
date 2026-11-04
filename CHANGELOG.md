@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Windows settings: Check for updates runs the mockable npm lookup in a background
+  runspace, with current/available/offline results in an aligned dashboard chip.
+  The install, update-check, and Node helper buttons use the shared equal-width row.
+- Confirmed, background Node.js helper pinned to 24.22.1 through winget; missing
+  winget and failed installs show friendly guidance. The confirmation is mockable.
+- Install/repair skips npm when the bundled version and entry point already match,
+  while refreshing the client, recipe, and shortcut; forced repair remains available.
+  Offline update and mocked winget/repair checks run alongside handler checks in CI.
 - Windows settings dashboard with themed Node.js, installed tools/version, token
   presence, region, and profile chips, refreshed after each action. Credential
   presence checks never materialize or display the saved token value.

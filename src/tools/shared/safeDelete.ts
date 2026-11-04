@@ -15,20 +15,31 @@ export const SafeDeleteInput = z.object({
 });
 
 interface SafeDeleteConfig {
+<<<<<<< HEAD
   kind: string;
   toolName: string;
   collectionPath: string;
   envelopeKey: string;
+=======
+  kind: 'incident' | 'problem' | 'change' | 'release' | 'solution';
+>>>>>>> origin/main
   resolveRef?: (input: number, client: SwsdClient) => Promise<{ id: number }>;
 }
 
 export function registerSafeDelete(
   server: McpServer,
   ctx: ToolContext,
+<<<<<<< HEAD
   { kind, toolName, collectionPath, envelopeKey, resolveRef }: SafeDeleteConfig,
 ): void {
   server.registerTool(
     toolName,
+=======
+  { kind, resolveRef }: SafeDeleteConfig,
+): void {
+  server.registerTool(
+    `swsd_delete_${kind}`,
+>>>>>>> origin/main
     {
       description:
         `DESTRUCTIVE — delete an SWSD ${kind}. ` +
@@ -47,19 +58,32 @@ export function registerSafeDelete(
         if (ctx.env.SWSD_WRITE_MODE === 'disabled') {
           const gated = checkWriteMode(ctx, {
             method: 'DELETE',
+<<<<<<< HEAD
             path: `${collectionPath}/${String(input.id)}.json`,
+=======
+            path: `/${kind}s/${String(input.id)}.json`,
+>>>>>>> origin/main
             action: `delete ${kind} ${String(input.id)}`,
           });
           if (gated) return gated;
         }
 
         const { id } = resolveRef ? await resolveRef(input.id, ctx.client) : input;
+<<<<<<< HEAD
         const path = `${collectionPath}/${String(id)}.json`;
         const request = { method: 'DELETE' as const, path };
         const { body } = await ctx.client.get<unknown>(path);
         // Accept both the existing client's flat records and the API's named envelopes.
         const raw = body && typeof body === 'object' && envelopeKey in body
           ? (body as Record<string, unknown>)[envelopeKey]
+=======
+        const path = `/${kind}s/${String(id)}.json`;
+        const request = { method: 'DELETE' as const, path };
+        const { body } = await ctx.client.get<unknown>(path);
+        // Accept both the existing client's flat records and the API's named envelopes.
+        const raw = body && typeof body === 'object' && kind in body
+          ? (body as Record<string, unknown>)[kind]
+>>>>>>> origin/main
           : body;
         const summary = toGenericRecordSummary(raw);
         if (!summary || !Number.isInteger(summary.id) || summary.id <= 0 || summary.id !== id) {

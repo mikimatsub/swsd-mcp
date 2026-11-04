@@ -4,6 +4,7 @@ import { resolveSolutionRef } from '../../utils/idResolver.js';
 import { registerSafeDelete } from '../shared/safeDelete.js';
 
 export function registerDeleteSolution(server: McpServer, ctx: ToolContext): void {
+<<<<<<< HEAD
   registerSafeDelete(server, ctx, {
     kind: 'solution',
     toolName: 'swsd_delete_solution',
@@ -11,4 +12,7 @@ export function registerDeleteSolution(server: McpServer, ctx: ToolContext): voi
     envelopeKey: 'solution',
     resolveRef: resolveSolutionRef,
   });
+=======
+  registerSafeDelete(server, ctx, { kind: 'solution', resolveRef: resolveSolutionRef });
+>>>>>>> origin/main
 }

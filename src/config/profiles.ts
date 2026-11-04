@@ -55,6 +55,7 @@ const OPERATIONS_RECORD_TOOLS = [
   'swsd_list_risks',
 ] as const;
 
+<<<<<<< HEAD
 const DIRECTORY_WRITE_TOOLS = [
   'swsd_create_user',
   'swsd_update_user',
@@ -72,12 +73,15 @@ const DIRECTORY_WRITE_TOOLS = [
   'swsd_remove_group_member',
 ] as const;
 
+=======
+>>>>>>> origin/main
 const DELETE_TOOLS = [
   'swsd_delete_incident',
   'swsd_delete_problem',
   'swsd_delete_change',
   'swsd_delete_release',
   'swsd_delete_solution',
+<<<<<<< HEAD
   'swsd_delete_user',
   'swsd_delete_group',
   'swsd_delete_site',
@@ -85,6 +89,8 @@ const DELETE_TOOLS = [
   'swsd_delete_category',
   'swsd_delete_role',
   'swsd_remove_group_member',
+=======
+>>>>>>> origin/main
 ] as const;
 
 const AGENT_TOOLS = [
@@ -140,7 +146,11 @@ export const PROFILE_TOOLS = {
     'swsd_list_problems',
   ],
   agent: AGENT_TOOLS,
+<<<<<<< HEAD
   operations: [...new Set([...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DIRECTORY_WRITE_TOOLS, ...DELETE_TOOLS])],
+=======
+  operations: [...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DELETE_TOOLS],
+>>>>>>> origin/main
   knowledge: [
     'swsd_get_server_info',
     'swsd_health_check',
@@ -209,7 +219,12 @@ export const PROFILE_TOOLS = {
     'swsd_update_problem',
     ...TIME_AND_ATTACHMENT_TOOLS,
     ...OPERATIONS_RECORD_TOOLS,
+<<<<<<< HEAD
     ...DIRECTORY_WRITE_TOOLS,
     ...DELETE_TOOLS,
   ])],
+=======
+    ...DELETE_TOOLS,
+  ],
+>>>>>>> origin/main
 } as const satisfies Record<ProfileName, readonly string[]>;
