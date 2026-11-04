@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SWSD SLA Risk</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="root">
+      <header>
+        <h1 id="title">SLA Risk</h1>
+        <div id="chips" class="chips"></div>
+      </header>
+      <table id="table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-number">#</th>
+            <th scope="col" class="col-name">Name</th>
+            <th scope="col" class="col-risk">Risk</th>
+            <th scope="col" class="col-due">Due</th>
+            <th scope="col" class="col-priority">Priority</th>
+            <th scope="col" class="col-assignee">Assignee</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p id="empty" class="empty" hidden>No incidents match the current filters.</p>
+    </main>
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

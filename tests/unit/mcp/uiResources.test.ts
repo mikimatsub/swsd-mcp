@@ -18,9 +18,9 @@ describe('loadUiResource — happy path', () => {
   });
 
   it('accepts every allowlisted slug', () => {
-    // The four UI-bearing tools each have a bundle that must load without
+    // Each UI bundle must load without
     // error — drift here means a tool will fail at startup.
-    for (const slug of ['incident-detail', 'solution-detail', 'incident-list', 'custom-fields']) {
+    for (const slug of ['incident-detail', 'solution-detail', 'incident-list', 'custom-fields', 'comment-thread', 'audit-timeline', 'catalog-item-form', 'change-calendar']) {
       expect(() => loadUiResource(slug)).not.toThrow();
     }
   });

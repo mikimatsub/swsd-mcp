@@ -45,3 +45,14 @@ export const ListUsersInput = z.object({
 
 export type ListLookupInput = z.infer<typeof ListLookupInput>;
 export type ListUsersInput = z.infer<typeof ListUsersInput>;
+
+export const GetLookupByIdInput = z.object({
+  id: z
+    .number()
+    .int()
+    .positive()
+    .max(Number.MAX_SAFE_INTEGER)
+    .describe('SWSD record id (from the matching swsd_list_* tool).'),
+});
+
+export type GetLookupByIdInput = z.infer<typeof GetLookupByIdInput>;

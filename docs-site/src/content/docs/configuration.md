@@ -50,11 +50,11 @@ Profiles control which tools are registered at startup. The choice is made once 
 
 | Profile | Intent | Tool count |
 |---|---|---|
-| `triage` | Read-heavy first-line support workflow + commenting + read-only task/problem visibility | 14 |
-| `agent` | Full ticket-handler workflow + KB lookups + custom-field introspection + service-catalog + tasks + problems + work logs/attachments (default) | 37 |
-| `knowledge` | KB-author workflow + incident reads + custom-field introspection | 15 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 64 |
-| `full` | Every tool registered | 66 |
+| `triage` | Read-heavy first-line support workflow + commenting + read-only task/problem visibility | 18 |
+| `agent` | Full ticket-handler workflow + KB lookups + custom-field introspection + service-catalog + tasks + problems + work logs/attachments (default) | 45 |
+| `knowledge` | KB-author workflow + incident reads + custom-field introspection | 17 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 72 |
+| `full` | Every tool registered | 74 |
 
 ### When to pick which
 
