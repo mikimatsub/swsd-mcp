@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 101 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 114 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **101 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **114 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
@@ -228,22 +228,35 @@ Use these for ITSM lifecycle work that needs change/release records instead of f
 
 ---
 
-## Assets & CMDB (12)
+## Assets & CMDB (25)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_hardware_assets` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_hardware_asset` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_hardware_asset` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_hardware_asset` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_hardware_asset` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_mobile_devices` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_mobile_device` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_mobile_device` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_mobile_device` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_mobile_device` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_printers` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_printer` | R |   |   |   | ✓ | ✓ |
+| `swsd_update_printer` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_software_assets` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_software_asset` | R |   |   |   | ✓ | ✓ |
 | `swsd_list_other_assets` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_other_asset` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_other_asset` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_other_asset` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_other_asset` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_configuration_items` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_configuration_item` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_configuration_item` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_configuration_item` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_configuration_item` | W |   |   |   | ✓ | ✓ |
 
 These read tools expose asset and CMDB context without adding asset mutation risk.
 
@@ -352,6 +365,22 @@ As of v2, the four write tools (`swsd_create_incident`, `swsd_update_incident`, 
 | `swsd_get_record_audits` | R, UI |   | ✓ |   | ✓ | ✓ |
 
 - **`swsd_get_record_audits`**: list the audit log for a SWSD record. Wraps `GET /{type}/{id}/audits.json`. Each audit entry captures one change: action (`"Update"`/`"Create"`/`"Delete"`), message (e.g. `"State changed from New to Assigned"`), the user who performed it, and the timestamp. Use this to answer "who changed this ticket?" or "what happened since I last looked?". Cheaper than `swsd_get_incident` with `detail_level=long` when you only need the audit history. `object_type` accepts `incidents`, `problems`, `changes`, `releases`, `solutions`, `hardwares`, `other_assets`. When `object_type` is `incidents` or `solutions`, `id` accepts either the internal id or the human-facing number; other types remain id-only. Renders the `audit-timeline` widget in MCP Apps-capable hosts (vertical timeline grouped by day with action chips and field-level diffs).
+
+---
+
+## Prompts (3)
+
+Built-in MCP prompts (`prompts/list`, `prompts/get`). A prompt is offered only when every tool it uses is enabled in the active profile. All arguments are optional and validated; every prompt is read-only and asks before proposing any change.
+
+| Prompt | Uses | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_morning_triage` | `swsd_get_me`, `swsd_my_queue`, `swsd_sla_risk` | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_sla_risk_review` | `swsd_sla_risk` | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_weekly_change_review` | `swsd_change_calendar`, `swsd_list_changes`, `swsd_get_change` |   |   |   | ✓ | ✓ |
+
+- **`swsd_morning_triage`**: start-of-day brief of my queue. Arguments: `group` (group name), `since_hours` (1-168, default 16).
+- **`swsd_sla_risk_review`**: at-risk incidents grouped by risk level with a next action per ticket. Arguments: `within_hours` (1-168, default 24), `group`.
+- **`swsd_weekly_change_review`**: the change calendar for one week, with overlaps, unapproved changes and missing plans. Argument: `week_start` (ISO date; default the next 7 days).
 
 ---
 

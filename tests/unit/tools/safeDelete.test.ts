@@ -289,7 +289,13 @@ describe('safe delete schema, profiles, and HTTP boundary', () => {
   });
 
   it('registers delete tools only in operations and full profiles', () => {
-    const deleteNames = Object.keys(REGISTRARS).map((kind) => `swsd_delete_${kind}`);
+    const deleteNames = [
+      'swsd_delete_hardware_asset',
+      'swsd_delete_mobile_device',
+      'swsd_delete_other_asset',
+      'swsd_delete_configuration_item',
+      ...Object.keys(REGISTRARS).map((kind) => `swsd_delete_${kind}`),
+    ];
     for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full'] as const) {
       const expected = profile === 'operations' || profile === 'full' ? deleteNames : [];
       expect(PROFILE_TOOLS[profile].filter((name) => name.startsWith('swsd_delete_'))).toEqual(expected);

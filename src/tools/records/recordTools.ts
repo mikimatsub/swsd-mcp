@@ -9,6 +9,8 @@ import {
   UpdateReleaseInput,
 } from '../../schemas/record.js';
 import { GetAssetInput, ListAssetsInput } from '../../schemas/asset.js';
+import { EmailInput, MAX_LABEL_CHARS, MAX_LONG_TEXT_CHARS } from '../../schemas/limits.js';
+import { registerSafeDelete } from '../shared/safeDelete.js';
 import { PaginationOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
@@ -55,7 +57,7 @@ const GenericSummaryOutput = z.object({
   url: z.string().optional(),
 });
 
-interface ReadConfig {
+interface RecordConfig {
   toolList: string;
   toolGet?: string;
   collectionPath: string;
@@ -65,6 +67,13 @@ interface ReadConfig {
   detailKey?: string;
   supportsLayout?: boolean;
   descriptionUse: string;
+  write?: {
+    root: string;
+    create?: z.ZodType<Record<string, unknown>>;
+    update?: z.ZodType<{ id: number } & Record<string, unknown>>;
+    delete?: boolean;
+    required?: string;
+  };
 }
 
 interface WriteConfig {
@@ -72,6 +81,54 @@ interface WriteConfig {
   root: 'change' | 'release';
   labelSingular: string;
 }
+
+const AssetLabelInput = z.string().min(1).max(MAX_LABEL_CHARS);
+const AssetIdInput = z.number().int().positive().describe('Internal asset record ID.');
+const AssetFields = {
+  status_name: AssetLabelInput.optional(),
+  site_name: AssetLabelInput.optional(),
+  department_name: AssetLabelInput.optional(),
+  description: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
+};
+const CreateHardwareAssetInput = z.object({
+  ...AssetFields,
+  name: AssetLabelInput,
+  asset_tag: AssetLabelInput.optional(),
+  owner_email: EmailInput.optional(),
+  user_email: EmailInput.optional(),
+  technical_contact_email: EmailInput.optional(),
+  ip_address: AssetLabelInput.optional(),
+  serial_number: AssetLabelInput.optional().describe('Hardware serial number, sent as bio.ssn.'),
+});
+const CreateMobileDeviceInput = z.object({
+  ...AssetFields,
+  device_type: AssetLabelInput.optional(),
+  manufacturer: AssetLabelInput,
+  model: AssetLabelInput,
+  serial_number: AssetLabelInput.optional(),
+  user_email: EmailInput.optional(),
+});
+const CreateOtherAssetInput = z.object({
+  ...AssetFields,
+  name: AssetLabelInput,
+  asset_id: AssetLabelInput.optional(),
+  asset_type_name: AssetLabelInput.optional(),
+  manufacturer: AssetLabelInput.optional(),
+  model: AssetLabelInput.optional(),
+  serial_number: AssetLabelInput.optional(),
+  owner_email: EmailInput.optional(),
+  user_email: EmailInput.optional(),
+});
+const CreateConfigurationItemInput = z.object({
+  ...AssetFields,
+  name: AssetLabelInput,
+  user_email: EmailInput.optional(),
+});
+const UpdatePrinterInput = z.object({
+  ...AssetFields,
+  id: AssetIdInput,
+  name: AssetLabelInput.optional(),
+});
 
 const READ_CONFIGS = {
   changes: {
@@ -106,6 +163,13 @@ const READ_CONFIGS = {
     detailKey: 'hardware_asset',
     supportsLayout: true,
     descriptionUse: 'Use for ITAM hardware inventory lookup before incident/change work.',
+    write: {
+      root: 'hardware',
+      create: CreateHardwareAssetInput,
+      update: CreateHardwareAssetInput.partial().extend({ id: AssetIdInput }),
+      delete: true,
+      required: 'name',
+    },
   },
   mobileDevices: {
     toolList: 'swsd_list_mobile_devices',
@@ -116,6 +180,13 @@ const READ_CONFIGS = {
     summaryKey: 'mobile_devices',
     detailKey: 'mobile_device',
     descriptionUse: 'Use for mobile-device inventory lookup.',
+    write: {
+      root: 'mobile',
+      create: CreateMobileDeviceInput,
+      update: CreateMobileDeviceInput.partial().extend({ id: AssetIdInput }),
+      delete: true,
+      required: 'manufacturer and model',
+    },
   },
   printers: {
     toolList: 'swsd_list_printers',
@@ -126,6 +197,10 @@ const READ_CONFIGS = {
     summaryKey: 'printers',
     detailKey: 'printer',
     descriptionUse: 'Use for printer inventory lookup.',
+    write: {
+      root: 'printer',
+      update: UpdatePrinterInput,
+    },
   },
   softwareAssets: {
     toolList: 'swsd_list_software_assets',
@@ -146,6 +221,13 @@ const READ_CONFIGS = {
     summaryKey: 'other_assets',
     detailKey: 'other_asset',
     descriptionUse: 'Use for non-hardware/non-software asset lookup.',
+    write: {
+      root: 'other_asset',
+      create: CreateOtherAssetInput,
+      update: CreateOtherAssetInput.partial().extend({ id: AssetIdInput }),
+      delete: true,
+      required: 'name',
+    },
   },
   configurationItems: {
     toolList: 'swsd_list_configuration_items',
@@ -156,6 +238,13 @@ const READ_CONFIGS = {
     summaryKey: 'configuration_items',
     detailKey: 'configuration_item',
     descriptionUse: 'Use for CMDB context and dependency review before changes.',
+    write: {
+      root: 'configuration_item',
+      create: CreateConfigurationItemInput,
+      update: CreateConfigurationItemInput.partial().extend({ id: AssetIdInput }),
+      delete: true,
+      required: 'name',
+    },
   },
   contracts: {
     toolList: 'swsd_list_contracts',
@@ -196,7 +285,7 @@ const READ_CONFIGS = {
     summaryKey: 'risks',
     descriptionUse: 'Use for risk context surfaced by SWSD.',
   },
-} as const satisfies Record<string, ReadConfig>;
+} as const satisfies Record<string, RecordConfig>;
 
 function pathJson(path: string): string {
   return `${path}.json`;
@@ -209,7 +298,7 @@ function layoutParams(
   return supportsLayout && detailLevel === 'long' ? { layout: 'long' } : {};
 }
 
-function registerListTool(server: McpServer, ctx: ToolContext, cfg: ReadConfig): void {
+function registerListTool(server: McpServer, ctx: ToolContext, cfg: RecordConfig): void {
   server.registerTool(
     cfg.toolList,
     {
@@ -250,7 +339,7 @@ function registerListTool(server: McpServer, ctx: ToolContext, cfg: ReadConfig):
   );
 }
 
-function registerGetTool(server: McpServer, ctx: ToolContext, cfg: ReadConfig): void {
+function registerGetTool(server: McpServer, ctx: ToolContext, cfg: RecordConfig): void {
   const toolGet = cfg.toolGet;
   const detailKey = cfg.detailKey;
   if (!toolGet || !detailKey) return;
@@ -368,6 +457,95 @@ function registerUpdateTool(
   );
 }
 
+function assetWriteFields(root: string, input: Record<string, unknown>): Record<string, unknown> {
+  const fields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (key === 'id' || value === undefined) continue;
+    if (['status_name', 'site_name', 'department_name', 'asset_type_name'].includes(key)) {
+      fields[key.slice(0, -5)] = { name: value };
+    } else if (['owner_email', 'user_email', 'technical_contact_email'].includes(key)) {
+      fields[key.slice(0, -6)] = { email: value };
+    } else if (root === 'hardware' && key === 'serial_number') {
+      fields.bio = { ssn: value };
+    } else {
+      fields[key] = value;
+    }
+  }
+  return fields;
+}
+
+function registerAssetWrite(
+  server: McpServer,
+  ctx: ToolContext,
+  cfg: RecordConfig,
+  action: 'create' | 'update',
+): void {
+  const write = cfg.write;
+  const inputSchema = write?.[action];
+  if (!write || !inputSchema || !cfg.toolGet || !cfg.detailKey) return;
+  const detailKey = cfg.detailKey;
+  const update = action === 'update';
+  server.registerTool(
+    cfg.toolGet.replace('swsd_get_', `swsd_${action}_`),
+    {
+      description:
+        (update
+          ? `Update a SWSD ${cfg.labelSingular} by internal id. Only provided fields are sent. `
+          : `Create a SWSD ${cfg.labelSingular}. Required: ${write.required}. `) +
+        'WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.',
+      inputSchema,
+      annotations: { readOnlyHint: false, destructiveHint: update, openWorldHint: true, idempotentHint: false },
+    },
+    async (input: Record<string, unknown>) => {
+      try {
+        const fields = assetWriteFields(write.root, input);
+        const changed = Object.keys(fields);
+        if (update && changed.length === 0) {
+          return toolError('No fields to update — provide at least one field besides id.');
+        }
+        const payload = { [write.root]: fields };
+        const path = pathJson(update ? `${cfg.collectionPath}/${String(input.id)}` : cfg.collectionPath);
+        const gated = checkWriteMode(ctx, {
+          method: update ? 'PUT' : 'POST',
+          path,
+          body: payload,
+          action: `${action} ${cfg.labelSingular}${update ? ` ${String(input.id)}` : ''}`,
+        });
+        if (gated) return gated;
+        const { body } = update
+          ? await ctx.client.put<unknown>(path, payload)
+          : await ctx.client.post<unknown>(path, payload);
+        const raw = body && typeof body === 'object' && write.root in body
+          ? (body as Record<string, unknown>)[write.root]
+          : body;
+        const record = toGenericRecordDetail(raw);
+        if (!record) {
+          return toolError(`Could not parse ${update ? 'updated' : 'created'}-${write.root} response from SWSD.`);
+        }
+        const name = typeof record.name === 'string' ? `: ${record.name}` : '';
+        return structuredResult(
+          { [detailKey]: record, ...(update ? { changed_fields: changed } : {}) },
+          update
+            ? `Updated ${cfg.labelSingular} ${String(record.id)} (${changed.join(', ')}).`
+            : `Created ${cfg.labelSingular} ${String(record.id)}${name}`,
+        );
+      } catch (err) {
+        return mapSwsdError(err);
+      }
+    },
+  );
+}
+
+function registerAssetDelete(server: McpServer, ctx: ToolContext, cfg: RecordConfig): void {
+  if (!cfg.write?.delete || !cfg.toolGet) return;
+  registerSafeDelete(server, ctx, {
+    kind: cfg.labelSingular,
+    toolName: cfg.toolGet.replace('swsd_get_', 'swsd_delete_'),
+    collectionPath: cfg.collectionPath,
+    envelopeKey: cfg.write.root,
+  });
+}
+
 export const registerListChanges = (server: McpServer, ctx: ToolContext): void =>
   registerListTool(server, ctx, READ_CONFIGS.changes);
 export const registerGetChange = (server: McpServer, ctx: ToolContext): void =>
@@ -448,3 +626,42 @@ export const registerUpdateRelease = (server: McpServer, ctx: ToolContext): void
     labelSingular: 'release',
     input: UpdateReleaseInput,
   });
+
+export const registerCreateHardwareAsset = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetWrite(server, ctx, READ_CONFIGS.hardwareAssets, 'create');
+
+export const registerUpdateHardwareAsset = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetWrite(server, ctx, READ_CONFIGS.hardwareAssets, 'update');
+
+export const registerDeleteHardwareAsset = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetDelete(server, ctx, READ_CONFIGS.hardwareAssets);
+
+export const registerCreateMobileDevice = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetWrite(server, ctx, READ_CONFIGS.mobileDevices, 'create');
+
+export const registerUpdateMobileDevice = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetWrite(server, ctx, READ_CONFIGS.mobileDevices, 'update');
+
+export const registerDeleteMobileDevice = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetDelete(server, ctx, READ_CONFIGS.mobileDevices);
+
+export const registerCreateOtherAsset = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetWrite(server, ctx, READ_CONFIGS.otherAssets, 'create');
+
+export const registerUpdateOtherAsset = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetWrite(server, ctx, READ_CONFIGS.otherAssets, 'update');
+
+export const registerDeleteOtherAsset = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetDelete(server, ctx, READ_CONFIGS.otherAssets);
+
+export const registerCreateConfigurationItem = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetWrite(server, ctx, READ_CONFIGS.configurationItems, 'create');
+
+export const registerUpdateConfigurationItem = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetWrite(server, ctx, READ_CONFIGS.configurationItems, 'update');
+
+export const registerDeleteConfigurationItem = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetDelete(server, ctx, READ_CONFIGS.configurationItems);
+
+export const registerUpdatePrinter = (server: McpServer, ctx: ToolContext): void =>
+  registerAssetWrite(server, ctx, READ_CONFIGS.printers, 'update');
