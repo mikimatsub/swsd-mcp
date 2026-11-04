@@ -7,9 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Windows settings app: every event handler runs in a safe wrapper (friendly in-window error, controls re-enabled); new check-ui-handlers test clicks every button under StrictMode with mocked actions in CI; globe app icon replaces the default window icon.
-- Windows settings app: one shared button style so buttons in a row have identical top, height and width; field labels and token placeholder; themed dark-mode dropdown borders; clear disabled-button look; -ValidateWindow fails on any 1px button-row mismatch.
-
 ### Added
 
 - Windows settings: Check for updates runs the mockable npm lookup in a background
@@ -20,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Install/repair skips npm when the bundled version and entry point already match,
   while refreshing the client, recipe, and shortcut; forced repair remains available.
   Offline update and mocked winget/repair checks run alongside handler checks in CI.
-
 - Windows settings dashboard with themed Node.js, installed tools/version, token
   presence, region, and profile chips, refreshed after each action. Credential
   presence checks never materialize or display the saved token value.
@@ -28,6 +24,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   progress bar, disabled action controls during work, friendly in-window errors,
   safe error details, and restart guidance. Handler validation awaits the real
   polling timer with mocked installs, including failure and retry.
+- Windows settings app: every event handler runs in a safe wrapper (friendly in-window error, controls re-enabled); new check-ui-handlers test clicks every button under StrictMode with mocked actions in CI; globe app icon replaces the default window icon.
+- Windows settings app: one shared button style so buttons in a row have identical top, height and width; field labels and token placeholder; themed dark-mode dropdown borders; clear disabled-button look; -ValidateWindow fails on any 1px button-row mismatch.
+- Added `swsd_sla_risk` tool: lists open incidents ranked by SLA breach risk with
+  color-coded risk levels (breached, critical, warning, ok, no_due_date), due
+  countdowns, and a dedicated MCP Apps widget (`sla-risk`).
+- Added `swsd_my_queue` tool: work-queue view defaulting to the authenticated
+  user's open incidents, with per-row SLA risk computation and sort options.
+  Reuses the existing `incident-list` widget.
+- Factored shared `resolveCurrentUser` helper from `listMyIncidents` for reuse
+  across tools that need JWT-based user resolution.
+- Added the read-only `swsd_change_calendar` tool to Agent, Operations and Full:
+  bounded change/release scans, client-side filters, UTC day grouping, shared-CI
+  and group overlap conflicts, and explicit unscheduled/truncated scan accounting.
+- Added the content-sized change calendar MCP Apps widget with viewer-local times,
+  responsive rows, safe record links, conflict details, and light/dark themes.
+- Added read-only get-by-id lookups: `swsd_get_user` (with `group_ids`),
+  `swsd_get_group` (with members), `swsd_get_site`, `swsd_get_department` and
+  `swsd_get_category`. User and category lookups join every profile that lists
+  them; group, site and department lookups join Agent, Operations and Full.
 
 ### Changed
 
@@ -43,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clamped to the current monitor's working area, and re-layouts on per-monitor
   DPI changes. An SWSD_UI_SCALE environment variable allows simulating higher
   DPI scaling for testing.
+- Polished the `sla-risk` widget: it now sizes to its content instead of
+  scrolling, truncates long incident names with full text on hover, drops the
+  Priority/Assignee and then the number column on narrow hosts, follows the
+  host theme in dark mode, and exposes its render functions for unit tests.
+  The `swsd_sla_risk` description now states that list rows normally only carry
+  `due_at`, so SLA violations are counted only when SWSD includes them.
 - Made manual release recovery skip only the Windows plugin's live npm-latest
   assertion while rebuilding an immutable tag. Deterministic plugin checks and
   the normal online PR, main, and initial tag gates remain enabled.

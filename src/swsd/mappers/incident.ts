@@ -26,6 +26,7 @@ export function toIncidentSummary(raw: unknown): IncidentSummary | null {
     category: nestedString(raw.category, 'name'),
     updated_at: stringOrUndefined(raw.updated_at),
     url: stringOrUndefined(raw.href_account_domain),
+    due_at: stringOrUndefined(raw.due_at),
   };
 }
 

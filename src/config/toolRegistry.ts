@@ -9,6 +9,8 @@ import { registerGetMe } from '../tools/utility/getMe.js';
 
 import { registerListIncidents } from '../tools/incidents/listIncidents.js';
 import { registerListMyIncidents } from '../tools/incidents/listMyIncidents.js';
+import { registerSlaRisk } from '../tools/incidents/slaRisk.js';
+import { registerMyQueue } from '../tools/incidents/myQueue.js';
 import { registerGetIncident } from '../tools/incidents/getIncident.js';
 import { registerCreateIncident } from '../tools/incidents/createIncident.js';
 import { registerUpdateIncident } from '../tools/incidents/updateIncident.js';
@@ -30,6 +32,13 @@ import { registerCreateProblem } from '../tools/problems/createProblem.js';
 
 import { registerListCategories } from '../tools/lookups/listCategories.js';
 import { registerListSites } from '../tools/lookups/listSites.js';
+import {
+  registerGetCategory,
+  registerGetDepartment,
+  registerGetGroup,
+  registerGetSite,
+  registerGetUser,
+} from '../tools/lookups/getLookups.js';
 import { registerListDepartments } from '../tools/lookups/listDepartments.js';
 import { registerListUsers } from '../tools/lookups/listUsers.js';
 import { registerListGroups } from '../tools/lookups/listGroups.js';
@@ -82,6 +91,7 @@ import {
   registerUpdateTimeTrack,
 } from '../tools/timeTracks/timeTrackTools.js';
 import { registerUploadAttachment } from '../tools/attachments/uploadAttachment.js';
+import { registerChangeCalendar } from '../tools/records/changeCalendar.js';
 
 export interface ToolContext {
   env: Env;
@@ -94,12 +104,15 @@ export interface ToolContext {
 type Registrar = (server: McpServer, ctx: ToolContext) => void;
 
 const REGISTRARS: Record<string, Registrar> = {
+  swsd_change_calendar: registerChangeCalendar,
   swsd_get_server_info: registerGetServerInfo,
   swsd_health_check: registerHealthCheck,
   swsd_get_me: registerGetMe,
 
   swsd_list_incidents: registerListIncidents,
   swsd_list_my_incidents: registerListMyIncidents,
+  swsd_sla_risk: registerSlaRisk,
+  swsd_my_queue: registerMyQueue,
   swsd_get_incident: registerGetIncident,
   swsd_create_incident: registerCreateIncident,
   swsd_update_incident: registerUpdateIncident,
@@ -125,6 +138,11 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_list_users: registerListUsers,
   swsd_list_groups: registerListGroups,
   swsd_list_roles: registerListRoles,
+  swsd_get_user: registerGetUser,
+  swsd_get_group: registerGetGroup,
+  swsd_get_site: registerGetSite,
+  swsd_get_department: registerGetDepartment,
+  swsd_get_category: registerGetCategory,
 
   swsd_search_solutions: registerSearchSolutions,
   swsd_get_solution: registerGetSolution,

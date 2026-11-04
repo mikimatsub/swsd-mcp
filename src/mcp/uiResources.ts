@@ -39,6 +39,8 @@ const ALLOWED_UI_NAMES = new Set<string>([
   'comment-thread',
   'audit-timeline',
   'catalog-item-form',
+  'sla-risk',
+  'change-calendar',
 ]);
 
 const cache = new Map<string, string>();

@@ -9,4 +9,6 @@ export const UI_TOOLS = [
   'comment-thread',
   'audit-timeline',
   'catalog-item-form',
+  'sla-risk',
+  'change-calendar',
 ];
