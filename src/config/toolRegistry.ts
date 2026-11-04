@@ -29,6 +29,7 @@ import { registerUpdateTaskState } from '../tools/tasks/updateTaskState.js';
 import { registerListProblems } from '../tools/problems/listProblems.js';
 import { registerGetProblem } from '../tools/problems/getProblem.js';
 import { registerCreateProblem } from '../tools/problems/createProblem.js';
+import { registerUpdateProblem } from '../tools/problems/updateProblem.js';
 
 import { registerListCategories } from '../tools/lookups/listCategories.js';
 import { registerListSites } from '../tools/lookups/listSites.js';
@@ -91,6 +92,11 @@ import {
   registerUpdateTimeTrack,
 } from '../tools/timeTracks/timeTrackTools.js';
 import { registerUploadAttachment } from '../tools/attachments/uploadAttachment.js';
+import { registerDeleteIncident } from '../tools/incidents/deleteIncident.js';
+import { registerDeleteProblem } from '../tools/problems/deleteProblem.js';
+import { registerDeleteChange } from '../tools/records/deleteChange.js';
+import { registerDeleteRelease } from '../tools/records/deleteRelease.js';
+import { registerDeleteSolution } from '../tools/solutions/deleteSolution.js';
 import { registerChangeCalendar } from '../tools/records/changeCalendar.js';
 
 export interface ToolContext {
@@ -115,6 +121,7 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_my_queue: registerMyQueue,
   swsd_get_incident: registerGetIncident,
   swsd_create_incident: registerCreateIncident,
+  swsd_delete_incident: registerDeleteIncident,
   swsd_update_incident: registerUpdateIncident,
   swsd_assign_incident: registerAssignIncident,
   swsd_update_incident_state: registerUpdateIncidentState,
@@ -131,6 +138,8 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_list_problems: registerListProblems,
   swsd_get_problem: registerGetProblem,
   swsd_create_problem: registerCreateProblem,
+  swsd_delete_problem: registerDeleteProblem,
+  swsd_update_problem: registerUpdateProblem,
 
   swsd_list_categories: registerListCategories,
   swsd_list_sites: registerListSites,
@@ -147,6 +156,7 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_search_solutions: registerSearchSolutions,
   swsd_get_solution: registerGetSolution,
   swsd_create_solution: registerCreateSolution,
+  swsd_delete_solution: registerDeleteSolution,
   swsd_update_solution: registerUpdateSolution,
 
   swsd_describe_custom_fields: registerDescribeCustomFields,
@@ -160,10 +170,12 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_list_changes: registerListChanges,
   swsd_get_change: registerGetChange,
   swsd_create_change: registerCreateChange,
+  swsd_delete_change: registerDeleteChange,
   swsd_update_change: registerUpdateChange,
   swsd_list_releases: registerListReleases,
   swsd_get_release: registerGetRelease,
   swsd_create_release: registerCreateRelease,
+  swsd_delete_release: registerDeleteRelease,
   swsd_update_release: registerUpdateRelease,
 
   swsd_list_hardware_assets: registerListHardwareAssets,

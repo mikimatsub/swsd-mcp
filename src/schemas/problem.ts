@@ -101,6 +101,22 @@ export const CreateProblemInput = z.object({
     .describe('Email of the user the problem is for. Defaults to the token owner if omitted.'),
 });
 
+export const UpdateProblemInput = z.object({
+  id: GetProblemInput.shape.id,
+  name: z.string().min(1).max(MAX_LABEL_CHARS).optional().describe('New problem title.'),
+  description: z.string().max(MAX_LONG_TEXT_CHARS).optional().describe('New description (replaces existing).'),
+  priority: z.string().max(MAX_LABEL_CHARS).optional().describe('New priority name.'),
+  category: z.string().max(MAX_LABEL_CHARS).optional().describe('New category name (see swsd_list_categories).'),
+  subcategory: z.string().max(MAX_LABEL_CHARS).optional().describe('New subcategory name.'),
+  assignee_email: EmailInput.optional().describe('Email of the agent to assign the problem to.'),
+  requester_email: EmailInput.optional().describe('Email of the user the problem is for.'),
+  state: z.string().max(MAX_LABEL_CHARS).optional().describe('New problem state. Tenant-specific.'),
+  root_cause: z.string().max(MAX_LONG_TEXT_CHARS).optional().describe('New root-cause analysis (replaces existing).'),
+  symptoms: z.string().max(MAX_LONG_TEXT_CHARS).optional().describe('New symptoms (replaces existing).'),
+  workaround: z.string().max(MAX_LONG_TEXT_CHARS).optional().describe('New workaround (replaces existing).'),
+});
+
 export type ListProblemsInputT = z.infer<typeof ListProblemsInput>;
 export type GetProblemInputT = z.infer<typeof GetProblemInput>;
 export type CreateProblemInputT = z.infer<typeof CreateProblemInput>;
+export type UpdateProblemInputT = z.infer<typeof UpdateProblemInput>;

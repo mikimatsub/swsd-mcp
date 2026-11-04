@@ -33,6 +33,7 @@ export interface SwsdClient {
   get<T = unknown>(path: string, params?: Record<string, unknown>): Promise<SwsdGetResult<T>>;
   post<T = unknown>(path: string, body: unknown): Promise<SwsdMutationResult<T>>;
   put<T = unknown>(path: string, body: unknown): Promise<SwsdMutationResult<T>>;
+  delete<T = unknown>(path: string): Promise<SwsdMutationResult<T>>;
   rawRequest(path: string, init: SwsdRequestInit): Promise<SwsdRawResult>;
 }
 
@@ -142,6 +143,10 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
     },
     async post<T>(path: string, body: unknown): Promise<SwsdMutationResult<T>> {
       const res = await rawRequest(path, { method: 'POST', body });
+      return { body: res.body as T, headers: res.headers, status: res.status };
+    },
+    async delete<T>(path: string): Promise<SwsdMutationResult<T>> {
+      const res = await rawRequest(path, { method: 'DELETE' });
       return { body: res.body as T, headers: res.headers, status: res.status };
     },
     async put<T>(path: string, body: unknown): Promise<SwsdMutationResult<T>> {

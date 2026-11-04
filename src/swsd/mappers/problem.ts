@@ -75,6 +75,10 @@ export interface ProblemWriteFields {
   subcategory?: string;
   assignee_email?: string;
   requester_email?: string;
+  state?: string;
+  root_cause?: string;
+  symptoms?: string;
+  workaround?: string;
 }
 
 /**
@@ -94,6 +98,10 @@ export function buildProblemWritePayload(
   if (fields.subcategory !== undefined) problem.subcategory = { name: fields.subcategory };
   if (fields.assignee_email !== undefined) problem.assignee = { email: fields.assignee_email };
   if (fields.requester_email !== undefined) problem.requester = { email: fields.requester_email };
+  if (fields.state !== undefined) problem.state = fields.state;
+  if (fields.root_cause !== undefined) problem.root_cause = fields.root_cause;
+  if (fields.symptoms !== undefined) problem.symptoms = fields.symptoms;
+  if (fields.workaround !== undefined) problem.workaround = fields.workaround;
   return { problem };
 }
 
