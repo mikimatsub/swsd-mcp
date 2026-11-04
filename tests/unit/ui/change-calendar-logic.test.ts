@@ -6,13 +6,15 @@ import type { CalendarConflict } from '../../../src/schemas/changeCalendar.js';
 
 const item = toCalendarItem(fixture.change, 'change')!;
 describe('change calendar widget logic', () => {
-  it('formats same-day, multiday and assumed-end times in the given zone', () => {
-    expect(formatTimeRange({ planned_start_at: '2026-11-10T04:00:00-05:00', planned_end_at: '2026-11-10T06:00:00-05:00' }, 'UTC')).toEqual({ range: '09:00–11:00' });
-    expect(formatTimeRange({ planned_start_at: '2026-11-10T09:00:00Z', planned_end_at: '2026-11-10T11:00:00Z' }, 'America/Indianapolis')).toEqual({ range: '04:00–06:00' });
-    expect(formatTimeRange({ planned_start_at: '2026-11-10T09:00:00Z', planned_end_at: '2026-11-12T10:00:00Z' }, 'UTC')).toEqual({ range: '09:00–10:00', until: 'until Nov 12' });
-    expect(formatTimeRange({ planned_start_at: '2026-11-10T23:30:00Z' }, 'UTC')).toEqual({ range: '23:30–00:30', until: 'until Nov 11' });
-    expect(formatTimeRange({ planned_start_at: '2026-11-10T23:30:00Z' }, 'America/Indianapolis')).toEqual({ range: '18:30–19:30' });
-    expect(formatTimeRange({ planned_start_at: '2026-11-10T09:00:00Z', planned_end_at: 'bad' }, 'UTC')).toEqual({ range: '09:00–10:00' });
+  it('formats same-day and multiday times in the viewer locale and zone', () => {
+    const n = (r: { range: string; until?: string }) => ({ ...r, range: r.range.replace(/[\u2009\u202f]/g, ' '), ...(r.until ? { until: r.until.replace(/[\u2009\u202f]/g, ' ') } : {}) });
+    const ind = 'America/Indianapolis';
+    expect(n(formatTimeRange({ planned_start_at: '2026-11-10T09:00:00Z', planned_end_at: '2026-11-10T11:00:00Z' }, ind, 'en-US'))).toEqual({ range: '4:00 – 6:00 AM' });
+    expect(n(formatTimeRange({ planned_start_at: '2026-11-10T09:00:00Z', planned_end_at: '2026-11-10T11:00:00Z' }, 'UTC', 'en-GB'))).toEqual({ range: '09:00–11:00' });
+    expect(n(formatTimeRange({ planned_start_at: '2026-11-10T10:00:00Z', planned_end_at: '2026-11-12T10:00:00Z' }, ind, 'en-US'))).toEqual({ range: '5:00 AM →', until: 'Nov 12, 5:00 AM' });
+    expect(n(formatTimeRange({ planned_start_at: '2026-11-10T23:30:00Z' }, 'UTC', 'en-US'))).toEqual({ range: '11:30 PM →', until: 'Nov 11, 12:30 AM' });
+    expect(n(formatTimeRange({ planned_start_at: '2026-11-10T23:30:00Z' }, ind, 'en-US'))).toEqual({ range: '6:30 – 7:30 PM' });
+    expect(n(formatTimeRange({ planned_start_at: '2026-11-10T09:00:00Z', planned_end_at: 'bad' }, 'UTC', 'en-US'))).toEqual({ range: '9:00 – 10:00 AM' });
     expect(formatTimeRange({ planned_start_at: 'bad' })).toEqual({ range: 'Unscheduled' });
     expect(typeof viewerTimeZone()).toBe('string');
   });

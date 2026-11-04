@@ -25,11 +25,15 @@ export function zoneLabel(timeZone: string, at: Date = new Date()): string {
   return part?.value ?? timeZone;
 }
 
-function fmtTime(d: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+const TIME: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+function fmtTime(d: Date, timeZone: string, locale?: string): string {
+  return new Intl.DateTimeFormat(locale, { ...TIME, timeZone }).format(d);
 }
 function fmtDate(d: Date, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', { timeZone, month: 'short', day: 'numeric' }).format(d);
+}
+function fmtDateTime(d: Date, timeZone: string, locale?: string): string {
+  return new Intl.DateTimeFormat(locale, { ...TIME, month: 'short', day: 'numeric', timeZone }).format(d);
 }
 
 /** Day heading for a local YYYY-MM-DD key (rendered at noon UTC so it never shifts). */
@@ -40,15 +44,19 @@ export function formatDay(key: string): string {
 
 export interface TimeRange { range: string; until?: string; }
 
-/** Always "HH:MM–HH:MM"; multi-day windows add an "until Nov 12" line. */
-export function formatTimeRange(item: Pick<CalendarItem, 'planned_start_at' | 'planned_end_at'>, timeZone = viewerTimeZone()): TimeRange {
+/**
+ * Viewer-locale times. Same day: "4:00 – 6:00 AM" (Intl formatRange).
+ * Multi-day: "5:00 AM →" then "Nov 12, 5:00 AM" so the end is never ambiguous.
+ */
+export function formatTimeRange(item: Pick<CalendarItem, 'planned_start_at' | 'planned_end_at'>, timeZone = viewerTimeZone(), locale?: string): TimeRange {
   const start = valid(item.planned_start_at);
   if (!start) return { range: 'Unscheduled' };
   const rawEnd = valid(item.planned_end_at);
   const end = rawEnd && rawEnd > start ? rawEnd : new Date(start.getTime() + HOUR);
-  const range = `${fmtTime(start, timeZone)}–${fmtTime(end, timeZone)}`;
-  return localDateKey(start, timeZone) === localDateKey(end, timeZone)
-    ? { range } : { range, until: `until ${fmtDate(end, timeZone)}` };
+  if (localDateKey(start, timeZone) === localDateKey(end, timeZone)) {
+    return { range: new Intl.DateTimeFormat(locale, { ...TIME, timeZone }).formatRange(start, end) };
+  }
+  return { range: `${fmtTime(start, timeZone, locale)} →`, until: fmtDateTime(end, timeZone, locale) };
 }
 
 /** Friendly window such as "Nov 10 – Nov 12 · times in EST" (end is exclusive, so shown as the prior instant). */

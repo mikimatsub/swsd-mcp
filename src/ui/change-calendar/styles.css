@@ -33,13 +33,13 @@ h1 { margin: 0; font-size: 18px; line-height: 24px; font-weight: 650; }
 .day { margin-top: 16px; }
 .day h2 { margin: 0; padding: 8px 12px; font-size: 13px; line-height: 20px; background: var(--subtle); border-bottom: 1px solid var(--border); border-radius: 6px 6px 0 0; }
 .day-rows { list-style: none; margin: 0; padding: 0; }
-.calendar-row { display: grid; grid-template-columns: 6.25rem 4.25rem minmax(0,1fr) 4.75rem; align-items: center; gap: 12px; padding: 10px 12px 10px 9px; border-left: 3px solid transparent; border-bottom: 1px solid var(--border); }
+.calendar-row { display: grid; grid-template-columns: 8rem 4.25rem minmax(0,1fr) 4.75rem; align-items: center; gap: 12px; padding: 10px 12px 10px 9px; border-left: 3px solid transparent; border-bottom: 1px solid var(--border); }
 .calendar-row.has-conflict { border-left-color: var(--accent); }
 .calendar-row:hover { background: var(--subtle); }
 .calendar-row > .pill { justify-self: start; }
 .time { display: flex; flex-direction: column; min-width: 0; color: var(--muted); font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .range { color: var(--fg); font-weight: 550; }
-.until { font-size: 11px; line-height: 16px; }
+.until { font-size: 12px; line-height: 18px; }
 .name-cell { display: grid; min-width: 0; }
 .name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; min-width: 0; overflow: hidden; overflow-wrap: anywhere; font-weight: 550; }
 a.name { color: var(--link); text-decoration: none; }
@@ -50,7 +50,7 @@ a.name:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 .empty { padding: 16px 0; margin: 0; color: var(--muted); }
 .notice { padding: 10px 12px; margin: 0 0 16px; background: var(--subtle); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; line-height: 18px; }
 @media (max-width: 600px) {
-  .calendar-row { gap: 10px; grid-template-columns: 5.75rem 4.25rem minmax(0,1fr) 4.5rem; }
+  .calendar-row { gap: 10px; grid-template-columns: 7.5rem 4.25rem minmax(0,1fr) 4.5rem; }
 }
 @media (max-width: 440px) {
   body { padding: 12px; }

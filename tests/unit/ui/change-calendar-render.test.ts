@@ -41,7 +41,7 @@ describe('change calendar rendering', () => {
     const rows = targets.days.querySelectorAll('.calendar-row');
     expect(rows).toHaveLength(2);
     expect([...rows[0]!.children].map(e => e.className)).toEqual(['time', 'pill change', 'name-cell', 'badge-cell']);
-    expect(rows[0]?.querySelector('.range')?.textContent).toMatch(/^\d\d:\d\d–\d\d:\d\d$/);
+    expect(rows[0]?.querySelector('.range')?.textContent).toMatch(/\d:\d\d/);
     expect(rows[0]?.querySelector('.meta')?.textContent).toBe(`${item.state!} · Helpdesk Team · John Doe`);
     expect(rows[1]?.querySelector('.pill')?.textContent).toBe('Release');
     expect(targets.empty.hidden).toBe(true);
@@ -97,9 +97,9 @@ describe('change calendar rendering', () => {
   });
   it('keeps responsive, theme and content-sizing CSS contracts', () => {
     const css = readFileSync('src/ui/change-calendar/styles.css', 'utf8');
-    expect(css).toContain('grid-template-columns: 6.25rem 4.25rem minmax(0,1fr) 4.75rem');
+    expect(css).toContain('grid-template-columns: 8rem 4.25rem minmax(0,1fr) 4.75rem');
     expect(css).toContain('-webkit-line-clamp: 2');
-    expect(css).toMatch(/@media \(max-width: 600px\)[\s\S]*?\.calendar-row \{ gap: 10px; grid-template-columns: 5\.75rem/);
+    expect(css).toMatch(/@media \(max-width: 600px\)[\s\S]*?\.calendar-row \{ gap: 10px; grid-template-columns: 7\.5rem/);
     expect(css).toMatch(/@media \(max-width: 440px\)[\s\S]*?\.time \{ grid-column: 1 \/ -1/);
     expect(css).toContain(':root[data-theme="dark"] { color-scheme: dark; }');
     expect(css).toContain(':root[data-theme="light"] { color-scheme: light; }');
