@@ -355,6 +355,22 @@ As of v2, the four write tools (`swsd_create_incident`, `swsd_update_incident`, 
 
 ---
 
+## Prompts (3)
+
+Built-in MCP prompts (`prompts/list`, `prompts/get`). A prompt is offered only when every tool it uses is enabled in the active profile. All arguments are optional and validated; every prompt is read-only and asks before proposing any change.
+
+| Prompt | Uses | triage | agent | knowledge | operations | full |
+|---|---|---|---|---|---|---|
+| `swsd_morning_triage` | `swsd_get_me`, `swsd_my_queue`, `swsd_sla_risk` | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_sla_risk_review` | `swsd_sla_risk` | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_weekly_change_review` | `swsd_change_calendar`, `swsd_list_changes`, `swsd_get_change` |   |   |   | ✓ | ✓ |
+
+- **`swsd_morning_triage`**: start-of-day brief of my queue. Arguments: `group` (group name), `since_hours` (1-168, default 16).
+- **`swsd_sla_risk_review`**: at-risk incidents grouped by risk level with a next action per ticket. Arguments: `within_hours` (1-168, default 24), `group`.
+- **`swsd_weekly_change_review`**: the change calendar for one week, with overlaps, unapproved changes and missing plans. Argument: `week_start` (ISO date; default the next 7 days).
+
+---
+
 ## Adding tools to a profile
 
 Use `SWSD_ENABLE_EXTRAS` to add specific tools on top of the chosen profile. See [Configuration → Profiles](/configuration/#profiles).

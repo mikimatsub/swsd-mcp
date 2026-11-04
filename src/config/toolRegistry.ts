@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/server';
+import { registerPrompts } from '../mcp/prompts.js';
 import type { Env, ProfileName } from './env.js';
 import { PROFILE_TOOLS } from './profiles.js';
 import type { SwsdClient } from '../swsd/client.js';
@@ -294,4 +295,5 @@ export function registerTools(server: McpServer, ctx: ToolContext): void {
     register(server, ctx);
     ctx.enabledTools.push(tool);
   }
+  registerPrompts(server, ctx.enabledTools);
 }
