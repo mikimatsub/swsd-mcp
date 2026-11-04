@@ -57,7 +57,7 @@ for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full']) {
     await call('swsd_search_solutions', { per_page: 1 });
     const resources = await client.listResources();
     const ui = resources.resources.filter((item) => item.uri.startsWith('ui://swsd/'));
-    assert.equal(ui.length, UI_TOOLS.length, 'Expected all widget resources');
+    assert.ok(ui.length === UI_TOOLS.length, `Expected ${String(UI_TOOLS.length)} widget resources`);
     for (const resource of ui) {
       currentCheck = 'widget resource';
       const result = await client.readResource({ uri: resource.uri });

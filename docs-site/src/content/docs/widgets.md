@@ -1,9 +1,9 @@
 ---
 title: Widgets reference
-description: The eight MCP Apps UI bundles swsd-mcp ships, what they render, and which hosts support them.
+description: The nine MCP Apps UI bundles swsd-mcp ships, what they render, and which hosts support them.
 ---
 
-swsd-mcp ships **eight** interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Each one is a single-file HTML resource served at `ui://swsd/<widget-name>.html` with content type `text/html;profile=mcp-app`. When a tool with an attached widget is called from an MCP Apps-capable host, the host renders the bundle alongside (or in place of) the structured-content text response. Hosts without MCP Apps support are unaffected: the same tools still return their normal text + structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
+swsd-mcp ships **nine** interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Each one is a single-file HTML resource served at `ui://swsd/<widget-name>.html` with content type `text/html;profile=mcp-app`. When a tool with an attached widget is called from an MCP Apps-capable host, the host renders the bundle alongside (or in place of) the structured-content text response. Hosts without MCP Apps support are unaffected: the same tools still return their normal text + structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
 
 All widgets are self-contained. No external network access, no third-party scripts. HTML coming from SWSD (solution bodies, incident descriptions, comment bodies, catalog helptext) is sanitized client-side via [DOMPurify](https://github.com/cure53/DOMPurify) before insertion. Theme variables and host fonts are applied via the SDK's `applyHostStyleVariables` / `applyDocumentTheme` / `applyHostFonts` helpers, so widgets follow the host's light/dark mode and font settings automatically.
 
@@ -14,6 +14,7 @@ All widgets are self-contained. No external network access, no third-party scrip
 | [`incident-detail`](#incident-detail) | `swsd_get_incident` | Single-incident card with description, due date, SLA, resolution, custom fields. |
 | [`solution-detail`](#solution-detail) | `swsd_get_solution` | Single-solution card with full sanitized HTML body, attachments, audits, statistics. |
 | [`incident-list`](#incident-list) | `swsd_list_incidents`, `swsd_list_my_incidents` | Sortable, filterable, scrollable table of incidents. |
+| [`sla-risk`](#sla-risk) | `swsd_sla_risk` | Risk-count chips + color-coded table with due countdowns. |
 | [`comment-thread`](#comment-thread) | `swsd_list_incident_comments` | Vertical comment thread with author chips, timestamps, public/private badges. |
 | [`audit-timeline`](#audit-timeline) | `swsd_get_record_audits` | Vertical audit-log timeline grouped by day with action chips and field diffs. |
 | [`catalog-item-form`](#catalog-item-form) | `swsd_get_catalog_item` | Renders catalog variables as a form; submits via `swsd_create_service_request`. |
@@ -35,7 +36,7 @@ Steps 4–6 run over JSON-RPC postMessage between the host and the iframe. The w
 
 ## Error handling
 
-All eight widgets handle `isError: true` tool results. Instead of an infinite "Loading…" spinner, they render a clear error state showing the tool's error message. This is the v2.1 fix for the v2.0 bug where tool errors silently spun forever.
+All nine widgets handle `isError: true` tool results. Instead of an infinite "Loading…" spinner, they render a clear error state showing the tool's error message. This is the v2.1 fix for the v2.0 bug where tool errors silently spun forever.
 
 ## Per-widget detail
 
@@ -76,6 +77,10 @@ Bound to `swsd_get_solution`. Card layout: header (id, name, state, category), m
 Bound to both `swsd_list_incidents` and `swsd_list_my_incidents` (the latter auto-resolves the JWT user's email as `assignee_email`). Table columns: id, name, state, priority, assignee, updated_at. Sortable headers (click to toggle, ▲/▼ indicator + `aria-sort` on the active column). Wrapped in an `overflow-x: auto` container so the 6-column table scrolls instead of clipping at narrow viewports (<560px).
 
 Pagination chip in the footer shows `page X of Y matching your filters` (when `pagination.total_scope === "filtered"`) or `page X of Y tenant-wide` (when `"tenant"`), driven by the v2 `applied_filters` echo + `total_scope` discriminator.
+
+### `sla-risk`
+
+Bound to `swsd_sla_risk`. Header with color-coded risk-count chips (breached/critical/warning/ok/no due date) and a table of incidents sorted by risk priority. Each row shows the incident number/name (linked), a color-coded risk pill, human-readable due countdown ("Overdue by 3h 12m" / "Due in 45m"), priority, and assignee. Long names truncate with the full text available on hover. The layout sizes to its content and adapts to narrow hosts: below 640px the Priority and Assignee columns drop, and below 440px the number column folds into the name cell with the chips wrapping under the title. Risk colors: red for breached, orange for critical, amber for warning, green for ok, gray for no due date. Follows host light/dark theme via CSS custom properties and `color-scheme`.
 
 ### `comment-thread`
 

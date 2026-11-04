@@ -149,7 +149,7 @@ The clients listed below use this common JSON shape. Add it under `mcpServers` i
 Replace `your-jwt-here` with the token from the previous step. **EU tenants** use `https://apieu.samanage.com` instead.
 
 :::tip[Customize behavior]
-Any variable from the [Configuration](/configuration/) page goes into this same `env` block. The most common one to add is `SWSD_PROFILE` to switch from the default `agent` profile (38 tools) to `triage` (14), `knowledge` (15), `operations` (65), or `full` (67):
+Any variable from the [Configuration](/configuration/) page goes into this same `env` block. The most common one to add is `SWSD_PROFILE` to switch from the default `agent` profile (40 tools) to `triage` (16), `knowledge` (15), `operations` (67), or `full` (69):
 
 ```json
 "env": {
