@@ -4,7 +4,7 @@
  * SLA-risk widget.
  *
  * Sizing: the widget sizes to its content — no fixed heights, no min-heights,
- * no 100vh. The table uses `table-layout: fixed` with explicit column widths,
+ * no 100vh. The table uses `table-layout: auto`; Name absorbs spare width,
  * so long incident names truncate inside the Name column instead of widening
  * the table (which is what used to force a horizontal scrollbar).
  *
@@ -87,7 +87,7 @@ header h1 {
 .chip-nodate { background: var(--risk-nodate-bg); color: var(--risk-nodate-fg); }
 table {
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
@@ -109,11 +109,12 @@ th {
  * below 100% at every width (so the table can never overflow the host), and
  * the narrow breakpoints below swap in rem widths once the columns are
  * actually hidden. */
-th.col-number { width: 5rem; }
-th.col-risk { width: 7rem; }
-th.col-due { width: 9.5rem; }
-th.col-priority { width: 5.75rem; }
-th.col-assignee { width: 24%; }
+/* Every column except Name shrinks to its content (width:1% + nowrap); Name
+ * takes all remaining width and truncates via the max-width:0 trick. */
+th.col-number, th.col-risk, th.col-due, th.col-priority { width: 1%; }
+td.col-number, td.col-risk, td.col-due, td.col-priority { white-space: nowrap; }
+th.col-name, td.col-name { width: 100%; max-width: 0; }
+th.col-assignee, td.col-assignee { width: 1%; max-width: 14rem; }
 tbody tr:nth-child(even) {
   background: var(--bg-alt);
 }
@@ -211,9 +212,6 @@ td a.name:hover {
   td.col-assignee {
     display: none;
   }
-  th.col-number { width: 4.75rem; }
-  th.col-risk { width: 6.5rem; }
-  th.col-due { width: 9.5rem; }
 }
 
 /* Below 440px the number column also goes away; the number moves into the
@@ -235,8 +233,8 @@ td a.name:hover {
   td {
     padding: 0.35rem 0.4rem;
   }
-  th.col-risk { width: 5.5rem; }
-  th.col-due { width: 10rem; }
+  /* Due wraps to two lines ("Overdue by" / "3h 12m") instead of starving Name. */
+  td.col-due { white-space: normal; min-width: 5.5rem; }
   td.col-due { font-size: 0.85rem; }
 }
 /* Whole-pixel row metrics: the MCP Apps host sizes the iframe from the
