@@ -3,9 +3,9 @@ title: Client compatibility
 description: Which MCP clients work with swsd-mcp, and which render the rich UI widgets.
 ---
 
-swsd-mcp is a standard [Model Context Protocol](https://modelcontextprotocol.io) server. **Any MCP-compatible client can use it** for the 66 tools; that's the protocol's whole point.
+swsd-mcp is a standard [Model Context Protocol](https://modelcontextprotocol.io) server. **Any MCP-compatible client can use it** for the 67 tools; that's the protocol's whole point.
 
-The seven [UI widgets](/widgets/) ship over the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865), a strictly additive extension. Hosts that don't support MCP Apps still get the full text and structured tool output. The widgets are simply not rendered, and the tools do not error.
+The eight [UI widgets](/widgets/) ship over the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865), a strictly additive extension. Hosts that don't support MCP Apps still get the full text and structured tool output. The widgets are simply not rendered, and the tools do not error.
 
 ## Client matrix
 
@@ -25,7 +25,7 @@ The seven [UI widgets](/widgets/) ship over the [MCP Apps capability](https://mo
 | **LM Studio** | ✅ | No | No widget rendering surface. |
 | **Microsoft Copilot Studio** | ✅* | No | *Different transport: needs an HTTP server, not stdio. See [Deployment → Copilot Studio](/deployment/#microsoft-copilot-studio). |
 
-A "✅" under **Stdio MCP** means the client speaks the standard MCP protocol and can call swsd-mcp's tools. A "✅" under **MCP Apps widgets** means the client also renders the seven UI bundles in-line. A "No" means the host doesn't currently render widgets; the structured tool output still works.
+A "✅" under **Stdio MCP** means the client speaks the standard MCP protocol and can call swsd-mcp's tools. A "✅" under **MCP Apps widgets** means the client also renders the eight UI bundles in-line. A "No" means the host doesn't currently render widgets; the structured tool output still works.
 
 ## My client isn't listed
 
@@ -36,5 +36,5 @@ If you've verified swsd-mcp working in a client not listed here, [open a PR](htt
 ## See also
 
 - [Quick start](/quickstart/): install and configure in under five minutes
-- [Widgets reference](/widgets/): what each of the seven widgets renders
+- [Widgets reference](/widgets/): what each of the eight widgets renders
 - [Deployment](/deployment/): HTTP-transport hosting for Copilot Studio and shared-team setups

@@ -53,6 +53,7 @@ const OPERATIONS_RECORD_TOOLS = [
 
 const AGENT_TOOLS = [
   ...READ_BASE,
+  'swsd_change_calendar',
   'swsd_add_incident_comment',
   'swsd_update_comment',
   'swsd_create_incident',
@@ -117,6 +118,7 @@ export const PROFILE_TOOLS = {
     'swsd_describe_custom_fields',
   ],
   full: [
+    'swsd_change_calendar',
     'swsd_get_server_info',
     'swsd_health_check',
     'swsd_get_me',
