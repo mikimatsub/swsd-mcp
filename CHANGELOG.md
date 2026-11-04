@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Windows settings app: every event handler runs in a safe wrapper (friendly in-window error, controls re-enabled); new check-ui-handlers test clicks every button under StrictMode with mocked actions in CI; globe app icon replaces the default window icon.
 - Windows settings app: one shared button style so buttons in a row have identical top, height and width; field labels and token placeholder; themed dark-mode dropdown borders; clear disabled-button look; -ValidateWindow fails on any 1px button-row mismatch.
 
 ### Changed

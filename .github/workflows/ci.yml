@@ -41,6 +41,9 @@ jobs:
       - name: Validate profile persistence without credential writes
         run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-profiles.ps1
 
+      - name: Click every setup button with mocked actions
+        run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-ui-handlers.ps1
+
       - name: Validate setup controls without opening a window
         run: powershell.exe -NoProfile -NonInteractive -STA -File plugins/swsd/scripts/Manage-Swsd.ps1 -ValidateUi
 

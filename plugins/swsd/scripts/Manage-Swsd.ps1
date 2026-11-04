@@ -1,9 +1,10 @@
-﻿param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [ValidateRange(1,15)][int]$WindowTestSeconds = 2)
+﻿param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [ValidateRange(1,15)][int]$WindowTestSeconds = 2)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Common.ps1')
-if ($ValidateUi -or $ValidateWindow) {
+if ($ValidateUi -or $ValidateWindow -or $ValidateHandlers) {
     # Exercise the real controls and save handler without touching a user's settings or credential.
     $script:SwsdHome = Join-Path ([IO.Path]::GetTempPath()) ('swsd-ui-test-' + [guid]::NewGuid().ToString('N'))
+    if ($ValidateHandlers) { $script:SwsdCredentialTarget = 'swsd-mcp/handler-test-' + [guid]::NewGuid().ToString('N') }
 }
 if ($CheckOnly) {
     $nodeOk = $false
@@ -35,6 +36,30 @@ $script:SwsdLayoutFailures = @()
         }
     } catch {}
 })
+
+$script:SwsdHandlerErrors = @()
+# Every event handler runs inside this: a failure shows a friendly in-window error and re-enables controls.
+function Invoke-SwsdSafe {
+    param([string]$Source = 'handler', [switch]$Quiet, [Parameter(Mandatory, Position = 0)][scriptblock]$Body)
+    try { . $Body } catch {
+        $message = $_.Exception.Message
+        $script:SwsdHandlerErrors += "${Source}: $message"
+        try { Add-Content -LiteralPath (Join-Path $env:TEMP 'swsd-settings.log') -Value ("{0:u} [{1}] {2}" -f (Get-Date), $Source, $message) } catch {}
+        if ($Quiet) { return }
+        try {
+            if (Get-Command Set-SwsdStatus -ErrorAction SilentlyContinue) { Set-SwsdStatus -Kind error -Text "Something went wrong: $message" }
+            foreach ($name in 'install','save','test','remove','saveProfile','region','tokenBox','profile') {
+                $control = Get-Variable -Name $name -Scope Script -ValueOnly -ErrorAction SilentlyContinue
+                if ($control -is [Windows.Forms.Control]) { $control.Enabled = $true }
+            }
+            $f = Get-Variable -Name form -Scope Script -ValueOnly -ErrorAction SilentlyContinue
+            if ($f -is [Windows.Forms.Form]) { $f.UseWaitCursor = $false }
+        } catch {}
+    }
+}
+function Confirm-SwsdRemove {
+    return [Windows.Forms.MessageBox]::Show('Remove this computer''s saved SWSD token? Fully quit ChatGPT afterwards to end running connections. This does not revoke the token in SolarWinds.', 'Remove saved token', 'YesNo', 'Question')
+}
 
 # DPI awareness before any window is created
 try {
@@ -268,19 +293,39 @@ $form.AutoScaleMode = 'Dpi'
 $form.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
 $form.BackColor = $script:SwsdPalette.WindowBg
 $form.ForeColor = $script:SwsdPalette.TextPrimary
+try {
+    $iconBmp = New-Object Drawing.Bitmap 64, 64
+    $g = [Drawing.Graphics]::FromImage($iconBmp)
+    $g.SmoothingMode = 'AntiAlias'; $g.TextRenderingHint = 'AntiAliasGridFit'
+    $g.Clear([Drawing.Color]::Transparent)
+    $accent = [Drawing.Color]::FromArgb(0, 120, 212)
+    $brush = New-Object Drawing.SolidBrush $accent
+    if ($script:SwsdIconFont) {
+        $iconFont = New-Object Drawing.Font($script:SwsdIconFont, 40, [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
+        $fmt = New-Object Drawing.StringFormat; $fmt.Alignment = 'Center'; $fmt.LineAlignment = 'Center'
+        $g.DrawString([string][char]0xE774, $iconFont, $brush, (New-Object Drawing.RectangleF(0, 0, 64, 64)), $fmt)
+        $iconFont.Dispose()
+    } else {
+        $pen = New-Object Drawing.Pen($accent, 5)
+        $g.DrawEllipse($pen, 6, 6, 52, 52); $g.DrawEllipse($pen, 20, 6, 24, 52); $g.DrawLine($pen, 6, 32, 58, 32); $pen.Dispose()
+    }
+    $brush.Dispose(); $g.Dispose()
+    $form.Icon = [Drawing.Icon]::FromHandle($iconBmp.GetHicon())
+    $form.ShowIcon = $true
+} catch {}
 
 # DWM attributes applied after handle creation
-$form.Add_HandleCreated({
+$form.Add_HandleCreated({ Invoke-SwsdSafe -Source 'HandleCreated' -Quiet {
     try {
         [SwsdDesktop.Windows]::ApplyDarkMode($form.Handle, $script:SwsdDarkMode)
         $osBuild = [Environment]::OSVersion.Version.Build
         if ($osBuild -ge 22621) { [SwsdDesktop.Windows]::ApplyMicaBackdrop($form.Handle) }
         if ($osBuild -ge 22000) { [SwsdDesktop.Windows]::ApplyRoundedCorners($form.Handle) }
     } catch {}
-})
+ }})
 
 $script:SwsdPresentationCount = 0
-$form.Add_Shown({
+$form.Add_Shown({ Invoke-SwsdSafe -Source 'Shown' {
     # Start with the token field focused (or nothing), never a drop-down showing its focus frame.
     try { if ($tokenBox.Enabled) { $form.ActiveControl = $tokenBox } else { $form.ActiveControl = $null } } catch {}
     # Present once after the dialog has a visible handle, even when its console is hidden.
@@ -304,14 +349,14 @@ $form.Add_Shown({
         $fadeTimer = New-Object Windows.Forms.Timer
         $fadeTimer.Interval = 15
         $fadeSteps = 0
-        $fadeTimer.Add_Tick({
+        $fadeTimer.Add_Tick({ Invoke-SwsdSafe -Source 'Tick' {
             $fadeSteps++
             $form.Opacity = [Math]::Min(1.0, $fadeSteps / 10.0)
             if ($form.Opacity -ge 1.0) { $fadeTimer.Stop(); $fadeTimer.Dispose() }
-        })
+         }})
         $fadeTimer.Start()
     }
-})
+ }})
 
 # Root layout panel
 $rootPanel = New-Object Windows.Forms.TableLayoutPanel
@@ -319,12 +364,12 @@ $rootPanel.Dock = 'Fill'
 $rootPanel.Padding = New-Object Windows.Forms.Padding((ScalePx $script:SwsdRootPaddingH), (ScalePx $script:SwsdRootPaddingV), (ScalePx $script:SwsdRootPaddingH), (ScalePx $script:SwsdRootPaddingV))
 $rootPanel.ColumnCount = 1
 $rootPanel.RowCount = 5
-$rootPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
-$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+[void]$rootPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
+[void]$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+[void]$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+[void]$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+[void]$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+[void]$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
 $rootPanel.AutoScroll = $false
 $form.Controls.Add($rootPanel)
 
@@ -361,7 +406,7 @@ function New-SwsdButton([string]$Text, [bool]$Primary = $false) {
     $btn.Size = New-Object Drawing.Size(($textWidth + 2 * (ScalePx $script:SwsdButtonPaddingH) + 2), (ScalePx $script:SwsdButtonMinHeight))
     # Intentional disabled look: owner-draw so WinForms' muddy system gray is never used.
     $btn.Add_Paint({
-        param($sender, $e)
+        param($sender, $e) Invoke-SwsdSafe -Source 'Paint' -Quiet {
         if ($sender.Enabled) { return }
         $rect = $sender.ClientRectangle
         $e.Graphics.Clear($script:SwsdPalette.DisabledBg)
@@ -369,7 +414,7 @@ function New-SwsdButton([string]$Text, [bool]$Primary = $false) {
         $e.Graphics.DrawRectangle($pen, 0, 0, $rect.Width - 1, $rect.Height - 1)
         $pen.Dispose()
         [Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.Text, $sender.Font, $rect, $script:SwsdPalette.DisabledFg, [Windows.Forms.TextFormatFlags]'HorizontalCenter, VerticalCenter, SingleLine')
-    })
+     }})
     if ($Primary) {
         $btn.BackColor = $script:SwsdAccentColor
         $btn.ForeColor = Get-SwsdContrastColor $script:SwsdAccentColor
@@ -404,39 +449,17 @@ function New-SwsdFieldLabel([string]$Text) {
 }
 
 # Helper: themed 1px border host so inputs never show the default light 3D border.
-function New-SwsdComboHost([Windows.Forms.ComboBox]$Combo) {
-    $hostPanel = New-Object Windows.Forms.Panel
-    $hostPanel.BackColor = $script:SwsdPalette.InputBg
-    $hostPanel.Padding = New-Object Windows.Forms.Padding(1)
-    $hostPanel.Height = $Combo.PreferredSize.Height
-    $hostPanel.Add_Paint({
-        param($sender, $e)
-        $pen = New-Object Drawing.Pen($script:SwsdPalette.InputBorder)
-        $e.Graphics.DrawRectangle($pen, 0, 0, $sender.Width - 1, $sender.Height - 1)
-        $pen.Dispose()
-    })
-    $clip = New-Object Windows.Forms.Panel
-    $clip.Dock = 'Fill'
-    $clip.BackColor = $script:SwsdPalette.InputBg
-    $hostPanel.Controls.Add($clip)
-    $Combo.Margin = New-Object Windows.Forms.Padding(0)
-    $Combo.Location = New-Object Drawing.Point(-1, -1)
-    $clip.Controls.Add($Combo)
-    $clip.Add_Resize({ param($sender, $e) foreach ($c in $sender.Controls) { $c.Width = $sender.Width + 2 } })
-    $hostPanel.Height = $Combo.Height
-    return ,$hostPanel
-}
 function New-SwsdInputHost([Windows.Forms.Control]$Control, [int]$Inset = 1) {
     $hostPanel = New-Object Windows.Forms.Panel
     $hostPanel.BackColor = $script:SwsdPalette.InputBg
     $hostPanel.Padding = New-Object Windows.Forms.Padding($Inset)
     $hostPanel.Height = $Control.PreferredSize.Height + 2 * $Inset
     $hostPanel.Add_Paint({
-        param($sender, $e)
+        param($sender, $e) Invoke-SwsdSafe -Source 'Paint' -Quiet {
         $pen = New-Object Drawing.Pen($script:SwsdPalette.InputBorder)
         $e.Graphics.DrawRectangle($pen, 0, 0, $sender.Width - 1, $sender.Height - 1)
         $pen.Dispose()
-    })
+     }})
     $Control.Dock = 'Fill'
     $Control.Margin = New-Object Windows.Forms.Padding(0)
     $hostPanel.Controls.Add($Control)
@@ -579,7 +602,7 @@ $region.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
 $region.Height = ScalePx 30
 $region.DrawMode = 'OwnerDrawFixed'
 $region.Add_DrawItem({
-    param($sender, $e)
+    param($sender, $e) Invoke-SwsdSafe -Source 'DrawItem' -Quiet {
     if ($e.Index -lt 0) { return }
     $bg = if (($e.State -band [Windows.Forms.DrawItemState]::Selected) -eq [Windows.Forms.DrawItemState]::Selected) {
         $script:SwsdAccentColor
@@ -590,7 +613,7 @@ $region.Add_DrawItem({
     $e.Graphics.FillRectangle((New-Object Drawing.SolidBrush($bg)), $e.Bounds)
     $text = $sender.GetItemText($sender.Items[$e.Index])
     $e.Graphics.DrawString($text, $sender.Font, (New-Object Drawing.SolidBrush($fg)), $e.Bounds.X + 2, $e.Bounds.Y + 2)
-})
+ }})
 [void]$region.Items.Add('US - api.samanage.com')
 [void]$region.Items.Add('EU - apieu.samanage.com')
 $region.SelectedIndex = 0
@@ -605,10 +628,10 @@ $tokenBox.ForeColor = $script:SwsdPalette.TextPrimary
 $tokenBox.BorderStyle = 'None'
 $tokenBox.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
 $tokenBox.Height = ScalePx 30
-$tokenBox.Add_EnabledChanged({
+$tokenBox.Add_EnabledChanged({ Invoke-SwsdSafe -Source 'EnabledChanged' {
     if (-not $tokenBox.Enabled) { $tokenBox.ForeColor = $script:SwsdPalette.TextSecondary }
     else { $tokenBox.ForeColor = $script:SwsdPalette.TextPrimary }
-})
+ }})
 Add-CardRow $card2 (New-SwsdFieldLabel 'API token')
 Add-CardRow $card2 (New-SwsdInputHost $tokenBox (ScalePx 6))
 try { [void][SwsdDesktop.Windows]::SendMessage($tokenBox.Handle, 0x1501, [IntPtr]1, 'Paste your API token') } catch {}
@@ -663,7 +686,7 @@ $profile.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
 $profile.Height = ScalePx 30
 $profile.DrawMode = 'OwnerDrawFixed'
 $profile.Add_DrawItem({
-    param($sender, $e)
+    param($sender, $e) Invoke-SwsdSafe -Source 'DrawItem' -Quiet {
     if ($e.Index -lt 0) { return }
     $bg = if (($e.State -band [Windows.Forms.DrawItemState]::Selected) -eq [Windows.Forms.DrawItemState]::Selected) {
         $script:SwsdAccentColor
@@ -674,7 +697,7 @@ $profile.Add_DrawItem({
     $e.Graphics.FillRectangle((New-Object Drawing.SolidBrush($bg)), $e.Bounds)
     $text = $sender.GetItemText($sender.Items[$e.Index])
     $e.Graphics.DrawString($text, $sender.Font, (New-Object Drawing.SolidBrush($fg)), $e.Bounds.X + 2, $e.Bounds.Y + 2)
-})
+ }})
 foreach ($item in $script:SwsdProfiles) { [void]$profile.Items.Add($item.name) }
 $savedProfile = (Get-SwsdSettings).profile
 $profile.SelectedIndex = [Array]::IndexOf(@($script:SwsdProfiles | ForEach-Object { $_.id }), $savedProfile)
@@ -688,7 +711,7 @@ $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].descript
 $profileDescription.ForeColor = $script:SwsdPalette.TextSecondary
 $profileDescription.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
 Add-CardRow $card3 $profileDescription
-$profile.Add_SelectedIndexChanged({ $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].description })
+$profile.Add_SelectedIndexChanged({ Invoke-SwsdSafe -Source 'SelectedIndexChanged' { $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].description  }})
 
 $profileButtonRow = New-Object Windows.Forms.FlowLayoutPanel
 $profileButtonRow.AutoSize = $true
@@ -853,20 +876,20 @@ function Update-SwsdWrappingWidths {
     } catch {}
 }
 
-$form.Add_Load({ Update-SwsdFormSize })
-$form.Add_Resize({ Update-SwsdWrappingWidths })
+$form.Add_Load({ Invoke-SwsdSafe -Source 'Load' { Update-SwsdFormSize  }})
+$form.Add_Resize({ Invoke-SwsdSafe -Source 'Resize' -Quiet { Update-SwsdWrappingWidths  }})
 
 # Handle PerMonitorV2 DPI changes
 try {
     $form.Add_DpiChanged({
-        param($sender, $e)
+        param($sender, $e) Invoke-SwsdSafe -Source 'DpiChanged' {
         try {
             if ($e.SuggestedRectangle -ne $null) {
                 $form.Bounds = $e.SuggestedRectangle
             }
             Update-SwsdFormSize
         } catch {}
-    })
+     }})
 } catch {}
 
 function Invoke-SetupAction([scriptblock]$Action) {
@@ -882,7 +905,7 @@ function Invoke-SetupAction([scriptblock]$Action) {
         foreach ($button in @($install, $save, $test, $remove, $saveProfile)) { $button.Enabled = $true }
     }
 }
-$install.Add_Click({ Invoke-SetupAction {
+$install.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
     $sourceRoot = Split-Path $PSScriptRoot
     if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'runtime\package.json')) { $sourceRoot = $PSScriptRoot }
     # Installed settings windows already reside beside the launcher; only repair the runtime there.
@@ -896,8 +919,8 @@ $install.Add_Click({ Invoke-SetupAction {
     }
     Install-SwsdTools -SourceRoot $sourceRoot
     Set-SwsdStatus -Kind success -Text 'Tools installed. Test and save your token next. This window is also available from the Windows Start menu.'
-} })
-$save.Add_Click({ Invoke-SetupAction {
+}  }})
+$save.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
     $secret = $tokenBox.Text.Trim()
     $tokenBox.Clear()
     try {
@@ -914,36 +937,36 @@ $save.Add_Click({ Invoke-SetupAction {
         }
         Set-SwsdStatus -Kind success -Text 'Connection verified and token saved. Start a new chat. If an old connection remains, fully quit and reopen the desktop app.'
     } finally { $secret = $null }
-} })
-$test.Add_Click({ Invoke-SetupAction {
+}  }})
+$test.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
     $secret = [SwsdDesktop.Credentials]::Read($script:SwsdCredentialTarget)
     try {
         if ([string]::IsNullOrWhiteSpace($secret)) { throw 'No token is saved. Paste one into the masked field, then select Test and save token.' }
         Test-SwsdToken -Token $secret -BaseUrl (Get-SwsdSettings).baseUrl
         Set-SwsdStatus -Kind success -Text 'Saved connection verified. SolarWinds accepted the token and allowed the read-only check.'
     } finally { $secret = $null }
-} })
-$remove.Add_Click({
-    $choice = [Windows.Forms.MessageBox]::Show('Remove this computer''s saved SWSD token? Fully quit ChatGPT afterwards to end running connections. This does not revoke the token in SolarWinds.', 'Remove saved token', 'YesNo', 'Question')
+}  }})
+$remove.Add_Click({ Invoke-SwsdSafe -Source 'Click' {
+    $choice = Confirm-SwsdRemove
     if ($choice -eq 'Yes') { Invoke-SetupAction {
         [SwsdDesktop.Credentials]::Remove($script:SwsdCredentialTarget)
         $tokenBox.Clear()
         Set-SwsdStatus -Kind info -Text 'Saved token removed. Fully quit ChatGPT to stop running connections. Revoke the token in SolarWinds if needed.'
     } }
-})
-$saveProfile.Add_Click({ Invoke-SetupAction {
+ }})
+$saveProfile.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
     $selection = $script:SwsdProfiles[$profile.SelectedIndex]
     Save-SwsdProfile -Profile $selection.id
     $currentProfile.Text = 'Saved profile: ' + $selection.name
     Set-SwsdStatus -Kind success -Text 'Profile saved. Fully quit and reopen the desktop app, then start a new chat to load this tool set. Your saved token is unchanged.'
-} })
+}  }})
 if ($ValidateWindow) {
     # Visible lifecycle probe: no token entry, installation, settings or credential actions.
-    foreach ($control in @($install,$region,$tokenBox,$save,$test,$remove,$profile,$saveProfile)) { $control.Enabled = $false }
+    if ($env:SWSD_PREVIEW_ENABLED -ne '1') { foreach ($control in @($install,$region,$tokenBox,$save,$test,$remove,$profile,$saveProfile)) { $control.Enabled = $false } }
     $script:SwsdWindowResult = $null
     $probe = New-Object Windows.Forms.Timer
     $probe.Interval = 200
-    $probe.Add_Tick({
+    $probe.Add_Tick({ Invoke-SwsdSafe -Source 'Tick' {
         $probe.Stop()
         try {
         $script:SwsdLayoutFailures = @()
@@ -1091,11 +1114,11 @@ if ($ValidateWindow) {
         } catch {
             $script:SwsdWindowResult = @{ error = $_.Exception.Message }
         }
-    })
+     }})
     $close = New-Object Windows.Forms.Timer
     $close.Interval = $WindowTestSeconds * 1000
-    $close.Add_Tick({ $close.Stop(); $form.Close() })
-    $form.Add_Shown({ $probe.Start(); $close.Start() })
+    $close.Add_Tick({ Invoke-SwsdSafe -Source 'Tick' { $close.Stop(); $form.Close()  }})
+    $form.Add_Shown({ Invoke-SwsdSafe -Source 'Shown' { $probe.Start(); $close.Start()  }})
     try {
         [void]$form.ShowDialog()
         $script:SwsdWindowResult | ConvertTo-Json
@@ -1103,7 +1126,7 @@ if ($ValidateWindow) {
             -not $script:SwsdWindowResult.foregroundAvailable -or $script:SwsdWindowResult.behindForeground -or
             $script:SwsdWindowResult.alwaysOnTop -or
             $script:SwsdPresentationCount -ne 1 -or $script:SwsdWindowResult.consoleVisible -or
-            $script:SwsdWindowResult.tokenEntryEnabled) { throw 'Setup window presentation check failed.' }
+            ($script:SwsdWindowResult.tokenEntryEnabled -and $env:SWSD_PREVIEW_ENABLED -ne '1')) { throw 'Setup window presentation check failed.' }
         if ($script:SwsdWindowResult.layoutFailures -and $script:SwsdWindowResult.layoutFailures.Count -gt 0) {
             $failureList = ($script:SwsdWindowResult.layoutFailures -join '; ')
             throw "Layout validation failed: $failureList"
@@ -1113,6 +1136,52 @@ if ($ValidateWindow) {
         $tokenBox.Clear(); $form.Dispose()
     }
     exit 0
+} elseif ($ValidateHandlers) {
+    Set-StrictMode -Version Latest
+    $script:SwsdMockCalls = @()
+    $script:SwsdMockInstallFails = $false
+    function script:Install-SwsdTools { param($SourceRoot) $script:SwsdMockCalls += 'install'; if ($script:SwsdMockInstallFails) { throw 'mock install failure' } }
+    function script:Test-SwsdToken { param($Token, $BaseUrl) $script:SwsdMockCalls += 'test' }
+    function script:Confirm-SwsdRemove { return 'Yes' }
+    $onClick = [Windows.Forms.Button].GetMethod('OnClick', [Reflection.BindingFlags]'Instance,NonPublic')
+    $buttons = @($install, $save, $test, $remove, $saveProfile)
+    function Assert-SwsdClick([Windows.Forms.Button]$Button, [string]$Expect) {
+        $script:SwsdHandlerErrors = @()
+        $Button.Enabled = $true
+        $onClick.Invoke($Button, @([EventArgs]::Empty))
+        if ($script:SwsdHandlerErrors.Count) { throw "Unhandled exception in '$($Button.Text)': $($script:SwsdHandlerErrors -join '; ')" }
+        if ($status.Text -notlike "*$Expect*") { throw "'$($Button.Text)' status was '$($status.Text)', expected '*$Expect*'." }
+        foreach ($b in $buttons) { if (-not $b.Enabled) { throw "'$($b.Text)' stayed disabled after '$($Button.Text)'." } }
+        if ($form.UseWaitCursor) { throw "Wait cursor stuck after '$($Button.Text)'." }
+    }
+    try {
+        Assert-SwsdClick $install 'Tools installed'
+        $tokenBox.Text = 'synthetic-demo-token'
+        Assert-SwsdClick $save 'token saved'
+        if ($tokenBox.Text) { throw 'Token field was not cleared after save.' }
+        Assert-SwsdClick $test 'Saved connection verified'
+        Assert-SwsdClick $saveProfile 'Profile saved'
+        Assert-SwsdClick $remove 'Saved token removed'
+        Assert-SwsdClick $test 'No token is saved'
+        Assert-SwsdClick $save 'Paste your personal SWSD token'
+        $script:SwsdMockInstallFails = $true
+        Assert-SwsdClick $install 'mock install failure'
+        # A handler that escapes every inner catch must still surface as a friendly in-window error.
+        $script:SwsdHandlerErrors = @()
+        foreach ($b in $buttons) { $b.Enabled = $false }
+        Invoke-SwsdSafe -Source 'probe' { throw 'synthetic handler crash' }
+        if ($status.Text -notlike '*Something went wrong: synthetic handler crash*') { throw 'Safe wrapper did not show a friendly error.' }
+        foreach ($b in $buttons) { if (-not $b.Enabled) { throw 'Safe wrapper did not re-enable controls.' } }
+        if ($script:SwsdMockCalls -notcontains 'install' -or $script:SwsdMockCalls -notcontains 'test') { throw 'Mocks were not used.' }
+        Write-Output 'PASS: every button clicked under StrictMode with mocked install/test; friendly errors, controls re-enabled, no unhandled exceptions.'
+    } finally {
+        try { [SwsdDesktop.Credentials]::Remove($script:SwsdCredentialTarget) } catch {}
+        $settingsPath = Join-Path $script:SwsdHome 'settings.json'
+        if (Test-Path -LiteralPath $settingsPath) { Remove-Item -LiteralPath $settingsPath -Force }
+        $repair = Join-Path $script:SwsdHome 'repair-source'
+        if (Test-Path -LiteralPath $repair) { Remove-Item -LiteralPath $repair -Recurse -Force }
+        if (Test-Path -LiteralPath $script:SwsdHome) { Remove-Item -LiteralPath $script:SwsdHome -Recurse -Force }
+    }
 } elseif ($ValidateUi) {
     try {
         if (-not $tokenBox.UseSystemPasswordChar) { throw 'Token field must be masked.' }
