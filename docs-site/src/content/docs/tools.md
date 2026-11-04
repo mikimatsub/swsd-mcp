@@ -1,15 +1,15 @@
 ---
 title: Tools reference
-description: All 68 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 69 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **68 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **69 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
 ## MCP Apps UI bundles
 
-Eight read tools ship interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Hosts that support MCP Apps render rich UI alongside the structured response, including single-record detail views, filterable and sortable tables, comment threads, audit timelines, searchable explorers, submit-ready forms, and SLA risk dashboards. This UI appears instead of, or in addition to, plain text. Hosts without MCP Apps support are unaffected: the same tools continue to return their normal text and structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
+Nine interactive UI bundles ship with read tools using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Hosts that support MCP Apps render rich UI alongside the structured response, including single-record detail views, filterable and sortable tables, comment threads, audit timelines, searchable explorers, submit-ready forms, SLA risk dashboards, and change/release calendars. This UI appears instead of, or in addition to, plain text. Hosts without MCP Apps support are unaffected: the same tools continue to return their normal text and structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
 
 | Tool | Widget | UI |
 |---|---|---|
@@ -186,10 +186,11 @@ ITIL problem records: separate from incidents, scoped to root-cause investigatio
 
 ---
 
-## Change & Release (8)
+## Change & Release (9)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
+| `swsd_change_calendar` | R |   | ✓ |   | ✓ | ✓ |
 | `swsd_list_changes` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_change` | R |   |   |   | ✓ | ✓ |
 | `swsd_create_change` | W |   |   |   | ✓ | ✓ |
@@ -200,6 +201,18 @@ ITIL problem records: separate from incidents, scoped to root-cause investigatio
 | `swsd_update_release` | W |   |   |   | ✓ | ✓ |
 
 Use these for ITSM lifecycle work that needs change/release records instead of free-form incidents.
+
+- **`swsd_change_calendar`**: read-only change/release calendar with an [MCP Apps widget](/widgets/#change-calendar). Inputs: `kinds` (defaults to both), `from` / `to`, `states`, `state_is_not`, `assignee_email`, `group_assignee_id`, `query`, `max_pages` (3 by default, maximum 10 **per kind**) and `per_page` (100 by default and maximum).
+
+  All filters run **client-side**. Only `page` and `per_page` go to `/changes.json` and `/releases.json`; the [official API specification](https://apidoc.samanage.com/) documents no state, assignee, search or date query filters for these collections. `query` is a case-insensitive substring search on **name only**; state and email comparisons are also case-insensitive. Empty state arrays do not restrict the scan; exclusions take precedence over inclusions.
+
+  Dates mean UTC midnight; datetimes must include `Z` or an offset. The default window starts today at UTC midnight and ends 30 days later; when only `from` is supplied, `to` defaults to 30 days after it. Windows are half-open (`start < to` and `end > from`), so work starting before the window is included if it overlaps. Missing, invalid or non-positive ends use start + 1 hour. Missing/invalid starts are excluded and counted as unscheduled.
+
+  Returns sorted `items`, `conflicts`, `days: [{date, items}]` keyed by the **UTC start date**, normalized `window: {from, to}`, `applied_filters`, and `scan: {pages_fetched: {change, release}, rows_scanned, unscheduled, truncated}`. Scanned rows include records rejected by filters; pages count separately per kind. Conflicts require overlapping windows and a shared configuration-item ID or group ID; each pair includes both `{kind, id}` references, reasons, and overlap bounds. `conflict_count` counts conflicting peers, not reasons. Identical IDs across kinds are distinct records; repeated records within a kind are deduplicated.
+
+  **This is a bounded calendar, not a tenant-wide conflict guarantee.** Pagination stops independently when `has_more` is false or the per-kind page cap is reached. `truncated: true` means more matches/conflicts may exist. Conflicts are computed only among returned, filtered items. No server-side date ordering or early stop based on dates is assumed.
+
+  Example: `{"from":"2026-11-10","to":"2026-11-13","state_is_not":["Closed"],"query":"patch"}`.
 
 - **`swsd_list_changes` / `swsd_get_change`**: browse and inspect SWSD change records. `detail_level: "long"` maps to SWSD `layout=long` where documented.
 - **`swsd_create_change` / `swsd_update_change`**: create or update change records with plans, rollback/test plans, CI links, tags, and custom fields.

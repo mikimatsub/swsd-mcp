@@ -64,7 +64,7 @@ for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full']) {
       assert.ok(result.contents.every((item) => typeof item.text === 'string' && item.text.length > 1000 && !/<script\b[^>]*\bsrc=/i.test(item.text) && !/<link\b[^>]*\bhref=["'][^"']+\.css/i.test(item.text)), 'Widget is not self-contained');
     }
     passed++;
-    console.log('PASS seven self-contained widget resources');
+    console.log(`PASS ${UI_TOOLS.length} self-contained widget resources`);
   } catch {
     // Never emit upstream payloads, JWT claims, ticket contents, or token values.
     console.error(`FAIL ${currentCheck}`);

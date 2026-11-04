@@ -87,7 +87,7 @@ for (const version of versions) {
       if (message.method === 'initialize') server.processHandle.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
       return response;
     }, version);
-    console.log(`PASS STDIO ${version}: negotiation, 66 tools, annotations, metadata call, 7 widgets`);
+    console.log(`PASS STDIO ${version}: negotiation, ${PROFILE_TOOLS.full.length} tools, annotations, metadata call, ${UI_TOOLS.length} widgets`);
   } finally { await stop(server); }
 }
 
@@ -119,7 +119,7 @@ try {
       return response.headers.get('content-type').includes('text/event-stream')
         ? JSON.parse(body.split('\n').find(line => line.startsWith('data:')).slice(5).trim()) : JSON.parse(body);
     }, version);
-    console.log(`PASS HTTP ${version}: negotiation, 66 tools, annotations, metadata call, 7 widgets`);
+    console.log(`PASS HTTP ${version}: negotiation, ${PROFILE_TOOLS.full.length} tools, annotations, metadata call, ${UI_TOOLS.length} widgets`);
   }
 } finally { await stop(server); }
 console.log('8 legacy transport checks passed; fixture credential only, write mode disabled.');
