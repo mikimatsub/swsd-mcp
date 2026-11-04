@@ -55,12 +55,35 @@ const OPERATIONS_RECORD_TOOLS = [
   'swsd_list_risks',
 ] as const;
 
+const DIRECTORY_WRITE_TOOLS = [
+  'swsd_create_user',
+  'swsd_update_user',
+  'swsd_create_group',
+  'swsd_update_group',
+  'swsd_create_site',
+  'swsd_update_site',
+  'swsd_create_department',
+  'swsd_update_department',
+  'swsd_create_category',
+  'swsd_update_category',
+  'swsd_create_role',
+  'swsd_update_role',
+  'swsd_add_group_member',
+] as const;
+
 const DELETE_TOOLS = [
   'swsd_delete_incident',
   'swsd_delete_problem',
   'swsd_delete_change',
   'swsd_delete_release',
   'swsd_delete_solution',
+  'swsd_delete_user',
+  'swsd_delete_group',
+  'swsd_delete_site',
+  'swsd_delete_department',
+  'swsd_delete_category',
+  'swsd_delete_role',
+  'swsd_remove_group_member',
 ] as const;
 
 const AGENT_TOOLS = [
@@ -79,6 +102,7 @@ const AGENT_TOOLS = [
   'swsd_list_departments',
   'swsd_list_groups',
   'swsd_list_roles',
+  'swsd_get_role',
   // Directory get-by-id lookups (user + category are in READ_BASE)
   'swsd_get_group',
   'swsd_get_site',
@@ -115,7 +139,7 @@ export const PROFILE_TOOLS = {
     'swsd_list_problems',
   ],
   agent: AGENT_TOOLS,
-  operations: [...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DELETE_TOOLS],
+  operations: [...new Set([...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DIRECTORY_WRITE_TOOLS, ...DELETE_TOOLS])],
   knowledge: [
     'swsd_get_server_info',
     'swsd_health_check',
@@ -136,7 +160,7 @@ export const PROFILE_TOOLS = {
     'swsd_update_solution',
     'swsd_describe_custom_fields',
   ],
-  full: [
+  full: [...new Set([
     'swsd_change_calendar',
     'swsd_get_server_info',
     'swsd_health_check',
@@ -160,6 +184,7 @@ export const PROFILE_TOOLS = {
     'swsd_list_users',
     'swsd_list_groups',
     'swsd_list_roles',
+    'swsd_get_role',
     'swsd_get_user',
     'swsd_get_group',
     'swsd_get_site',
@@ -183,6 +208,7 @@ export const PROFILE_TOOLS = {
     'swsd_update_problem',
     ...TIME_AND_ATTACHMENT_TOOLS,
     ...OPERATIONS_RECORD_TOOLS,
+    ...DIRECTORY_WRITE_TOOLS,
     ...DELETE_TOOLS,
-  ],
+  ])],
 } as const satisfies Record<ProfileName, readonly string[]>;

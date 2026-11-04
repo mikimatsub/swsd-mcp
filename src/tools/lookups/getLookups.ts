@@ -9,6 +9,7 @@ import {
   toDepartmentSummary,
   toGroupMembers,
   toGroupSummary,
+  toRoleSummary,
   toSiteSummary,
   toUserGroupIds,
   toUserSummary,
@@ -59,6 +60,12 @@ const SiteOutput = z.object({
 });
 
 const DepartmentOutput = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  description: z.string().optional(),
+});
+
+const RoleOutput = z.object({
   id: z.number().int(),
   name: z.string(),
   description: z.string().optional(),
@@ -206,6 +213,23 @@ export function registerGetCategory(server: McpServer, ctx: ToolContext): void {
     map: (raw) => {
       const c = toCategorySummary(raw);
       return c ? { ...c } : null;
+    },
+  });
+}
+
+export function registerGetRole(server: McpServer, ctx: ToolContext): void {
+  registerGetLookup(server, ctx, {
+    tool: 'swsd_get_role',
+    label: 'role',
+    collection: 'roles',
+    key: 'role',
+    description:
+      'Fetch one SWSD role by id. Returns name and description. Use swsd_list_roles first to find the id.',
+    output: RoleOutput,
+    map: (raw) => {
+      const body = raw && typeof raw === 'object' && 'role' in raw ? raw.role : raw;
+      const role = toRoleSummary(body);
+      return role ? { ...role } : null;
     },
   });
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EmailInput, MAX_QUERY_CHARS } from './limits.js';
+import { EmailInput, MAX_LABEL_CHARS, MAX_LONG_TEXT_CHARS, MAX_QUERY_CHARS } from './limits.js';
 
 const PaginationFields = {
   page: z
@@ -56,3 +56,75 @@ export const GetLookupByIdInput = z.object({
 });
 
 export type GetLookupByIdInput = z.infer<typeof GetLookupByIdInput>;
+
+const DirectoryId = GetLookupByIdInput.shape.id;
+const DirectoryName = z.string().min(1).max(MAX_LABEL_CHARS);
+const DirectoryLabel = z.string().max(MAX_LABEL_CHARS);
+const DirectoryDescription = z.string().max(MAX_LONG_TEXT_CHARS);
+
+export const CreateUserInput = z.object({
+  name: DirectoryName,
+  email: EmailInput,
+  title: DirectoryLabel.optional(),
+  phone: DirectoryLabel.optional(),
+  mobile_phone: DirectoryLabel.optional(),
+  role_name: DirectoryName.optional().describe('Role name from swsd_list_roles.'),
+  site_name: DirectoryName.optional().describe('Site name from swsd_list_sites.'),
+  department_name: DirectoryName.optional().describe('Department name from swsd_list_departments.'),
+  reports_to_email: EmailInput.optional().describe('Email of the user this user reports to.'),
+});
+
+export const UpdateUserInput = CreateUserInput.partial().extend({
+  id: DirectoryId,
+  disabled: z.boolean().optional(),
+});
+
+export const CreateGroupInput = z.object({
+  name: DirectoryName,
+  description: DirectoryDescription.optional(),
+  email: EmailInput.optional(),
+});
+
+export const UpdateGroupInput = CreateGroupInput.partial().extend({ id: DirectoryId });
+
+export const CreateSiteInput = z.object({
+  name: DirectoryName,
+  location: DirectoryLabel.optional(),
+  description: DirectoryDescription.optional(),
+  time_zone: DirectoryLabel.optional(),
+});
+
+export const UpdateSiteInput = CreateSiteInput.partial().extend({ id: DirectoryId });
+
+export const CreateDepartmentInput = z.object({
+  name: DirectoryName,
+  description: DirectoryDescription.optional(),
+});
+
+export const UpdateDepartmentInput = CreateDepartmentInput.partial().extend({ id: DirectoryId });
+
+export const CreateCategoryInput = z.object({
+  name: DirectoryName,
+  parent_id: DirectoryId.optional(),
+  default_assignee_id: DirectoryId.optional(),
+});
+
+export const UpdateCategoryInput = CreateCategoryInput.partial().extend({ id: DirectoryId });
+
+export const CreateRoleInput = z.object({
+  name: DirectoryName,
+  description: DirectoryDescription.optional(),
+});
+
+export const UpdateRoleInput = CreateRoleInput.partial().extend({ id: DirectoryId });
+
+export const AddGroupMemberInput = z.object({
+  group_id: DirectoryId.describe('Internal group id from swsd_list_groups.'),
+  user_id: DirectoryId.describe('Internal user id from swsd_list_users.'),
+});
+
+export const RemoveGroupMemberInput = z.object({
+  membership_id: DirectoryId.describe('Membership id returned by swsd_add_group_member, not a user or group id.'),
+  confirm: z.boolean().default(false).describe('Set true only after the user confirms the previewed membership removal.'),
+  confirm_id: DirectoryId.optional().describe('Membership id from the preview, required to confirm removal.'),
+});
