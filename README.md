@@ -107,7 +107,7 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 
 ---
 
-## Tools (101 across 15 categories)
+## Tools (114 across 15 categories)
 
 | Category | Tools |
 |---|---|
@@ -117,7 +117,7 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 | **Tasks** | `swsd_list_incident_tasks`, `swsd_create_incident_task`, `swsd_update_task_state` |
 | **Problems** | `swsd_list_problems`, `swsd_get_problem`, `swsd_create_problem`, `swsd_update_problem`, `swsd_delete_problem` |
 | **Change & Release** | `swsd_change_calendar`, `swsd_list_changes`, `swsd_get_change`, `swsd_create_change`, `swsd_update_change`, `swsd_delete_change`, `swsd_list_releases`, `swsd_get_release`, `swsd_create_release`, `swsd_update_release`, `swsd_delete_release` |
-| **Assets & CMDB** | `swsd_list_hardware_assets`, `swsd_get_hardware_asset`, `swsd_list_mobile_devices`, `swsd_get_mobile_device`, `swsd_list_printers`, `swsd_get_printer`, `swsd_list_software_assets`, `swsd_get_software_asset`, `swsd_list_other_assets`, `swsd_get_other_asset`, `swsd_list_configuration_items`, `swsd_get_configuration_item` |
+| **Assets & CMDB** | `swsd_list_hardware_assets`, `swsd_get_hardware_asset`, `swsd_create_hardware_asset`, `swsd_update_hardware_asset`, `swsd_delete_hardware_asset`, `swsd_list_mobile_devices`, `swsd_get_mobile_device`, `swsd_create_mobile_device`, `swsd_update_mobile_device`, `swsd_delete_mobile_device`, `swsd_list_printers`, `swsd_get_printer`, `swsd_update_printer`, `swsd_list_software_assets`, `swsd_get_software_asset`, `swsd_list_other_assets`, `swsd_get_other_asset`, `swsd_create_other_asset`, `swsd_update_other_asset`, `swsd_delete_other_asset`, `swsd_list_configuration_items`, `swsd_get_configuration_item`, `swsd_create_configuration_item`, `swsd_update_configuration_item`, `swsd_delete_configuration_item` |
 | **Procurement & Risk** | `swsd_list_contracts`, `swsd_get_contract`, `swsd_list_purchase_orders`, `swsd_get_purchase_order`, `swsd_list_vendors`, `swsd_get_vendor`, `swsd_list_risks` |
 | **Time tracking** | `swsd_list_time_tracks`, `swsd_log_time`, `swsd_update_time_track` |
 | **Attachments** | `swsd_upload_attachment` |
@@ -190,8 +190,8 @@ Profiles control which tools are registered at startup. Cannot be changed mid-se
 | `triage` | Read-heavy first-line support + commenting | 18 |
 | `agent` | Full ticket-handler workflow (default) | 47 |
 | `knowledge` | KB-author workflow + incident reads | 17 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 99 |
-| `full` | Every tool | 101 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 112 |
+| `full` | Every tool | 114 |
 
 Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a profile.
 

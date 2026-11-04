@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 101 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 114 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **101 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **114 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
@@ -228,22 +228,35 @@ Use these for ITSM lifecycle work that needs change/release records instead of f
 
 ---
 
-## Assets & CMDB (12)
+## Assets & CMDB (25)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_hardware_assets` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_hardware_asset` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_hardware_asset` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_hardware_asset` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_hardware_asset` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_mobile_devices` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_mobile_device` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_mobile_device` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_mobile_device` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_mobile_device` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_printers` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_printer` | R |   |   |   | ✓ | ✓ |
+| `swsd_update_printer` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_software_assets` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_software_asset` | R |   |   |   | ✓ | ✓ |
 | `swsd_list_other_assets` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_other_asset` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_other_asset` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_other_asset` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_other_asset` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_configuration_items` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_configuration_item` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_configuration_item` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_configuration_item` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_configuration_item` | W |   |   |   | ✓ | ✓ |
 
 These read tools expose asset and CMDB context without adding asset mutation risk.
 
