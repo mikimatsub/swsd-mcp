@@ -16,15 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   progress bar, disabled action controls during work, friendly in-window errors,
   safe error details, and restart guidance. Handler validation awaits the real
   polling timer with mocked installs, including failure and retry.
-- Windows settings dashboard with themed Node.js, installed tools/version, token
-  presence, region, and profile chips, refreshed after each action. Credential
-  presence checks never materialize or display the saved token value.
-- Background install/repair using a PowerShell runspace, an animated themed
-  progress bar, disabled action controls during work, friendly in-window errors,
-  safe error details, and restart guidance. Handler validation awaits the real
-  polling timer with mocked installs, including failure and retry.
-
-- Shared status collection for the dashboard and `-CheckOnly`, with Node.js
 - Windows settings app: every event handler runs in a safe wrapper (friendly in-window error, controls re-enabled); new check-ui-handlers test clicks every button under StrictMode with mocked actions in CI; globe app icon replaces the default window icon.
 - Windows settings app: one shared button style so buttons in a row have identical top, height and width; field labels and token placeholder; themed dark-mode dropdown borders; clear disabled-button look; -ValidateWindow fails on any 1px button-row mismatch.
 - Added `swsd_sla_risk` tool: lists open incidents ranked by SLA breach risk with
@@ -43,8 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Shared status collection for the dashboard and `-CheckOnly`, with Node.js
-  version and region added to the existing JSON fields.
 - Shared status collection for the dashboard and `-CheckOnly`, with Node.js
   version and region added to the existing JSON fields.
 - Restyled the Windows settings app to a Windows 11 look using WinForms only:
