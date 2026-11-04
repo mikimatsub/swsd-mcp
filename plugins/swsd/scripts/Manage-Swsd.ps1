@@ -65,6 +65,7 @@ namespace SwsdDesktop {
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, string lParam);
     [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
     public static bool IsBehindForeground(IntPtr window) {
       IntPtr foreground = GetForegroundWindow();
@@ -92,6 +93,42 @@ namespace SwsdDesktop {
   }
 }
 '@
+}
+
+if (-not ('SwsdDesktop.ThemedComboBox' -as [type])) {
+Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition @"
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+namespace SwsdDesktop {
+  // ComboBox whose frame and drop-down arrow follow the app theme instead of the light system colors.
+  public class ThemedComboBox : ComboBox {
+    public Color BorderColor = Color.Gray;
+    public Color ArrowColor = Color.Black;
+    protected override void WndProc(ref Message m) {
+      base.WndProc(ref m);
+      if (m.Msg == 0x000F || m.Msg == 0x0133) {
+        using (Graphics g = Graphics.FromHwnd(Handle)) {
+          Rectangle r = ClientRectangle;
+          using (Pen back = new Pen(BackColor, 2)) { g.DrawRectangle(back, 1, 1, r.Width - 2, r.Height - 2); }
+          int arrowWidth = SystemInformation.VerticalScrollBarWidth;
+          Rectangle arrow = new Rectangle(r.Right - arrowWidth - 3, 1, arrowWidth + 2, r.Height - 2);
+          using (SolidBrush b = new SolidBrush(BackColor)) { g.FillRectangle(b, arrow); }
+          using (Pen inner = new Pen(BackColor)) { for (int i = 1; i <= 3; i++) g.DrawRectangle(inner, i, i, arrow.Left - i - 1, r.Height - 2 * i - 1); }
+          int cx = arrow.Left + arrow.Width / 2, cy = arrow.Top + arrow.Height / 2;
+          int w = Math.Max(3, arrowWidth / 4);
+          using (Pen ap = new Pen(ArrowColor, Math.Max(1, arrowWidth / 12))) {
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.DrawLines(ap, new Point[] { new Point(cx - w, cy - w / 2), new Point(cx, cy + w / 2), new Point(cx + w, cy - w / 2) });
+          }
+          g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+          using (Pen border = new Pen(BorderColor)) { g.DrawRectangle(border, 0, 0, r.Width - 1, r.Height - 1); }
+        }
+      }
+    }
+  }
+}
+"@
 }
 
 # Theme detection
@@ -130,6 +167,8 @@ if ($script:SwsdDarkMode) {
         InputBorder  = [Drawing.Color]::FromArgb(80, 80, 80)
         ButtonNeutralBg = [Drawing.Color]::FromArgb(60, 60, 60)
         ButtonNeutralFg = [Drawing.Color]::White
+    DisabledBg   = [Drawing.Color]::FromArgb(45, 45, 45)
+    DisabledFg   = [Drawing.Color]::FromArgb(125, 125, 125)
         StatusSuccessBg = [Drawing.Color]::FromArgb(16, 60, 30)
         StatusSuccessFg = [Drawing.Color]::FromArgb(108, 200, 138)
         StatusWarnBg    = [Drawing.Color]::FromArgb(70, 55, 10)
@@ -150,6 +189,8 @@ if ($script:SwsdDarkMode) {
         InputBorder  = [Drawing.Color]::FromArgb(200, 200, 200)
         ButtonNeutralBg = [Drawing.Color]::White
         ButtonNeutralFg = [Drawing.Color]::FromArgb(26, 26, 26)
+    DisabledBg   = [Drawing.Color]::FromArgb(243, 243, 243)
+    DisabledFg   = [Drawing.Color]::FromArgb(160, 160, 160)
         StatusSuccessBg = [Drawing.Color]::FromArgb(220, 245, 228)
         StatusSuccessFg = [Drawing.Color]::FromArgb(16, 100, 40)
         StatusWarnBg    = [Drawing.Color]::FromArgb(255, 245, 210)
@@ -240,6 +281,8 @@ $form.Add_HandleCreated({
 
 $script:SwsdPresentationCount = 0
 $form.Add_Shown({
+    # Start with the token field focused (or nothing), never a drop-down showing its focus frame.
+    try { if ($tokenBox.Enabled) { $form.ActiveControl = $tokenBox } else { $form.ActiveControl = $null } } catch {}
     # Present once after the dialog has a visible handle, even when its console is hidden.
     [void]$form.BeginInvoke([Action]{
         $script:SwsdPresentationCount++
@@ -304,13 +347,29 @@ function New-SwsdButton([string]$Text, [bool]$Primary = $false) {
     $btn = New-Object Windows.Forms.Button
     $btn.Text = $Text
     $btn.FlatStyle = 'Flat'
+    # Every button gets identical geometry: fixed DPI-scaled height, same margin/padding/border.
     $btn.FlatAppearance.BorderSize = 1
-    $btn.AutoSize = $true
-    $btn.AutoSizeMode = 'GrowAndShrink'
-    $btn.Padding = New-Object Windows.Forms.Padding((ScalePx $script:SwsdButtonPaddingH), (ScalePx $script:SwsdButtonPaddingV), (ScalePx $script:SwsdButtonPaddingH), (ScalePx $script:SwsdButtonPaddingV))
-    $btn.MinimumSize = New-Object Drawing.Size(0, (ScalePx $script:SwsdButtonMinHeight))
+    $btn.AutoSize = $false
+    $btn.UseVisualStyleBackColor = $false
+    $btn.TextAlign = 'MiddleCenter'
+    $btn.Padding = New-Object Windows.Forms.Padding(0)
+    $btn.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx $script:SwsdButtonGap), 0)
+    $btn.Anchor = 'Top,Left'
     $btn.Cursor = [Windows.Forms.Cursors]::Hand
     $btn.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
+    $textWidth = [Windows.Forms.TextRenderer]::MeasureText($Text, $btn.Font).Width
+    $btn.Size = New-Object Drawing.Size(($textWidth + 2 * (ScalePx $script:SwsdButtonPaddingH) + 2), (ScalePx $script:SwsdButtonMinHeight))
+    # Intentional disabled look: owner-draw so WinForms' muddy system gray is never used.
+    $btn.Add_Paint({
+        param($sender, $e)
+        if ($sender.Enabled) { return }
+        $rect = $sender.ClientRectangle
+        $e.Graphics.Clear($script:SwsdPalette.DisabledBg)
+        $pen = New-Object Drawing.Pen($script:SwsdPalette.Border)
+        $e.Graphics.DrawRectangle($pen, 0, 0, $rect.Width - 1, $rect.Height - 1)
+        $pen.Dispose()
+        [Windows.Forms.TextRenderer]::DrawText($e.Graphics, $sender.Text, $sender.Font, $rect, $script:SwsdPalette.DisabledFg, [Windows.Forms.TextFormatFlags]'HorizontalCenter, VerticalCenter, SingleLine')
+    })
     if ($Primary) {
         $btn.BackColor = $script:SwsdAccentColor
         $btn.ForeColor = Get-SwsdContrastColor $script:SwsdAccentColor
@@ -325,6 +384,63 @@ function New-SwsdButton([string]$Text, [bool]$Primary = $false) {
         $btn.FlatAppearance.MouseDownBackColor = Adjust-SwsdColor $script:SwsdPalette.ButtonNeutralBg -10
     }
     return $btn
+}
+
+# Helper: make every button in a row the same width (the widest) and height.
+function Set-SwsdButtonRow([Windows.Forms.Button[]]$Buttons) {
+    $width = ($Buttons | ForEach-Object { $_.Width } | Measure-Object -Maximum).Maximum
+    foreach ($b in $Buttons) { $b.Size = New-Object Drawing.Size($width, (ScalePx $script:SwsdButtonMinHeight)) }
+    $Buttons[-1].Margin = New-Object Windows.Forms.Padding(0)
+}
+
+# Helper: field label above an input.
+function New-SwsdFieldLabel([string]$Text) {
+    $l = New-Object Windows.Forms.Label
+    $l.AutoSize = $true
+    $l.Text = $Text
+    $l.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 9))
+    $l.ForeColor = $script:SwsdPalette.TextPrimary
+    return $l
+}
+
+# Helper: themed 1px border host so inputs never show the default light 3D border.
+function New-SwsdComboHost([Windows.Forms.ComboBox]$Combo) {
+    $hostPanel = New-Object Windows.Forms.Panel
+    $hostPanel.BackColor = $script:SwsdPalette.InputBg
+    $hostPanel.Padding = New-Object Windows.Forms.Padding(1)
+    $hostPanel.Height = $Combo.PreferredSize.Height
+    $hostPanel.Add_Paint({
+        param($sender, $e)
+        $pen = New-Object Drawing.Pen($script:SwsdPalette.InputBorder)
+        $e.Graphics.DrawRectangle($pen, 0, 0, $sender.Width - 1, $sender.Height - 1)
+        $pen.Dispose()
+    })
+    $clip = New-Object Windows.Forms.Panel
+    $clip.Dock = 'Fill'
+    $clip.BackColor = $script:SwsdPalette.InputBg
+    $hostPanel.Controls.Add($clip)
+    $Combo.Margin = New-Object Windows.Forms.Padding(0)
+    $Combo.Location = New-Object Drawing.Point(-1, -1)
+    $clip.Controls.Add($Combo)
+    $clip.Add_Resize({ param($sender, $e) foreach ($c in $sender.Controls) { $c.Width = $sender.Width + 2 } })
+    $hostPanel.Height = $Combo.Height
+    return ,$hostPanel
+}
+function New-SwsdInputHost([Windows.Forms.Control]$Control, [int]$Inset = 1) {
+    $hostPanel = New-Object Windows.Forms.Panel
+    $hostPanel.BackColor = $script:SwsdPalette.InputBg
+    $hostPanel.Padding = New-Object Windows.Forms.Padding($Inset)
+    $hostPanel.Height = $Control.PreferredSize.Height + 2 * $Inset
+    $hostPanel.Add_Paint({
+        param($sender, $e)
+        $pen = New-Object Drawing.Pen($script:SwsdPalette.InputBorder)
+        $e.Graphics.DrawRectangle($pen, 0, 0, $sender.Width - 1, $sender.Height - 1)
+        $pen.Dispose()
+    })
+    $Control.Dock = 'Fill'
+    $Control.Margin = New-Object Windows.Forms.Padding(0)
+    $hostPanel.Controls.Add($Control)
+    return ,$hostPanel
 }
 
 # Helper: create a card panel with title; stores inner layout in card.Tag
@@ -388,7 +504,7 @@ function Add-CardRow([Windows.Forms.Panel]$Card, [Windows.Forms.Control]$Control
     $rowIndex = $layout.RowCount
     $layout.RowCount = $layout.RowCount + 1
     [void]$layout.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-    $Control.Anchor = 'Top,Left,Right'
+    if (-not ($Control -is [Windows.Forms.Button])) { $Control.Anchor = 'Top,Left,Right' }
     $Control.Margin = New-Object Windows.Forms.Padding(0, (ScalePx 2), 0, (ScalePx 2))
     $layout.Controls.Add($Control, 0, $rowIndex)
 }
@@ -399,10 +515,10 @@ $headerPanel.Dock = 'Fill'
 $headerPanel.AutoSize = $true
 $headerPanel.ColumnCount = 2
 $headerPanel.RowCount = 2
-$headerPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
-$headerPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
-$headerPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-$headerPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+[void]$headerPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
+[void]$headerPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
+[void]$headerPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+[void]$headerPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
 $headerPanel.Margin = New-Object Windows.Forms.Padding(0, 0, 0, (ScalePx $script:SwsdCardGap))
 
 $headerIcon = New-Object Windows.Forms.Label
@@ -453,7 +569,8 @@ $rootPanel.Controls.Add($card1, 0, 1)
 # Card 2: Region + token
 $card2 = New-SwsdCard '2. Connect your account' 'Key'
 
-$region = New-Object Windows.Forms.ComboBox
+$region = New-Object SwsdDesktop.ThemedComboBox
+$region.BorderColor = $script:SwsdPalette.InputBorder; $region.ArrowColor = $script:SwsdPalette.TextSecondary
 $region.DropDownStyle = 'DropDownList'
 $region.FlatStyle = 'Flat'
 $region.BackColor = $script:SwsdPalette.InputBg
@@ -478,20 +595,23 @@ $region.Add_DrawItem({
 [void]$region.Items.Add('EU - apieu.samanage.com')
 $region.SelectedIndex = 0
 if ((Get-SwsdSettings).baseUrl -eq 'https://apieu.samanage.com') { $region.SelectedIndex = 1 }
+Add-CardRow $card2 (New-SwsdFieldLabel 'Region')
 Add-CardRow $card2 $region
 
 $tokenBox = New-Object Windows.Forms.TextBox
 $tokenBox.UseSystemPasswordChar = $true
 $tokenBox.BackColor = $script:SwsdPalette.InputBg
 $tokenBox.ForeColor = $script:SwsdPalette.TextPrimary
-$tokenBox.BorderStyle = 'FixedSingle'
+$tokenBox.BorderStyle = 'None'
 $tokenBox.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
 $tokenBox.Height = ScalePx 30
 $tokenBox.Add_EnabledChanged({
     if (-not $tokenBox.Enabled) { $tokenBox.ForeColor = $script:SwsdPalette.TextSecondary }
     else { $tokenBox.ForeColor = $script:SwsdPalette.TextPrimary }
 })
-Add-CardRow $card2 $tokenBox
+Add-CardRow $card2 (New-SwsdFieldLabel 'API token')
+Add-CardRow $card2 (New-SwsdInputHost $tokenBox (ScalePx 6))
+try { [void][SwsdDesktop.Windows]::SendMessage($tokenBox.Handle, 0x1501, [IntPtr]1, 'Paste your API token') } catch {}
 
 $tokenHint = New-Object Windows.Forms.Label
 $tokenHint.AutoSize = $true
@@ -503,7 +623,7 @@ Add-CardRow $card2 $tokenHint
 
 $buttonRow2 = New-Object Windows.Forms.FlowLayoutPanel
 $buttonRow2.AutoSize = $true
-$buttonRow2.WrapContents = $true
+$buttonRow2.WrapContents = $false
 $buttonRow2.FlowDirection = 'LeftToRight'
 $buttonRow2.Anchor = 'Top,Left,Right'
 $buttonRow2.Margin = New-Object Windows.Forms.Padding(0, (ScalePx 6), 0, 0)
@@ -512,13 +632,12 @@ $save = New-SwsdButton 'Test and save token' $true
 $buttonRow2.Controls.Add($save)
 
 $test = New-SwsdButton 'Test saved connection'
-$test.Margin = New-Object Windows.Forms.Padding((ScalePx $script:SwsdButtonGap), 0, 0, 0)
 $buttonRow2.Controls.Add($test)
 
 $remove = New-SwsdButton 'Remove saved token'
-$remove.Margin = New-Object Windows.Forms.Padding((ScalePx $script:SwsdButtonGap), 0, 0, 0)
 $buttonRow2.Controls.Add($remove)
 
+Set-SwsdButtonRow @($save, $test, $remove)
 Add-CardRow $card2 $buttonRow2
 $rootPanel.Controls.Add($card2, 0, 2)
 
@@ -533,7 +652,8 @@ $profileDesc.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
 $profileDesc.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 Add-CardRow $card3 $profileDesc
 
-$profile = New-Object Windows.Forms.ComboBox
+$profile = New-Object SwsdDesktop.ThemedComboBox
+$profile.BorderColor = $script:SwsdPalette.InputBorder; $profile.ArrowColor = $script:SwsdPalette.TextSecondary
 $profile.DropDownStyle = 'DropDownList'
 $profile.AccessibleName = 'SWSD profile'
 $profile.FlatStyle = 'Flat'
@@ -558,6 +678,7 @@ $profile.Add_DrawItem({
 foreach ($item in $script:SwsdProfiles) { [void]$profile.Items.Add($item.name) }
 $savedProfile = (Get-SwsdSettings).profile
 $profile.SelectedIndex = [Array]::IndexOf(@($script:SwsdProfiles | ForEach-Object { $_.id }), $savedProfile)
+Add-CardRow $card3 (New-SwsdFieldLabel 'Profile')
 Add-CardRow $card3 $profile
 
 $profileDescription = New-Object Windows.Forms.Label
@@ -571,7 +692,7 @@ $profile.Add_SelectedIndexChanged({ $profileDescription.Text = $script:SwsdProfi
 
 $profileButtonRow = New-Object Windows.Forms.FlowLayoutPanel
 $profileButtonRow.AutoSize = $true
-$profileButtonRow.WrapContents = $true
+$profileButtonRow.WrapContents = $false
 $profileButtonRow.FlowDirection = 'LeftToRight'
 $profileButtonRow.Anchor = 'Top,Left,Right'
 $profileButtonRow.Margin = New-Object Windows.Forms.Padding(0, (ScalePx 6), 0, 0)
@@ -585,7 +706,10 @@ $currentProfile.Text = 'Saved profile: ' + $script:SwsdProfiles[$profile.Selecte
 $currentProfile.ForeColor = $script:SwsdPalette.TextSecondary
 $currentProfile.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
 $currentProfile.Anchor = 'Left'
-$currentProfile.Margin = New-Object Windows.Forms.Padding((ScalePx 12), (ScalePx 8), 0, 0)
+$currentProfile.Margin = New-Object Windows.Forms.Padding((ScalePx 12), 0, 0, 0)
+$currentProfile.AutoSize = $false
+$currentProfile.TextAlign = 'MiddleLeft'
+$currentProfile.Size = New-Object Drawing.Size(([Windows.Forms.TextRenderer]::MeasureText('Saved profile: Administrator (all tools)', $currentProfile.Font).Width), (ScalePx $script:SwsdButtonMinHeight))
 $profileButtonRow.Controls.Add($currentProfile)
 
 Add-CardRow $card3 $profileButtonRow
@@ -824,6 +948,21 @@ if ($ValidateWindow) {
         try {
         $script:SwsdLayoutFailures = @()
         $script:SwsdLayoutNotes = @()
+
+        # Button rows must be pixel-identical: same Top and Height for every button (tolerance 0),
+        # and equal widths inside a row of action buttons.
+        foreach ($row in @($buttonRow2, $profileButtonRow)) {
+            $rowButtons = @($row.Controls | Where-Object { $_ -is [Windows.Forms.Button] -and $_.Visible })
+            if ($rowButtons.Count -lt 1) { continue }
+            $tops = @($rowButtons | ForEach-Object { $_.Top } | Sort-Object -Unique)
+            $heights = @($rowButtons | ForEach-Object { $_.Height } | Sort-Object -Unique)
+            $widths = @($rowButtons | ForEach-Object { $_.Width } | Sort-Object -Unique)
+            if ($tops.Count -ne 1) { $script:SwsdLayoutFailures += "Button row tops differ: $($tops -join ',')" }
+            if ($heights.Count -ne 1) { $script:SwsdLayoutFailures += "Button row heights differ: $($heights -join ',')" }
+            if ($widths.Count -ne 1) { $script:SwsdLayoutFailures += "Button row widths differ: $($widths -join ',')" }
+        }
+        $allHeights = @(@($install, $save, $test, $remove, $saveProfile) | ForEach-Object { $_.Height } | Sort-Object -Unique)
+        if ($allHeights.Count -ne 1) { $script:SwsdLayoutFailures += "Button heights differ across cards: $($allHeights -join ',')" }
 
         $formClientScreen = $form.RectangleToScreen($form.ClientRectangle)
         $workingArea = [Windows.Forms.Screen]::FromControl($form).WorkingArea
