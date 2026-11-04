@@ -17,8 +17,8 @@ Re-run after any profile change.
 | `triage.swagger.yaml` | `triage` | 18 | First-line support agents who read tickets and post comments but don't reassign or close. |
 | `agent.swagger.yaml` | `agent` | 47 | Full ticket-handler workflow (default). |
 | `knowledge.swagger.yaml` | `knowledge` | 17 | KB authors browsing incident context plus full solution CRUD. |
-| `operations.swagger.yaml` | `operations` | 99 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context. |
-| `full.swagger.yaml` | `full` | 101 | Every tool. |
+| `operations.swagger.yaml` | `operations` | 112 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context. |
+| `full.swagger.yaml` | `full` | 114 | Every tool. |
 
 Agent, Operations and Full include the read-only `swsd_change_calendar` tool.
 Its calendar (shown in the viewer's local time) scans bounded pages and applies all filters client-side;
