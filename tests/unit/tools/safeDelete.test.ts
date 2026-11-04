@@ -6,12 +6,20 @@ import { PROFILE_TOOLS } from '../../../src/config/profiles.js';
 import { registerTools } from '../../../src/config/toolRegistry.js';
 import { createSwsdClient } from '../../../src/swsd/client.js';
 import { SwsdHttpError, SwsdNetworkError } from '../../../src/swsd/errors.js';
-import { SafeDeleteInput } from '../../../src/tools/shared/safeDelete.js';
+import { registerSafeDelete, SafeDeleteInput } from '../../../src/tools/shared/safeDelete.js';
 import { registerDeleteIncident } from '../../../src/tools/incidents/deleteIncident.js';
 import { registerDeleteProblem } from '../../../src/tools/problems/deleteProblem.js';
 import { registerDeleteChange } from '../../../src/tools/records/deleteChange.js';
 import { registerDeleteRelease } from '../../../src/tools/records/deleteRelease.js';
 import { registerDeleteSolution } from '../../../src/tools/solutions/deleteSolution.js';
+import {
+  registerDeleteUser,
+  registerDeleteGroup,
+  registerDeleteSite,
+  registerDeleteDepartment,
+  registerDeleteCategory,
+  registerDeleteRole,
+} from '../../../src/tools/lookups/directoryWrites.js';
 import { makeCtx, makeFakeClient, getRegisteredTool } from './_helpers/mockClient.js';
 
 const ID = 195000010;
@@ -24,13 +32,19 @@ const REGISTRARS = {
   change: registerDeleteChange,
   release: registerDeleteRelease,
   solution: registerDeleteSolution,
+  user: registerDeleteUser,
+  group: registerDeleteGroup,
+  site: registerDeleteSite,
+  department: registerDeleteDepartment,
+  category: registerDeleteCategory,
+  role: registerDeleteRole,
 };
 type Kind = keyof typeof REGISTRARS;
 type Mode = 'live' | 'dry-run' | 'disabled';
 
 function setup(kind: Kind, mode: Mode = 'live') {
   const client = makeFakeClient();
-  const path = `/${kind}s/${String(ID)}.json`;
+  const path = `/${kind === 'category' ? 'categories' : `${kind}s`}/${String(ID)}.json`;
   client.setBodyForPath((p) => p === path, { ...RECORD, private_metadata: TOKEN });
   client.setDeleteResponse({ deleted_ids: [String(ID)] });
   const ctx = makeCtx(client, { SWSD_WRITE_MODE: mode });
@@ -55,6 +69,17 @@ describe.each(Object.keys(REGISTRARS) as Kind[])('swsd_delete_%s', (kind) => {
     expect(tool.annotations).toEqual({
       readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true,
     });
+  });
+
+  it('rejects invalid and unsafe ids for this delete tool', () => {
+    const { tool } = setup(kind);
+    const schema = tool.inputSchema as typeof SafeDeleteInput;
+    for (const field of ['id', 'confirm_id']) {
+      for (const value of [0, -1, 1.5, '42', Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+        expect(schema.safeParse({ id: ID, [field]: value }).success).toBe(false);
+      }
+    }
+    expect(schema.safeParse({ id: ID, confirm: 'true' }).success).toBe(false);
   });
 
   it('previews in dry-run even with matching confirmation and sends no DELETE', async () => {
@@ -310,5 +335,27 @@ describe('safe delete schema, profiles, and HTTP boundary', () => {
     });
     await expect(client.delete('/problems/195000010.json')).rejects.toMatchObject({ status: 503 });
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+});
+
+describe('explicit safe delete configuration', () => {
+  it('uses the configured tool name, collection path, and envelope independently of kind', async () => {
+    const server = new McpServer({ name: 'explicit-delete-test', version: '0.0.0' });
+    const client = makeFakeClient();
+    client.setLookupBody({ category: RECORD });
+    registerSafeDelete(server, makeCtx(client), {
+      kind: 'directory entry',
+      toolName: 'swsd_delete_directory_entry',
+      collectionPath: '/categories',
+      envelopeKey: 'category',
+    });
+    const tool = getRegisteredTool(server, 'swsd_delete_directory_entry');
+    const result = await tool.handler({ id: ID, confirm: true, confirm_id: ID }, {}) as CallToolResult;
+    expect(result.isError).toBeUndefined();
+    expect(result.structuredContent?.deleted).toBe(true);
+    expect(client.calls).toEqual([
+      { type: 'get', path: `/categories/${String(ID)}.json`, params: {} },
+      { type: 'delete', path: `/categories/${String(ID)}.json` },
+    ]);
   });
 });

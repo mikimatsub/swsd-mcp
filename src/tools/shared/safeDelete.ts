@@ -15,17 +15,20 @@ export const SafeDeleteInput = z.object({
 });
 
 interface SafeDeleteConfig {
-  kind: 'incident' | 'problem' | 'change' | 'release' | 'solution';
+  kind: string;
+  toolName: string;
+  collectionPath: string;
+  envelopeKey: string;
   resolveRef?: (input: number, client: SwsdClient) => Promise<{ id: number }>;
 }
 
 export function registerSafeDelete(
   server: McpServer,
   ctx: ToolContext,
-  { kind, resolveRef }: SafeDeleteConfig,
+  { kind, toolName, collectionPath, envelopeKey, resolveRef }: SafeDeleteConfig,
 ): void {
   server.registerTool(
-    `swsd_delete_${kind}`,
+    toolName,
     {
       description:
         `DESTRUCTIVE — delete an SWSD ${kind}. ` +
@@ -44,19 +47,19 @@ export function registerSafeDelete(
         if (ctx.env.SWSD_WRITE_MODE === 'disabled') {
           const gated = checkWriteMode(ctx, {
             method: 'DELETE',
-            path: `/${kind}s/${String(input.id)}.json`,
+            path: `${collectionPath}/${String(input.id)}.json`,
             action: `delete ${kind} ${String(input.id)}`,
           });
           if (gated) return gated;
         }
 
         const { id } = resolveRef ? await resolveRef(input.id, ctx.client) : input;
-        const path = `/${kind}s/${String(id)}.json`;
+        const path = `${collectionPath}/${String(id)}.json`;
         const request = { method: 'DELETE' as const, path };
         const { body } = await ctx.client.get<unknown>(path);
         // Accept both the existing client's flat records and the API's named envelopes.
-        const raw = body && typeof body === 'object' && kind in body
-          ? (body as Record<string, unknown>)[kind]
+        const raw = body && typeof body === 'object' && envelopeKey in body
+          ? (body as Record<string, unknown>)[envelopeKey]
           : body;
         const summary = toGenericRecordSummary(raw);
         if (!summary || !Number.isInteger(summary.id) || summary.id <= 0 || summary.id !== id) {
