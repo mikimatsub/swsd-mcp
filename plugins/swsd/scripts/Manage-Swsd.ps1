@@ -14,7 +14,8 @@ namespace SwsdDesktop {
         throw new InvalidOperationException("Non-test credential target is forbidden.");
     }
     public static bool Exists(string target) { Check(target); return values.ContainsKey(target); }
-    public static string Read(string target) { Check(target); string value; return values.TryGetValue(target, out value) ? value : null; }
+    public static int ReadCount;
+    public static string Read(string target) { Check(target); ReadCount++; string value; return values.TryGetValue(target, out value) ? value : null; }
     public static void Save(string target, string secret) { Check(target); values[target] = secret; }
     public static void Remove(string target) { Check(target); values.Remove(target); }
   }
@@ -26,6 +27,10 @@ if ($ValidateUi -or $ValidateWindow -or $ValidateHandlers) {
     # Exercise the real controls and save handler without touching a user's settings or credential.
     $script:SwsdHome = Join-Path ([IO.Path]::GetTempPath()) ('swsd-ui-test-' + [guid]::NewGuid().ToString('N'))
     $script:SwsdCredentialTarget = 'swsd-mcp/ui-test-' + [guid]::NewGuid().ToString('N')
+}
+$script:SwsdDiagnosticsLogPath = Join-Path $env:TEMP 'swsd-settings.log'
+if ($ValidateUi -or $ValidateWindow -or $ValidateHandlers) {
+    $script:SwsdDiagnosticsLogPath = Join-Path $script:SwsdHome 'swsd-settings.log'
 }
 if ($CheckOnly) {
     $s = Get-SwsdStatus
@@ -77,7 +82,7 @@ $script:SwsdLayoutFailures = @()
     try { Add-Content -LiteralPath (Join-Path $env:TEMP 'swsd-settings.log') -Value ("{0:u} {1}" -f (Get-Date), $message) } catch {}
     try {
         if (Get-Command Set-SwsdStatus -ErrorAction SilentlyContinue) { Set-SwsdStatus -Kind error -Text "Something went wrong: $message" }
-        foreach ($name in 'install','checkUpdates','nodeInstallButton','save','test','remove','saveProfile','showDetails','region','tokenBox','profile') {
+        foreach ($name in 'install','checkUpdates','nodeInstallButton','save','test','remove','saveProfile','showDetails','copyDiagnostics','region','tokenBox','profile') {
             $control = Get-Variable -Name $name -Scope Script -ValueOnly -ErrorAction SilentlyContinue
             if ($control -is [Windows.Forms.Control]) { $control.Enabled = $true }
         }
@@ -95,7 +100,7 @@ function Invoke-SwsdSafe {
         if ($Quiet) { return }
         try {
             if (Get-Command Set-SwsdStatus -ErrorAction SilentlyContinue) { Set-SwsdStatus -Kind error -Text "Something went wrong: $message" }
-            foreach ($name in 'install','checkUpdates','nodeInstallButton','save','test','remove','saveProfile','showDetails','region','tokenBox','profile') {
+            foreach ($name in 'install','checkUpdates','nodeInstallButton','save','test','remove','saveProfile','showDetails','copyDiagnostics','region','tokenBox','profile') {
                 $control = Get-Variable -Name $name -Scope Script -ValueOnly -ErrorAction SilentlyContinue
                 if ($control -is [Windows.Forms.Control]) { $control.Enabled = $true }
             }
@@ -664,14 +669,16 @@ function Measure-SwsdGridText([string[]]$Texts, [Drawing.Font]$Font, [int]$Paddi
     foreach ($text in $Texts) {
         $width = [Math]::Max($width, [Windows.Forms.TextRenderer]::MeasureText($text, $Font).Width)
     }
-    return ScalePx ([int](8 * [Math]::Ceiling(($width / $script:SwsdUiScale + $PaddingPx) / 8)))
+    $grid = ScalePx 8
+    return [int]($grid * [Math]::Ceiling(($width + (ScalePx $PaddingPx)) / $grid))
 }
 $dashboardIconWidth = ScalePx 32
 $dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'Tools', 'Token', 'Region', 'Profile', 'Updates') $dashboardFont 8
 $dashboardValueWidth = [Math]::Max((ScalePx 144), (Measure-SwsdGridText (@('Not installed', 'Unavailable', ('swsd-mcp ' + $script:SwsdPackageVersion)) + @($script:SwsdProfiles | ForEach-Object { $_.name })) $dashboardFont 8))
 $dashboardChipWidth = Measure-SwsdGridText $dashboardChipTexts $dashboardChipFont 16
-$dashboardTextHeight = [Windows.Forms.TextRenderer]::MeasureText('Ag', $dashboardFont).Height
-$dashboardItemHeight = ScalePx ([int](8 * [Math]::Ceiling(($dashboardTextHeight / $script:SwsdUiScale + 8) / 8)))
+# A chip is exactly one measured line plus 4 logical pixels above and below.
+$dashboardChipHeight = [Windows.Forms.TextRenderer]::MeasureText('Ag', $dashboardChipFont).Height + (2 * (ScalePx 4))
+$dashboardItemHeight = $dashboardChipHeight
 $dashboardRowHeight = $dashboardItemHeight + (ScalePx 8)
 $dashboardItemWidth = $dashboardIconWidth + $dashboardLabelWidth + $dashboardValueWidth + $dashboardChipWidth
 $dashboardColumnWidth = $dashboardItemWidth + (ScalePx 8)
@@ -681,7 +688,10 @@ $statusRowTable.ColumnCount = 2
 $statusRowTable.RowCount = 3
 $statusRowTable.GrowStyle = 'FixedSize'
 $statusRowTable.Padding = New-Object Windows.Forms.Padding(0)
-$statusRowTable.Size = New-Object Drawing.Size((2 * $dashboardColumnWidth), (3 * $dashboardRowHeight))
+# Retain the measured fixed grid while Add-CardRow temporarily anchors both sides.
+# A narrower intermediate parent must not shrink it below its absolute columns.
+$statusRowTable.MinimumSize = New-Object Drawing.Size((2 * $dashboardColumnWidth), (3 * $dashboardRowHeight))
+$statusRowTable.Size = $statusRowTable.MinimumSize
 for ($ci = 0; $ci -lt 2; $ci++) { [void]$statusRowTable.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Absolute', $dashboardColumnWidth))) }
 for ($ri = 0; $ri -lt 3; $ri++) { [void]$statusRowTable.RowStyles.Add((New-Object Windows.Forms.RowStyle('Absolute', $dashboardRowHeight))) }
 
@@ -689,7 +699,8 @@ function New-StatusRow([string]$AccessibleName, [string]$IconGlyph, [string]$Lab
     $rowPanel = New-Object Windows.Forms.TableLayoutPanel
     $rowPanel.AutoSize = $false
     $rowPanel.Anchor = 'Top,Left'
-    $rowPanel.Size = New-Object Drawing.Size($dashboardItemWidth, $dashboardItemHeight)
+    $rowPanel.MinimumSize = New-Object Drawing.Size($dashboardItemWidth, $dashboardItemHeight)
+    $rowPanel.Size = $rowPanel.MinimumSize
     $rowPanel.ColumnCount = 4
     foreach ($width in @($dashboardIconWidth, $dashboardLabelWidth, $dashboardValueWidth, $dashboardChipWidth)) {
         [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Absolute', $width)))
@@ -725,7 +736,7 @@ function New-StatusRow([string]$AccessibleName, [string]$IconGlyph, [string]$Lab
 
     $chip = New-Object Windows.Forms.Label
     $chip.Font = $dashboardChipFont
-    $chip.Padding = New-Object Windows.Forms.Padding((ScalePx 8), 0, (ScalePx 8), 0)
+    $chip.Padding = New-Object Windows.Forms.Padding((ScalePx 8), (ScalePx 4), (ScalePx 8), (ScalePx 4))
     $chip.Visible = $false
     $rowPanel.Controls.Add($chip, 3, 0)
     foreach ($control in @($icon, $lbl, $value, $chip)) {
@@ -792,7 +803,24 @@ Add-CardRow $statusCard $progressBar
 $showDetails = New-SwsdButton 'Show details'
 $showDetails.AccessibleName = 'Show details'
 $showDetails.Visible = $false
-Add-CardRow $statusCard $showDetails
+$copyDiagnostics = New-SwsdButton 'Copy diagnostics'
+$copyDiagnostics.AccessibleName = 'Copy diagnostics'
+$statusButtonRow = New-Object Windows.Forms.FlowLayoutPanel
+$statusButtonRow.AutoSize = $true
+$statusButtonRow.FlowDirection = 'LeftToRight'
+$statusButtonRow.WrapContents = $false
+Set-SwsdButtonRow @($copyDiagnostics, $showDetails)
+$statusButtonRow.Controls.AddRange(@($copyDiagnostics, $showDetails))
+Add-CardRow $statusCard $statusButtonRow
+$copyDiagnostics.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'CopyDiagnosticsClick' {
+    $graphics = $form.CreateGraphics()
+    try { $dpi = $graphics.DpiX } finally { $graphics.Dispose() }
+    $theme = if ($script:SwsdDarkMode) { 'dark' } else { 'light' }
+    $report = Get-SwsdDiagnostics -LogPath $script:SwsdDiagnosticsLogPath -Dpi $dpi -Scale $script:SwsdUiScale -Theme $theme
+    Set-SwsdClipboard -Text $report
+    Set-SwsdStatus -Kind success -Text 'Diagnostics copied. You can paste them into your support request.'
+    if ($form.Visible) { Update-SwsdFormSize }
+} })
 $errorDetails = New-Object Windows.Forms.Label
 $errorDetails.AutoSize = $true
 $errorDetails.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
@@ -1107,7 +1135,8 @@ function Update-SwsdFormSize {
         $screen = [Windows.Forms.Screen]::FromPoint([Windows.Forms.Cursor]::Position).WorkingArea
         $margin = ScalePx $script:SwsdScreenMargin
         $maxWidth = $screen.Width - (2 * $margin)
-        $maxHeight = $screen.Height - (2 * $margin)
+        # Clamp the whole window (client content plus frame) only to the working area.
+        $maxHeight = $screen.Height
 
         $frameWidth = $form.Width - $form.ClientSize.Width
         $frameHeight = $form.Height - $form.ClientSize.Height
@@ -1121,6 +1150,12 @@ function Update-SwsdFormSize {
         if ($targetWidth -gt $maxWidth) { $targetWidth = $maxWidth }
         if ($targetHeight -gt $maxHeight) { $targetHeight = $maxHeight }
 
+        # Reserve the scrollbar's actual pixel width so the fixed dashboard still fits.
+        $needsScroll = $finalClientHeight -gt ($targetHeight - $frameHeight)
+        if ($needsScroll) {
+            $targetWidth = [Math]::Min($maxWidth, ($targetWidth + [Windows.Forms.SystemInformation]::VerticalScrollBarWidth))
+        }
+
         $form.MinimumSize = New-Object Drawing.Size($targetWidth, $targetHeight)
         $form.Size = New-Object Drawing.Size($targetWidth, $targetHeight)
 
@@ -1128,7 +1163,6 @@ function Update-SwsdFormSize {
         $form.PerformLayout()
         $rootPanel.PerformLayout()
 
-        $needsScroll = $finalClientHeight -gt ($targetHeight - $frameHeight)
         $rootPanel.AutoScroll = $needsScroll
 
         $centerX = $screen.Left + [int](($screen.Width - $targetWidth) / 2)
@@ -1184,7 +1218,7 @@ $script:SwsdInstallTimer = New-Object Windows.Forms.Timer
 $script:SwsdInstallTimer.Interval = 50
 
 function Set-SwsdBusy([bool]$Busy) {
-    foreach ($control in @($install, $checkUpdates, $nodeInstallButton, $save, $test, $remove, $saveProfile, $showDetails, $region, $tokenBox, $profile)) { $control.Enabled = -not $Busy }
+    foreach ($control in @($install, $checkUpdates, $nodeInstallButton, $save, $test, $remove, $saveProfile, $showDetails, $copyDiagnostics, $region, $tokenBox, $profile)) { $control.Enabled = -not $Busy }
     $progressBar.Visible = $Busy
     $progressText.Visible = $Busy
     $form.UseWaitCursor = $false
@@ -1418,7 +1452,7 @@ Update-SwsdDashboard
 
 if ($ValidateWindow) {
     # Visible lifecycle probe: no token entry, installation, settings or credential actions.
-    if ($env:SWSD_PREVIEW_ENABLED -ne '1') { foreach ($control in @($install,$checkUpdates,$nodeInstallButton,$region,$tokenBox,$save,$test,$remove,$profile,$saveProfile)) { $control.Enabled = $false } }
+    if ($env:SWSD_PREVIEW_ENABLED -ne '1') { foreach ($control in @($install,$checkUpdates,$nodeInstallButton,$region,$tokenBox,$save,$test,$remove,$profile,$saveProfile,$copyDiagnostics)) { $control.Enabled = $false } }
     $script:SwsdWindowResult = $null
     $probe = New-Object Windows.Forms.Timer
     $probe.Interval = 200
@@ -1430,7 +1464,7 @@ if ($ValidateWindow) {
 
         # Button rows must be pixel-identical: same Top and Height for every button (tolerance 0),
         # and equal widths inside a row of action buttons.
-        foreach ($row in @($installButtonRow, $buttonRow2, $profileButtonRow)) {
+        foreach ($row in @($installButtonRow, $buttonRow2, $profileButtonRow, $statusButtonRow)) {
             $rowButtons = @($row.Controls | Where-Object { $_ -is [Windows.Forms.Button] -and $_.Visible })
             if ($rowButtons.Count -lt 1) { continue }
             $tops = @($rowButtons | ForEach-Object { $_.Top } | Sort-Object -Unique)
@@ -1440,7 +1474,7 @@ if ($ValidateWindow) {
             if ($heights.Count -ne 1) { $script:SwsdLayoutFailures += "Button row heights differ: $($heights -join ',')" }
             if ($widths.Count -ne 1) { $script:SwsdLayoutFailures += "Button row widths differ: $($widths -join ',')" }
         }
-        $allHeights = @(@($install, $checkUpdates, $nodeInstallButton, $save, $test, $remove, $saveProfile, $showDetails) | ForEach-Object { $_.Height } | Sort-Object -Unique)
+        $allHeights = @(@($install, $checkUpdates, $nodeInstallButton, $save, $test, $remove, $saveProfile, $showDetails, $copyDiagnostics) | ForEach-Object { $_.Height } | Sort-Object -Unique)
         if ($allHeights.Count -ne 1) { $script:SwsdLayoutFailures += "Button heights differ across cards: $($allHeights -join ',')" }
 
         $formClientScreen = $form.RectangleToScreen($form.ClientRectangle)
@@ -1472,7 +1506,21 @@ if ($ValidateWindow) {
                 if ($tops.Count -ne 1) { $script:SwsdLayoutFailures += "Dashboard row $ri $field tops differ: $($tops -join ',')" }
             }
         }
+        if (-not $statusRowTable.Parent.ClientRectangle.Contains($statusRowTable.Bounds)) {
+            $script:SwsdLayoutFailures += 'Dashboard grid exceeds its card client rectangle.'
+        }
         foreach ($item in $statusRows) {
+            # Check the fixed cell even when the form legitimately needs scrolling.
+            $column = $statusRowTable.GetColumn($item.Panel)
+            $row = $statusRowTable.GetRow($item.Panel)
+            $cell = New-Object Drawing.Rectangle(($column * $dashboardColumnWidth), ($row * $dashboardRowHeight), $dashboardColumnWidth, $dashboardRowHeight)
+            if (-not $cell.Contains($item.Panel.Bounds) -or -not $statusRowTable.ClientRectangle.Contains($item.Panel.Bounds)) {
+                $script:SwsdLayoutFailures += "$($item.Panel.AccessibleName) exceeds its dashboard cell."
+            }
+            $chipLineHeight = [Windows.Forms.TextRenderer]::MeasureText('Ag', $item.Chip.Font).Height
+            if ($item.Chip.Height -ne ($chipLineHeight + (2 * (ScalePx 4)))) {
+                $script:SwsdLayoutFailures += "$($item.Panel.AccessibleName) chip height must be one text line plus 4px padding per side."
+            }
             if ($item.Chip.Right -ne $item.Panel.ClientSize.Width) { $script:SwsdLayoutFailures += "$($item.Panel.AccessibleName) chip is not at the cell's right edge." }
             if ($item.Chip.TextAlign -ne [Drawing.ContentAlignment]::MiddleCenter) { $script:SwsdLayoutFailures += "$($item.Panel.AccessibleName) chip text is not centered." }
             foreach ($text in $dashboardChipTexts) {
@@ -1594,6 +1642,13 @@ if ($ValidateWindow) {
             }
         }
 
+        # The frame must fit too; unused screen margins must not force scrolling.
+        $preferredClient = $rootPanel.GetPreferredSize((New-Object Drawing.Size($rootPanel.ClientSize.Width, 0)))
+        $requiredFormHeight = [Math]::Min(($preferredClient.Height + $form.Height - $form.ClientSize.Height), $workingArea.Height)
+        if ($form.Height -lt $requiredFormHeight) {
+            $script:SwsdLayoutFailures += "Form height ($($form.Height)) is below the content-plus-frame height ($requiredFormHeight)."
+        }
+
         # Window fits working area check
         $formScreen = $form.RectangleToScreen($form.ClientRectangle)
         if (-not $workingArea.Contains($formScreen)) {
@@ -1609,6 +1664,12 @@ if ($ValidateWindow) {
             presentationCount = $script:SwsdPresentationCount
             consoleVisible = [SwsdDesktop.Windows]::IsWindowVisible([SwsdDesktop.Windows]::GetConsoleWindow())
             tokenEntryEnabled = $tokenBox.Enabled
+            workingAreaWidth = $workingArea.Width
+            workingAreaHeight = $workingArea.Height
+            formWidth = $form.Width
+            clientWidth = $form.ClientSize.Width
+            preferredClientHeight = $rootPanel.GetPreferredSize((New-Object Drawing.Size($rootPanel.ClientSize.Width, 0))).Height
+            frameHeight = $form.Height - $form.ClientSize.Height
             formHeight = $form.Height
             clientHeight = $form.ClientSize.Height
             dashboardChipWidth = $srNode.Chip.Width
@@ -1683,8 +1744,14 @@ if ($ValidateWindow) {
     }
     function script:Test-SwsdToken { param($Token, $BaseUrl) $script:SwsdMockCalls.Enqueue('test') }
     function script:Confirm-SwsdRemove { return 'Yes' }
+    $script:SwsdClipboardText = $null
+    function script:Set-SwsdClipboard {
+        param([string]$Text)
+        $script:SwsdMockCalls.Enqueue('clipboard')
+        $script:SwsdClipboardText = $Text
+    }
     $onClick = [Windows.Forms.Button].GetMethod('OnClick', [Reflection.BindingFlags]'Instance,NonPublic')
-    $buttons = @($install, $checkUpdates, $nodeInstallButton, $save, $test, $remove, $saveProfile, $showDetails)
+    $buttons = @($install, $checkUpdates, $nodeInstallButton, $save, $test, $remove, $saveProfile, $showDetails, $copyDiagnostics)
     function Assert-SwsdClick([Windows.Forms.Button]$Button, [string]$Expect) {
         $script:SwsdHandlerErrors = @()
         $Button.Enabled = $true
@@ -1752,10 +1819,25 @@ if ($ValidateWindow) {
         $nodeCallsBefore = $script:SwsdMockCalls.Count
         Assert-SwsdClick $nodeInstallButton 'already installed'
         if ($script:SwsdMockCalls.Count -ne $nodeCallsBefore) { throw 'Supported Node should not prompt or install.' }
-        $tokenBox.Text = 'synthetic-demo-token'
+        $diagnosticToken = ('synthetic' + [guid]::NewGuid().ToString('N'))
+        $tokenBox.Text = $diagnosticToken
         Assert-SwsdClick $save 'token saved'
         if ($tokenBox.Text) { throw 'Token field was not cleared after save.' }
         if ($srToken.Value.Text -ne 'Yes') { throw 'Dashboard did not show saved token presence.' }
+        # Use the real report builder and an isolated log, but never the real clipboard.
+        @('safe log line', ('Authorization: Bearer ' + $diagnosticToken), $diagnosticToken,
+            ('fragment ' + $diagnosticToken.Substring(7, 8))) | Set-Content -LiteralPath $script:SwsdDiagnosticsLogPath -Encoding UTF8
+        $readsBefore = [SwsdDesktop.Credentials]::ReadCount
+        Assert-SwsdClick $copyDiagnostics 'Diagnostics copied'
+        if ([SwsdDesktop.Credentials]::ReadCount -ne $readsBefore) { throw 'Diagnostics read the credential secret.' }
+        if (-not $script:SwsdClipboardText -or $script:SwsdClipboardText -notmatch 'Credential PRESENT: yes') { throw 'Clipboard report must show credential presence.' }
+        foreach ($section in @('[Application]', '[Windows]', '[PowerShell]', '[Node.js]', '[Tools]', '[Connection]', '[Display]', '[Recent log (last 20 lines; redacted)]')) {
+            if (-not $script:SwsdClipboardText.Contains($section)) { throw 'Clipboard report is missing a required section.' }
+        }
+        for ($i = 0; $i -le $diagnosticToken.Length - 8; $i++) {
+            if ($script:SwsdClipboardText.Contains($diagnosticToken.Substring($i, 8))) { throw 'Clipboard report leaked a synthetic token fragment.' }
+        }
+        if (-not $script:SwsdClipboardText.Contains('safe log line') -or -not $script:SwsdClipboardText.Contains('[REDACTED]')) { throw 'Clipboard report omitted the redacted log.' }
         Assert-SwsdClick $test 'Saved connection verified'
         Assert-SwsdClick $saveProfile 'Profile saved'
         Assert-SwsdClick $remove 'Saved token removed'
@@ -1779,10 +1861,10 @@ if ($ValidateWindow) {
         if ($status.Text -notlike '*Something went wrong: synthetic handler crash*') { throw 'Safe wrapper did not show a friendly error.' }
         foreach ($b in $buttons) { if (-not $b.Enabled) { throw 'Safe wrapper did not re-enable controls.' } }
         if ($script:SwsdMockCalls.ToArray() -notcontains 'install' -or $script:SwsdMockCalls.ToArray() -notcontains 'test') { throw 'Mocks were not used.' }
-        foreach ($call in @('update-check', 'node-confirm', 'node-install')) {
+        foreach ($call in @('update-check', 'node-confirm', 'node-install', 'clipboard')) {
             if ($script:SwsdMockCalls.ToArray() -notcontains $call) { throw "Mock '$call' was not used." }
         }
-        Write-Output 'PASS: update current/available/newer/offline/retry and confirmed/cancelled/failed Node helper; every button clicked under StrictMode; background install awaited via responsive timer; failure/retry, duplicate install and close guards, dashboard refresh, friendly errors, controls re-enabled, no unhandled exceptions.'
+        Write-Output 'PASS: diagnostics copied via mock with presence-only credential check and no token fragments; update current/available/newer/offline/retry and confirmed/cancelled/failed Node helper; every button clicked under StrictMode; background install awaited via responsive timer; failure/retry, duplicate install and close guards, dashboard refresh, friendly errors, controls re-enabled, no unhandled exceptions.'
     } finally {
         $script:SwsdInstallTimer.Stop()
         $script:SwsdInstallTimer.Dispose()
@@ -1811,6 +1893,8 @@ if ($ValidateWindow) {
         foreach ($expectedName in @('Status Node.js','Status Tools installed','Status Token saved','Status Region','Status Profile','Status Updates')) {
             if (@($statusRows | Where-Object { $_.Panel.AccessibleName -eq $expectedName }).Count -ne 1) { throw "Status row '$expectedName' is missing." }
         }
+        if ($copyDiagnostics.AccessibleName -ne 'Copy diagnostics' -or -not $statusButtonRow.Controls.Contains($copyDiagnostics) -or $statusButtonRow.WrapContents) { throw 'Copy diagnostics button or non-wrapping row is missing.' }
+        if ($copyDiagnostics.Height -ne $showDetails.Height -or $copyDiagnostics.Width -ne $showDetails.Width) { throw 'Status action buttons must have equal dimensions.' }
         if ($progressBar.AccessibleName -ne 'Progress') { throw 'Progress bar AccessibleName must be Progress.' }
         if ($srProfile.Chip.Text -ne 'Saved' -or $srToken.Value.Text -notin @('No', 'Unavailable')) { throw 'Dashboard initial state is incorrect.' }
         $onClick = $saveProfile.GetType().GetMethod('OnClick', [Reflection.BindingFlags]'Instance,NonPublic')

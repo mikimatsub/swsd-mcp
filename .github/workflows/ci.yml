@@ -47,6 +47,9 @@ jobs:
       - name: Validate update check and version logic
         run: powershell.exe -NoProfile -NonInteractive -STA -File tests/windows-plugin/check-update.ps1
 
+      - name: Validate diagnostics redaction and isolated credential presence
+        run: powershell.exe -NoProfile -NonInteractive -STA -File tests/windows-plugin/check-diagnostics.ps1
+
       - name: Validate setup controls without opening a window
         run: powershell.exe -NoProfile -NonInteractive -STA -File plugins/swsd/scripts/Manage-Swsd.ps1 -ValidateUi
 
