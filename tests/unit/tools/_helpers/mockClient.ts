@@ -22,7 +22,7 @@ import type {
  *
  * Surface:
  *   - `makeFakeClient()` — returns a `FakeClient` that captures every
- *     `get`/`post`/`put` call. Bodies are configured per-path via
+ *     `get`/`post`/`put`/`delete` call. Bodies are configured per-path via
  *     `setBodyForPath` (precise) or globally via `setLookupBody` /
  *     `setPostResponse` / `setPutResponse` (convenience for the common
  *     "one GET / one mutation" tool shape).
@@ -65,13 +65,18 @@ export interface CapturedPut {
   body: unknown;
 }
 
+export interface CapturedDelete {
+  type: 'delete';
+  path: string;
+}
+
 export interface CapturedRaw {
   type: 'raw';
   path: string;
   init: SwsdRequestInit;
 }
 
-export type CapturedCall = CapturedGet | CapturedPost | CapturedPut | CapturedRaw;
+export type CapturedCall = CapturedGet | CapturedPost | CapturedPut | CapturedDelete | CapturedRaw;
 
 export interface FakeClient extends SwsdClient {
   /** Every captured call, in order. */
@@ -89,6 +94,8 @@ export interface FakeClient extends SwsdClient {
   setPostResponse: (body: unknown) => void;
   /** Set the response body for any PUT call. */
   setPutResponse: (body: unknown) => void;
+  /** Set the response body for any DELETE call. */
+  setDeleteResponse: (body: unknown) => void;
   /** Set the response body/status for any rawRequest call. */
   setRawResponse: (body: unknown, status?: number) => void;
 }
@@ -98,6 +105,7 @@ export interface FakeClient extends SwsdClient {
  *   - GET returns `[]` unless `setLookupBody` or `setBodyForPath` overrides
  *   - POST returns `null` (override with `setPostResponse`)
  *   - PUT returns `null` (override with `setPutResponse`)
+ *   - DELETE returns `null` (override with `setDeleteResponse`)
  *   - rawRequest returns `null` (override with `setRawResponse`)
  *
  * `setBodyForPath` matchers take precedence over `setLookupBody` — when a
@@ -112,6 +120,7 @@ export function makeFakeClient(): FakeClient {
   let defaultGetBody: unknown = [];
   let postResponse: unknown = null;
   let putResponse: unknown = null;
+  let deleteResponse: unknown = null;
   let rawResponse: unknown = null;
   let rawStatus = 200;
 
@@ -159,6 +168,11 @@ export function makeFakeClient(): FakeClient {
     };
   };
 
+  const deleteRecord = async <T>(path: string): Promise<SwsdMutationResult<T>> => {
+    calls.push({ type: 'delete', path });
+    return { body: deleteResponse as T, headers: new Headers(), status: 200 };
+  };
+
   const rawRequest = async (
     path: string,
     init: SwsdRequestInit,
@@ -185,6 +199,9 @@ export function makeFakeClient(): FakeClient {
     setPutResponse: (body: unknown) => {
       putResponse = body;
     },
+    setDeleteResponse: (body: unknown) => {
+      deleteResponse = body;
+    },
     setRawResponse: (body: unknown, status = 200) => {
       rawResponse = body;
       rawStatus = status;
@@ -192,6 +209,7 @@ export function makeFakeClient(): FakeClient {
     get,
     post,
     put,
+    delete: deleteRecord,
     rawRequest,
   } as unknown as FakeClient;
 }

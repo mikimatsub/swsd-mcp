@@ -53,6 +53,14 @@ const OPERATIONS_RECORD_TOOLS = [
   'swsd_list_risks',
 ] as const;
 
+const DELETE_TOOLS = [
+  'swsd_delete_incident',
+  'swsd_delete_problem',
+  'swsd_delete_change',
+  'swsd_delete_release',
+  'swsd_delete_solution',
+] as const;
+
 const AGENT_TOOLS = [
   ...READ_BASE,
   'swsd_change_calendar',
@@ -85,6 +93,7 @@ const AGENT_TOOLS = [
   'swsd_list_problems',
   'swsd_get_problem',
   'swsd_create_problem',
+  'swsd_update_problem',
   // Work-log and evidence workflow for active ticket handling.
   ...TIME_AND_ATTACHMENT_TOOLS,
 ] as const;
@@ -100,7 +109,7 @@ export const PROFILE_TOOLS = {
     'swsd_list_problems',
   ],
   agent: AGENT_TOOLS,
-  operations: [...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS],
+  operations: [...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DELETE_TOOLS],
   knowledge: [
     'swsd_get_server_info',
     'swsd_health_check',
@@ -158,7 +167,9 @@ export const PROFILE_TOOLS = {
     'swsd_list_problems',
     'swsd_get_problem',
     'swsd_create_problem',
+    'swsd_update_problem',
     ...TIME_AND_ATTACHMENT_TOOLS,
     ...OPERATIONS_RECORD_TOOLS,
+    ...DELETE_TOOLS,
   ],
 } as const satisfies Record<ProfileName, readonly string[]>;
