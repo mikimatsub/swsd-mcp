@@ -107,7 +107,7 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 
 ---
 
-## Tools (80 across 15 categories)
+## Tools (101 across 15 categories)
 
 | Category | Tools |
 |---|---|
@@ -123,7 +123,7 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 | **Attachments** | `swsd_upload_attachment` |
 | **Solutions / KB** | `swsd_search_solutions`, `swsd_get_solution`, `swsd_create_solution`, `swsd_update_solution`, `swsd_delete_solution` |
 | **Service Catalog** | `swsd_list_catalog_items`, `swsd_get_catalog_item`, `swsd_create_service_request` |
-| **Lookups** | `swsd_list_categories`, `swsd_get_category`, `swsd_list_sites`, `swsd_get_site`, `swsd_list_departments`, `swsd_get_department`, `swsd_list_users`, `swsd_get_user`, `swsd_list_groups`, `swsd_get_group`, `swsd_list_roles` |
+| **Lookups** | `swsd_list_categories`, `swsd_get_category`, `swsd_create_category`, `swsd_update_category`, `swsd_delete_category`, `swsd_list_sites`, `swsd_get_site`, `swsd_create_site`, `swsd_update_site`, `swsd_delete_site`, `swsd_list_departments`, `swsd_get_department`, `swsd_create_department`, `swsd_update_department`, `swsd_delete_department`, `swsd_list_users`, `swsd_get_user`, `swsd_create_user`, `swsd_update_user`, `swsd_delete_user`, `swsd_list_groups`, `swsd_get_group`, `swsd_create_group`, `swsd_update_group`, `swsd_delete_group`, `swsd_add_group_member`, `swsd_remove_group_member`, `swsd_list_roles`, `swsd_get_role`, `swsd_create_role`, `swsd_update_role`, `swsd_delete_role` |
 | **Custom fields** | `swsd_describe_custom_fields` |
 | **Audits** | `swsd_get_record_audits` |
 
@@ -188,10 +188,10 @@ Profiles control which tools are registered at startup. Cannot be changed mid-se
 | Profile | Intent | Tool count |
 |---|---|---|
 | `triage` | Read-heavy first-line support + commenting | 18 |
-| `agent` | Full ticket-handler workflow (default) | 46 |
+| `agent` | Full ticket-handler workflow (default) | 47 |
 | `knowledge` | KB-author workflow + incident reads | 17 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 78 |
-| `full` | Every tool | 80 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 99 |
+| `full` | Every tool | 101 |
 
 Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a profile.
 

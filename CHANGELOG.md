@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `swsd_get_group` (with members), `swsd_get_site`, `swsd_get_department` and
   `swsd_get_category`. User and category lookups join every profile that lists
   them; group, site and department lookups join Agent, Operations and Full.
+- Added directory write tools (Operations/Full): create/update/delete for users, groups, sites, departments, categories and roles, `swsd_get_role`, and `swsd_add_group_member` / `swsd_remove_group_member`. Deletes and membership removal require `confirm: true` with a matching `confirm_id`.
 - Added the `swsd_update_problem` write tool (state, root cause, symptoms,
   workaround and core fields) to Agent, Operations and Full.
 - Added confirm-gated delete tools for incidents, problems, changes, releases and
