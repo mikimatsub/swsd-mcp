@@ -97,7 +97,7 @@ describe('change calendar rendering', () => {
   });
   it('keeps responsive, theme and content-sizing CSS contracts', () => {
     const css = readFileSync('src/ui/change-calendar/styles.css', 'utf8');
-    expect(css).toContain('grid-template-columns: auto auto minmax(0,1fr) auto auto');
+    expect(css).toContain('grid-template-columns: 8.75rem 4.25rem minmax(0,1fr) minmax(0,10rem) auto');
     expect(css).toMatch(/@media \(max-width: 600px\)[\s\S]*?\.owner \{ display: none/);
     expect(css).toMatch(/@media \(max-width: 440px\)[\s\S]*?\.time \{ grid-column: 1 \/ -1/);
     expect(css).toContain(':root[data-theme="dark"] { color-scheme: dark; }');
