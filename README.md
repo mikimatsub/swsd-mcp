@@ -107,7 +107,7 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 
 ---
 
-## Tools (69 across 15 categories)
+## Tools (74 across 15 categories)
 
 | Category | Tools |
 |---|---|
@@ -123,7 +123,7 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 | **Attachments** | `swsd_upload_attachment` |
 | **Solutions / KB** | `swsd_search_solutions`, `swsd_get_solution`, `swsd_create_solution`, `swsd_update_solution` |
 | **Service Catalog** | `swsd_list_catalog_items`, `swsd_get_catalog_item`, `swsd_create_service_request` |
-| **Lookups** | `swsd_list_categories`, `swsd_list_sites`, `swsd_list_departments`, `swsd_list_users`, `swsd_list_groups`, `swsd_list_roles` |
+| **Lookups** | `swsd_list_categories`, `swsd_get_category`, `swsd_list_sites`, `swsd_get_site`, `swsd_list_departments`, `swsd_get_department`, `swsd_list_users`, `swsd_get_user`, `swsd_list_groups`, `swsd_get_group`, `swsd_list_roles` |
 | **Custom fields** | `swsd_describe_custom_fields` |
 | **Audits** | `swsd_get_record_audits` |
 
@@ -187,11 +187,11 @@ Profiles control which tools are registered at startup. Cannot be changed mid-se
 
 | Profile | Intent | Tool count |
 |---|---|---|
-| `triage` | Read-heavy first-line support + commenting | 16 |
-| `agent` | Full ticket-handler workflow (default) | 40 |
-| `knowledge` | KB-author workflow + incident reads | 15 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 67 |
-| `full` | Every tool | 69 |
+| `triage` | Read-heavy first-line support + commenting | 18 |
+| `agent` | Full ticket-handler workflow (default) | 45 |
+| `knowledge` | KB-author workflow + incident reads | 17 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 72 |
+| `full` | Every tool | 74 |
 
 Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a profile.
 

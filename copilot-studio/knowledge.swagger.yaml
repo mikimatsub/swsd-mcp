@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   title: SWSD MCP: knowledge profile
   description: |
-    SolarWinds Service Desk MCP server, knowledge profile (15 tools).
+    SolarWinds Service Desk MCP server, knowledge profile (17 tools).
 
     KB-author workflow: incident reads (for context), category/user lookups, full solution CRUD (search, get, create, update), and custom-field schema introspection.
 
