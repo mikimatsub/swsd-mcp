@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Windows settings app: every event handler runs in a safe wrapper (friendly in-window error, controls re-enabled); new check-ui-handlers test clicks every button under StrictMode with mocked actions in CI; globe app icon replaces the default window icon.
+- Windows settings app: one shared button style so buttons in a row have identical top, height and width; field labels and token placeholder; themed dark-mode dropdown borders; clear disabled-button look; -ValidateWindow fails on any 1px button-row mismatch.
 - Added `swsd_sla_risk` tool: lists open incidents ranked by SLA breach risk with
   color-coded risk levels (breached, critical, warning, ok, no_due_date), due
   countdowns, and a dedicated MCP Apps widget (`sla-risk`).
@@ -25,6 +27,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Restyled the Windows settings app to a Windows 11 look using WinForms only:
+  card-based layout with TableLayoutPanel/FlowLayoutPanel, DPI-aware resizable
+  window with PerMonitorV2 support, dark/light theme from system personalization
+  settings, DWM immersive dark mode and Mica backdrop on supported builds,
+  colored status chips with icon glyphs, and a subtle fade-in animation. All
+  existing behaviors, switches, and accessible names are preserved. The window
+  now auto-sizes to show all options without scrolling or resizing on load,
+  clamped to the current monitor's working area, and re-layouts on per-monitor
+  DPI changes. An SWSD_UI_SCALE environment variable allows simulating higher
+  DPI scaling for testing.
 - Polished the `sla-risk` widget: it now sizes to its content instead of
   scrolling, truncates long incident names with full text on hover, drops the
   Priority/Assignee and then the number column on narrow hosts, follows the
