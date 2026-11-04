@@ -12,6 +12,8 @@ const READ_BASE = [
   'swsd_list_incident_comments',
   'swsd_list_categories',
   'swsd_list_users',
+  'swsd_get_user',
+  'swsd_get_category',
   'swsd_list_catalog_items',
   'swsd_get_catalog_item',
 ] as const;
@@ -69,6 +71,10 @@ const AGENT_TOOLS = [
   'swsd_list_departments',
   'swsd_list_groups',
   'swsd_list_roles',
+  // Directory get-by-id lookups (user + category are in READ_BASE)
+  'swsd_get_group',
+  'swsd_get_site',
+  'swsd_get_department',
   // Solution reads — agents often check the KB while triaging
   'swsd_search_solutions',
   'swsd_get_solution',
@@ -109,7 +115,9 @@ export const PROFILE_TOOLS = {
     'swsd_list_my_incidents',
     'swsd_get_incident',
     'swsd_list_categories',
+    'swsd_get_category',
     'swsd_list_users',
+    'swsd_get_user',
     'swsd_list_catalog_items',
     'swsd_get_catalog_item',
     // Full solution CRUD for KB authors
@@ -143,6 +151,11 @@ export const PROFILE_TOOLS = {
     'swsd_list_users',
     'swsd_list_groups',
     'swsd_list_roles',
+    'swsd_get_user',
+    'swsd_get_group',
+    'swsd_get_site',
+    'swsd_get_department',
+    'swsd_get_category',
     'swsd_list_catalog_items',
     'swsd_get_catalog_item',
     'swsd_create_service_request',
