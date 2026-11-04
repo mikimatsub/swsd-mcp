@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 74 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 80 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **74 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **80 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
@@ -62,7 +62,7 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 
 ---
 
-## Incidents (10)
+## Incidents (11)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
@@ -76,6 +76,7 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 | `swsd_assign_incident` | W |   | ✓ |   | ✓ | ✓ |
 | `swsd_update_incident_state` | W |   | ✓ |   | ✓ | ✓ |
 | `swsd_link_solution_to_incident` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_delete_incident` | W |   |   |   | ✓ | ✓ |
 
 - **`swsd_list_incidents`**: paginated list with structured filters using SWSD repeated-key array semantics (multiple values within a filter are OR-ed). Filters: `states`, `priorities`, `categories`, `assignee_email`, `requester_email`, `sites`, `departments`, `assigned_to_group` (group ID, not user ID), `created_from`/`created_to`, `updated_from`/`updated_to`, `updated_within` (date-natural-language alias, such as `"24h"`, `"7d"`, `"1w"`, or `"30d"`), `state_is_not` (negative state filter, such as `["Resolved", "Closed"]` to see only open work), `sort_by` (`created_at`, `updated_at`, `priority`, `name`, `due_at`), `sort_order` (`ASC`/`DESC`), and `query` (free-text across title and description). Returns compact summaries (id, name, state, priority, assignee_email, requester_email, category, updated_at); call `swsd_get_incident` for full detail of any one row.
 - **`swsd_list_my_incidents`**: thin wrapper over `swsd_list_incidents` that auto-resolves the authenticated user's email (via JWT decode + `/users/{user_ic}.json`) and applies it as `assignee_email`. One round-trip instead of two for first-person queries ("my tickets", "tickets assigned to me"). Same input shape as `swsd_list_incidents` minus `assignee_email`. Renders the same `incident-list` widget as `swsd_list_incidents` in MCP Apps-capable hosts. For tenant-wide queries use `swsd_list_incidents` with explicit filters.
@@ -170,23 +171,27 @@ Time entries are scoped to a parent `incident`, `problem`, `change`, or `release
 
 ---
 
-## Problems (3)
+## Problems (5)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_problems` | R | ✓ | ✓ |   | ✓ | ✓ |
 | `swsd_get_problem` | R |   | ✓ |   | ✓ | ✓ |
 | `swsd_create_problem` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_update_problem` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_delete_problem` | W |   |   |   | ✓ | ✓ |
 
 ITIL problem records: separate from incidents, scoped to root-cause investigation across recurring incidents. Read-only visibility ships in the `triage` profile so first-line support can see open root-cause work without granting promote/create rights.
 
 - **`swsd_list_problems`**: paginated browse with `state`, `priority`, `assignee_email`, `category`, `created_from`/`created_to`, free-text `query`, and standard sort/page filters. Returns compact summaries (id, name, state, priority, assignee, updated_at).
 - **`swsd_get_problem`**: full problem detail as returned by SWSD (passthrough), including custom-field values and any linked incidents.
 - **`swsd_create_problem`**: create a new problem record. Required: `name`. Strongly recommended: `description`, `requester`, `category`. Use this when an agent recognizes that several incidents share a common root cause.
+- **`swsd_update_problem`**: update an existing problem. Pass `id` plus any of `name`, `description`, `priority`, `category`, `subcategory`, `assignee_email`, `requester_email`, `state`, `root_cause`, `symptoms`, `workaround`. Only provided fields are sent.
+- **`swsd_delete_*`** (incident, problem, change, release, solution): Operations and Full only. The first call previews the record and sends nothing; the real DELETE runs only on a re-call with `confirm: true` and `confirm_id` equal to the previewed id. Dry-run always previews and `disabled` blocks.
 
 ---
 
-## Change & Release (9)
+## Change & Release (11)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
@@ -195,10 +200,12 @@ ITIL problem records: separate from incidents, scoped to root-cause investigatio
 | `swsd_get_change` | R |   |   |   | ✓ | ✓ |
 | `swsd_create_change` | W |   |   |   | ✓ | ✓ |
 | `swsd_update_change` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_change` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_releases` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_release` | R |   |   |   | ✓ | ✓ |
 | `swsd_create_release` | W |   |   |   | ✓ | ✓ |
 | `swsd_update_release` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_release` | W |   |   |   | ✓ | ✓ |
 
 Use these for ITSM lifecycle work that needs change/release records instead of free-form incidents.
 
@@ -264,7 +271,7 @@ Procurement context helps agents answer warranty, vendor, and purchase-history q
 
 ---
 
-## Solutions / Knowledge Base (4)
+## Solutions / Knowledge Base (5)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
@@ -272,6 +279,7 @@ Procurement context helps agents answer warranty, vendor, and purchase-history q
 | `swsd_get_solution` | R, UI |   | ✓ | ✓ | ✓ | ✓ |
 | `swsd_create_solution` | W |   |   | ✓ |   | ✓ |
 | `swsd_update_solution` | W |   |   | ✓ |   | ✓ |
+| `swsd_delete_solution` | W |   |   |   | ✓ | ✓ |
 
 - **`swsd_search_solutions`**: full-text search across titles and descriptions. Pass `category` to filter to a specific KB section.
 - **`swsd_get_solution`**: full solution as returned by SWSD (passthrough), including both `description` (HTML) and `description_no_html` (plain text), custom-field values, comments count, and attachment metadata. Accepts the solution's `id` or human-facing `number`. Pass `detail_level: "long"` to include attachments, audits, tags, and full statistics in one call. Default `"short"` is faster. Renders the `solution-detail` widget in MCP Apps-capable hosts with the full sanitized HTML body rather than just an excerpt, which is the purpose of opening a KB article.
