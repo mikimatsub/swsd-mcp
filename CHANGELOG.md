@@ -7,8 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `swsd_sla_risk` tool: lists open incidents ranked by SLA breach risk with
+  color-coded risk levels (breached, critical, warning, ok, no_due_date), due
+  countdowns, and a dedicated MCP Apps widget (`sla-risk`).
+- Added `swsd_my_queue` tool: work-queue view defaulting to the authenticated
+  user's open incidents, with per-row SLA risk computation and sort options.
+  Reuses the existing `incident-list` widget.
+- Factored shared `resolveCurrentUser` helper from `listMyIncidents` for reuse
+  across tools that need JWT-based user resolution.
+
 ### Changed
 
+- Polished the `sla-risk` widget: it now sizes to its content instead of
+  scrolling, truncates long incident names with full text on hover, drops the
+  Priority/Assignee and then the number column on narrow hosts, follows the
+  host theme in dark mode, and exposes its render functions for unit tests.
+  The `swsd_sla_risk` description now states that list rows normally only carry
+  `due_at`, so SLA violations are counted only when SWSD includes them.
 - Made manual release recovery skip only the Windows plugin's live npm-latest
   assertion while rebuilding an immutable tag. Deterministic plugin checks and
   the normal online PR, main, and initial tag gates remain enabled.

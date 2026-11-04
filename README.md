@@ -107,12 +107,12 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 
 ---
 
-## Tools (66 across 15 categories)
+## Tools (68 across 15 categories)
 
 | Category | Tools |
 |---|---|
 | **Utility** | `swsd_get_server_info`, `swsd_health_check`, `swsd_get_me` |
-| **Incidents** | `swsd_list_incidents`, `swsd_list_my_incidents`, `swsd_get_incident`, `swsd_create_incident`, `swsd_update_incident`, `swsd_assign_incident`, `swsd_update_incident_state`, `swsd_link_solution_to_incident` |
+| **Incidents** | `swsd_list_incidents`, `swsd_list_my_incidents`, `swsd_sla_risk`, `swsd_my_queue`, `swsd_get_incident`, `swsd_create_incident`, `swsd_update_incident`, `swsd_assign_incident`, `swsd_update_incident_state`, `swsd_link_solution_to_incident` |
 | **Comments** | `swsd_list_incident_comments`, `swsd_add_incident_comment`, `swsd_update_comment` |
 | **Tasks** | `swsd_list_incident_tasks`, `swsd_create_incident_task`, `swsd_update_task_state` |
 | **Problems** | `swsd_list_problems`, `swsd_get_problem`, `swsd_create_problem` |
@@ -133,17 +133,18 @@ Each tool's input schema, description, and output shape is auto-discovered by yo
 
 ## MCP Apps widgets (rich UI)
 
-Seven read tools ship interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25). On capable hosts (Claude Desktop, Claude Web, VS Code Copilot Chat, ChatGPT, Goose, Postman), the tool returns a rendered widget alongside the structured response. On text-only hosts (Claude Code, LM Studio), the same tools return their normal structured payload.
+Eight read tools ship interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25). On capable hosts (Claude Desktop, Claude Web, VS Code Copilot Chat, ChatGPT, Goose, Postman), the tool returns a rendered widget alongside the structured response. On text-only hosts (Claude Code, LM Studio), the same tools return their normal structured payload.
 
 ![incident-list widget rendering a sortable table of synthetic Acme Corp tickets](docs-site/public/widgets/incident-list-dark.png)
 
-*Example: `swsd_list_incidents` rendering the `incident-list` widget. Synthetic data; no real tenant info. See the [full gallery](https://mcp-swsd.pages.dev/widgets/) for screenshots of all seven widgets.*
+*Example: `swsd_list_incidents` rendering the `incident-list` widget. Synthetic data; no real tenant info. See the [full gallery](https://mcp-swsd.pages.dev/widgets/) for screenshots of all eight widgets.*
 
 | Tool | Widget | What it renders |
 |---|---|---|
 | `swsd_get_incident` | `incident-detail` | Single-record card (description, due date, SLA, resolution, custom fields) |
 | `swsd_get_solution` | `solution-detail` | Knowledge-base article with sanitized HTML body |
 | `swsd_list_incidents`, `swsd_list_my_incidents` | `incident-list` | Filterable, sortable table |
+| `swsd_sla_risk` | `sla-risk` | Risk-count chips + color-coded table with due countdowns |
 | `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips, public/private badges |
 | `swsd_get_record_audits` | `audit-timeline` | Timeline grouped by day with action chips and field diffs |
 | `swsd_get_catalog_item` | `catalog-item-form` | Form that submits via `swsd_create_service_request` |
@@ -175,11 +176,11 @@ Profiles control which tools are registered at startup. Cannot be changed mid-se
 
 | Profile | Intent | Tool count |
 |---|---|---|
-| `triage` | Read-heavy first-line support + commenting | 14 |
-| `agent` | Full ticket-handler workflow (default) | 37 |
+| `triage` | Read-heavy first-line support + commenting | 16 |
+| `agent` | Full ticket-handler workflow (default) | 39 |
 | `knowledge` | KB-author workflow + incident reads | 15 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 64 |
-| `full` | Every tool | 66 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 66 |
+| `full` | Every tool | 68 |
 
 Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a profile.
 
