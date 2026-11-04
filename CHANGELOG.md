@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Windows settings: Copy diagnostics shares a plain-text environment report with
+  credential presence only and a conservatively redacted 20-line log tail. The
+  status action row uses the shared button style; CI checks isolated credentials,
+  token-fragment redaction, and the actual handler with a mocked clipboard.
 - Windows settings: Check for updates runs the mockable npm lookup in a background
   runspace, with current/available/offline results in an aligned dashboard chip.
   The install, update-check, and Node helper buttons use the shared equal-width row.
