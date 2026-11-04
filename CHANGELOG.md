@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Restyled the Windows settings app to a Windows 11 look using WinForms only:
+  card-based layout with TableLayoutPanel/FlowLayoutPanel, DPI-aware resizable
+  window with PerMonitorV2 support, dark/light theme from system personalization
+  settings, DWM immersive dark mode and Mica backdrop on supported builds,
+  colored status chips with icon glyphs, and a subtle fade-in animation. All
+  existing behaviors, switches, and accessible names are preserved.
 - Made manual release recovery skip only the Windows plugin's live npm-latest
   assertion while rebuilding an immutable tag. Deterministic plugin checks and
   the normal online PR, main, and initial tag gates remain enabled.
