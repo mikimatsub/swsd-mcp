@@ -178,6 +178,113 @@ function Test-SwsdToken {
     } finally { $client.Dispose(); $handler.Dispose() }
 }
 
+function Get-SwsdInstalledVersion {
+    $packageJson = Join-Path $script:SwsdHome "runtime\$script:SwsdPackageVersion\node_modules\swsd-mcp\package.json"
+    if (-not (Test-Path -LiteralPath $packageJson)) { return $null }
+    try {
+        $pkg = Get-Content -LiteralPath $packageJson -Raw | ConvertFrom-Json
+        return $pkg.version
+    } catch { return $null }
+}
+
+function Get-SwsdLatestVersion {
+    param([ValidateRange(1, 60)][int]$TimeoutSeconds = 10)
+    $process = $null
+    $npmCmd = $env:SWSD_NPM
+    if (-not $npmCmd) {
+        try {
+            $node = Get-Command node.exe -ErrorAction SilentlyContinue
+            if ($node) { $npmCmd = Join-Path (Split-Path $node.Source) 'npm.cmd' }
+        } catch {}
+    }
+    if (-not $npmCmd -or -not (Test-Path -LiteralPath $npmCmd)) { return $null }
+    try {
+        $start = New-Object Diagnostics.ProcessStartInfo
+        $start.FileName = $npmCmd
+        $start.Arguments = 'view swsd-mcp version'
+        $start.EnvironmentVariables.Remove('SWSD_TOKEN')
+        $start.UseShellExecute = $false
+        $start.CreateNoWindow = $true
+        $start.RedirectStandardOutput = $true
+        $start.RedirectStandardError = $true
+        $process = New-Object Diagnostics.Process
+        $process.StartInfo = $start
+        [void]$process.Start()
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            try { $process.Kill() } catch {}
+            return $null
+        }
+        $stdout = $stdoutTask.GetAwaiter().GetResult().Trim()
+        [void]$stderrTask.GetAwaiter().GetResult()
+        if ($process.ExitCode -ne 0) { return $null }
+        if ($stdout -match '^\d+\.\d+\.\d+$') { return $Matches[0] }
+        return $null
+    } catch { return $null } finally {
+        if ($process) { try { $process.Dispose() } catch {} }
+    }
+}
+
+function Compare-SwsdVersion {
+    param([string]$Installed, [string]$Latest)
+    if ([string]::IsNullOrWhiteSpace($Installed) -or [string]::IsNullOrWhiteSpace($Latest)) { return 'unknown' }
+    try {
+        $iv = [version]$Installed
+        $lv = [version]$Latest
+        if ($iv -eq $lv) { return 'current' }
+        if ($iv -lt $lv) { return 'update' }
+        return 'newer'
+    } catch { return 'unknown' }
+}
+
+function Get-SwsdNodeInstallCommand {
+    # Reviewed Node 24 pin: the unversioned LTS package now selects unsupported Node 26.
+    return 'winget install --id OpenJS.NodeJS.LTS --version 24.22.1 --exact --silent --accept-package-agreements --accept-source-agreements'
+}
+
+function Get-SwsdWinget {
+    # Explicit overrides never fall back to a real executable (including missing test doubles).
+    if ($env:SWSD_WINGET) {
+        if (Test-Path -LiteralPath $env:SWSD_WINGET -PathType Leaf) { return $env:SWSD_WINGET }
+        return $null
+    }
+    $command = Get-Command winget.exe -ErrorAction SilentlyContinue
+    if ($command) { return $command.Source }
+    return $null
+}
+
+function Install-SwsdNode {
+    param([ValidateRange(1, 600)][int]$TimeoutSeconds = 300)
+    $winget = Get-SwsdWinget
+    if (-not $winget) { throw 'Windows Package Manager is unavailable. Ask IT to install Node.js 24.22.1, then reopen setup.' }
+    $process = $null
+    try {
+        $start = New-Object Diagnostics.ProcessStartInfo
+        $start.FileName = $winget
+        $start.Arguments = (Get-SwsdNodeInstallCommand) -replace '^winget\s+', ''
+        $start.UseShellExecute = $false
+        $start.CreateNoWindow = $true
+        $start.RedirectStandardOutput = $true
+        $start.RedirectStandardError = $true
+        $start.EnvironmentVariables.Remove('SWSD_TOKEN')
+        $process = New-Object Diagnostics.Process
+        $process.StartInfo = $start
+        [void]$process.Start()
+        $stdout = $process.StandardOutput.ReadToEndAsync()
+        $stderr = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            $process.Kill()
+            throw 'Node.js installation timed out. Ask IT to check Windows Package Manager, then reopen setup.'
+        }
+        [void]$stdout.GetAwaiter().GetResult()
+        [void]$stderr.GetAwaiter().GetResult()
+        if ($process.ExitCode -ne 0) { throw 'Node.js installation failed. Ask IT to install Node.js 24.22.1, then reopen setup.' }
+    } finally {
+        if ($process) { $process.Dispose() }
+    }
+}
+
 function Get-SwsdStatus {
     $nodeVersion = $null
     $nodeSupported = $false
@@ -224,7 +331,8 @@ function Get-SwsdStatus {
 function Install-SwsdTools {
     param(
         [Parameter(Mandatory)][string]$SourceRoot,
-        [string]$ShortcutDirectory = ([Environment]::GetFolderPath('Programs'))
+        [string]$ShortcutDirectory = ([Environment]::GetFolderPath('Programs')),
+        [switch]$Force
     )
     $node = Get-SwsdNode
     $npmCli = Join-Path (Split-Path $node) 'node_modules\npm\bin\npm-cli.js'
@@ -241,32 +349,39 @@ function Install-SwsdTools {
         throw 'The SWSD runtime recipe does not match this setup version. Ask IT to sync the reviewed plugin package.'
     }
     $runtime = Join-Path $script:SwsdHome "runtime\$script:SwsdPackageVersion"
-    New-Item -ItemType Directory -Path $runtime -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $SourceRoot 'runtime\package.json') -Destination $runtime -Force
-    Copy-Item -LiteralPath (Join-Path $SourceRoot 'runtime\package-lock.json') -Destination $runtime -Force
-    $start = New-Object Diagnostics.ProcessStartInfo
-    $start.FileName = $node
-    $start.Arguments = '"' + $npmCli + '" ci --ignore-scripts --strict-peer-deps --no-audit --no-fund'
-    $start.WorkingDirectory = $runtime
-    $start.UseShellExecute = $false
-    $start.CreateNoWindow = $true
-    $start.RedirectStandardOutput = $true
-    $start.RedirectStandardError = $true
-    $start.EnvironmentVariables.Remove('SWSD_TOKEN')
-    $process = New-Object Diagnostics.Process
-    $process.StartInfo = $start
-    try {
-        [void]$process.Start()
-        $stdout = $process.StandardOutput.ReadToEndAsync()
-        $stderr = $process.StandardError.ReadToEndAsync()
-        if (-not $process.WaitForExit(240000)) { $process.Kill(); throw 'Tool installation timed out. Check npm registry access and retry.' }
-        [void]$stdout.GetAwaiter().GetResult()
-        [void]$stderr.GetAwaiter().GetResult()
-        if ($process.ExitCode -ne 0) { throw 'Tool installation failed. Ask IT to check access to registry.npmjs.org and npm proxy configuration.' }
-    } finally { $process.Dispose() }
-    if (-not (Test-Path -LiteralPath (Get-SwsdEntryPoint))) { throw 'The SWSD server installation is incomplete.' }
-    $installed = Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
-    if ($installed.version -ne $script:SwsdPackageVersion) { throw 'The installed SWSD server version does not match this setup version.' }
+    $entryPoint = Get-SwsdEntryPoint
+    $installedVersion = Get-SwsdInstalledVersion
+    $skipNpmInstall = (-not $Force) -and
+        ($installedVersion -eq $script:SwsdPackageVersion) -and
+        (Test-Path -LiteralPath $entryPoint -PathType Leaf)
+    if (-not $skipNpmInstall) {
+        New-Item -ItemType Directory -Path $runtime -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $SourceRoot 'runtime\package.json') -Destination $runtime -Force
+        Copy-Item -LiteralPath (Join-Path $SourceRoot 'runtime\package-lock.json') -Destination $runtime -Force
+        $start = New-Object Diagnostics.ProcessStartInfo
+        $start.FileName = $node
+        $start.Arguments = '"' + $npmCli + '" ci --ignore-scripts --strict-peer-deps --no-audit --no-fund'
+        $start.WorkingDirectory = $runtime
+        $start.UseShellExecute = $false
+        $start.CreateNoWindow = $true
+        $start.RedirectStandardOutput = $true
+        $start.RedirectStandardError = $true
+        $start.EnvironmentVariables.Remove('SWSD_TOKEN')
+        $process = New-Object Diagnostics.Process
+        $process.StartInfo = $start
+        try {
+            [void]$process.Start()
+            $stdout = $process.StandardOutput.ReadToEndAsync()
+            $stderr = $process.StandardError.ReadToEndAsync()
+            if (-not $process.WaitForExit(240000)) { $process.Kill(); throw 'Tool installation timed out. Check npm registry access and retry.' }
+            [void]$stdout.GetAwaiter().GetResult()
+            [void]$stderr.GetAwaiter().GetResult()
+            if ($process.ExitCode -ne 0) { throw 'Tool installation failed. Ask IT to check access to registry.npmjs.org and npm proxy configuration.' }
+        } finally { $process.Dispose() }
+        if (-not (Test-Path -LiteralPath $entryPoint)) { throw 'The SWSD server installation is incomplete.' }
+        $installed = Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
+        if ($installed.version -ne $script:SwsdPackageVersion) { throw 'The installed SWSD server version does not match this setup version.' }
+    }
     $clientDir = Join-Path $script:SwsdHome "client\$script:SwsdClientVersion"
     New-Item -ItemType Directory -Path $clientDir -Force | Out-Null
     foreach ($name in @('Common.ps1', 'Start-Swsd.ps1', 'Manage-Swsd.ps1')) {
