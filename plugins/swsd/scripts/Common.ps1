@@ -286,11 +286,13 @@ function Install-SwsdNode {
 }
 
 function Get-SwsdStatus {
+    $nodePath = $null
     $nodeVersion = $null
     $nodeSupported = $false
     try {
         $nodeCmd = Get-Command node.exe -ErrorAction SilentlyContinue
         if ($nodeCmd) {
+            $nodePath = $nodeCmd.Source
             $nodeVersion = (& $nodeCmd.Source --version).Trim().TrimStart('v')
             $parsed = [version]$nodeVersion
             if ($parsed.Major -eq 24 -and $parsed -ge [version]'24.15.0') {
@@ -316,6 +318,7 @@ function Get-SwsdStatus {
     $settings = Get-SwsdSettings
     $regionLabel = if ($settings.baseUrl -eq 'https://apieu.samanage.com') { 'EU' } else { 'US' }
     return [pscustomobject]@{
+        nodePath        = $nodePath
         nodeSupported   = $nodeSupported
         nodeVersion     = $nodeVersion
         toolsInstalled  = $toolsInstalled
@@ -325,7 +328,93 @@ function Get-SwsdStatus {
         installedVersion = $installedVersion
         profile         = $settings.profile
         region          = $regionLabel
+        baseUrl         = $settings.baseUrl
     }
+}
+
+function Protect-SwsdDiagnosticText {
+    param([AllowEmptyString()][string]$Text)
+    # No saved secret is needed for redaction. Drop sensitive fields (including
+    # short/spaced values), then conservatively redact ALL long non-space runs.
+    # This catches bare tokens, JWTs, URLs and partial tokens, at the cost of
+    # hiding some ordinary long words in the log. Never retain token suffixes.
+    $redacted = $Text -replace '(?i)\b(?:authorization|bearer|[\w-]*token|api[_ -]?key|secret|password)\b[^\r\n]*', '[REDACTED]'
+    return ($redacted -replace '\S{8,}', '[REDACTED]')
+}
+
+function Get-SwsdDiagnostics {
+    param(
+        [string]$LogPath = (Join-Path $env:TEMP 'swsd-settings.log'),
+        [ValidateRange(0, 1536)][double]$Dpi = 0,
+        [ValidateRange(0, 16)][double]$Scale = 0,
+        [ValidateSet('light', 'dark', 'unknown')][string]$Theme = 'unknown'
+    )
+    # Get-SwsdStatus uses Credentials.Exists only; never Read, tokenBox, or SWSD_TOKEN.
+    # Display measurements are supplied by the caller; this function needs no UI.
+    $s = Get-SwsdStatus
+    $windowsVersion = [Environment]::OSVersion.Version.ToString()
+    $windowsBuild = [string][Environment]::OSVersion.Version.Build
+    try {
+        $os = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+        $windowsBuild = '{0}.{1}' -f [int]$os.CurrentBuildNumber, [int]$os.UBR
+        if ($os.DisplayVersion -match '^\d{2}H[12]$') { $windowsVersion += ' (' + $os.DisplayVersion + ')' }
+    } catch {} # Preserve the OS API fallback, never arbitrary exception text.
+    $nodePath = if ($s.nodePath) { [string]$s.nodePath -replace '[\x00-\x1f]', '?' } else { 'Not found' }
+    $nodeVersion = if ($s.nodeVersion -match '^\d+\.\d+\.\d+$') { $s.nodeVersion } else { 'Unavailable' }
+    $toolsVersion = if ($s.installedVersion -match '^\d+\.\d+\.\d+$') { $s.installedVersion } else { 'Not installed / unavailable' }
+    $toolsInstalled = if ($s.toolsInstalled) { 'yes' } else { 'no' }
+    $credential = if (-not $s.credentialAvailable) { 'unavailable' } elseif ($s.credentialSaved) { 'yes' } else { 'no' }
+    $dpiText = if ($Dpi -gt 0) { $Dpi.ToString('0.##', [Globalization.CultureInfo]::InvariantCulture) } else { 'Unavailable (no window supplied)' }
+    $displayScaleText = if ($Dpi -gt 0) { ($Dpi / 96 * 100).ToString('0.##', [Globalization.CultureInfo]::InvariantCulture) + '%' } else { 'Unavailable (no window supplied)' }
+    $scaleText = if ($Scale -gt 0) { ($Scale * 100).ToString('0.##', [Globalization.CultureInfo]::InvariantCulture) + '%' } else { 'Unavailable (no window supplied)' }
+    $logLines = @('No log file found.')
+    try {
+        if (Test-Path -LiteralPath $LogPath -PathType Leaf) {
+            $logLines = @(Get-Content -LiteralPath $LogPath -Tail 20 -Encoding UTF8 | ForEach-Object { Protect-SwsdDiagnosticText $_ })
+            if ($logLines.Count -eq 0) { $logLines = @('Log file is empty.') }
+        }
+    } catch { $logLines = @('Log file unavailable.') }
+    return (@(
+        'SWSD settings diagnostics'
+        ''
+        '[Application]'
+        "App version: $script:SwsdClientVersion"
+        "Package version: $script:SwsdPackageVersion"
+        ''
+        '[Windows]'
+        "Version: $windowsVersion"
+        "Build: $windowsBuild"
+        ''
+        '[PowerShell]'
+        "Version: $($PSVersionTable.PSVersion)"
+        ''
+        '[Node.js]'
+        "Path: $nodePath"
+        "Version: $nodeVersion"
+        ''
+        '[Tools]'
+        "Installed: $toolsInstalled"
+        "Version: $toolsVersion"
+        ''
+        '[Connection]'
+        "Profile: $($s.profile)"
+        "Region base URL: $($s.baseUrl)"
+        "Credential PRESENT: $credential"
+        ''
+        '[Display]'
+        "DPI: $dpiText"
+        "Display scale: $displayScaleText"
+        "UI scale: $scaleText"
+        "Theme: $Theme"
+        ''
+        '[Recent log (last 20 lines; redacted)]'
+    ) + $logLines) -join [Environment]::NewLine
+}
+
+function Set-SwsdClipboard {
+    param([Parameter(Mandatory)][string]$Text)
+    Add-Type -AssemblyName System.Windows.Forms
+    [Windows.Forms.Clipboard]::SetText($Text, [Windows.Forms.TextDataFormat]::UnicodeText)
 }
 
 function Install-SwsdTools {
