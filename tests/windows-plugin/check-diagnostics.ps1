@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $root = Resolve-Path (Join-Path $PSScriptRoot '../../plugins/swsd')
 . (Join-Path $root 'scripts/Common.ps1')
 $target = 'swsd-mcp/test/' + [guid]::NewGuid().ToString('N')
@@ -7,7 +7,7 @@ $script:SwsdHome = $testHome
 $script:SwsdCredentialTarget = $target
 $logPath = Join-Path $testHome 'swsd-settings.log'
 # Synthetic value only: never read a saved credential, including this test's value.
-$syntheticToken = 'Q7xM2vR9aB4kL8pN6zC3dF5hJ1sT0wY2'
+$syntheticToken = ('synthetic' + [guid]::NewGuid().ToString('N'))
 $saved = $false
 function Assert-NoDiagnosticToken([string]$Report) {
     if ($Report.Contains($syntheticToken)) { throw 'Diagnostics leaked the synthetic token.' }

@@ -1819,7 +1819,7 @@ if ($ValidateWindow) {
         $nodeCallsBefore = $script:SwsdMockCalls.Count
         Assert-SwsdClick $nodeInstallButton 'already installed'
         if ($script:SwsdMockCalls.Count -ne $nodeCallsBefore) { throw 'Supported Node should not prompt or install.' }
-        $diagnosticToken = 'Q7xM2vR9aB4kL8pN6zC3dF5hJ1sT0wY2'
+        $diagnosticToken = ('synthetic' + [guid]::NewGuid().ToString('N'))
         $tokenBox.Text = $diagnosticToken
         Assert-SwsdClick $save 'token saved'
         if ($tokenBox.Text) { throw 'Token field was not cleared after save.' }
