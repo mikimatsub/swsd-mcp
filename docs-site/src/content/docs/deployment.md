@@ -139,7 +139,7 @@ Key flags:
 | `--target-port 3000` | The container's internal listen port (matches the Dockerfile's EXPOSE) |
 | `--ingress external` | Accept traffic from the public internet (required for Copilot Studio) |
 | `SWSD_TRUST_PROXY=1` | Tell Express to trust Container Apps' reverse proxy so `req.ip` shows the real client (rate-limit accuracy) |
-| `SWSD_PROFILE=operations` | Register the 64-tool ITSM operations profile; use `full` only when the deployment also needs every KB write tool |
+| `SWSD_PROFILE=operations` | Register the 65-tool ITSM operations profile; use `full` only when the deployment also needs every KB write tool |
 | `SWSD_WRITE_MODE=live` | Allow writes. Use `dry-run` for payload previews or `disabled` for read-only hosted deployments |
 | `SWSD_RATE_LIMIT_MAX=200` | Slightly higher than default since this is a shared instance |
 | `--min-replicas 0` | Scale to zero when idle (the magic that makes this nearly free) |
@@ -246,11 +246,11 @@ After deploying the HTTP server (above), you import a Swagger 2.0 connector spec
 
 Per-profile Swagger files live in [`copilot-studio/`](https://github.com/mikimatsub/swsd-mcp/tree/main/copilot-studio) on GitHub:
 
-- `triage.swagger.yaml` (14 tools)
-- `agent.swagger.yaml` (37 tools, default)
+- `triage.swagger.yaml` (16 tools)
+- `agent.swagger.yaml` (40 tools, default)
 - `knowledge.swagger.yaml` (15 tools)
-- `operations.swagger.yaml` (64 tools)
-- `full.swagger.yaml` (66 tools)
+- `operations.swagger.yaml` (67 tools)
+- `full.swagger.yaml` (69 tools)
 
 ### Import steps
 

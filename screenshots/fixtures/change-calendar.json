@@ -1,0 +1,227 @@
+{
+  "items": [
+    {
+      "kind": "change",
+      "id": 10000,
+      "number": 1000,
+      "name": "Database maintenance and operating system security updates for customer services",
+      "state": "Scheduled for implementation",
+      "priority": "High",
+      "planned_start_at": "2026-11-10T09:00:00Z",
+      "planned_end_at": "2026-11-10T11:00:00Z",
+      "assignee_email": "john.doe@email.com",
+      "assignee_name": "John Doe",
+      "group_assignee": {
+        "id": 1,
+        "name": "Helpdesk Team"
+      },
+      "configuration_items": [
+        {
+          "id": 100,
+          "name": "Customer database"
+        }
+      ],
+      "url": "https://tenant.example/changes/10000",
+      "conflict_count": 1
+    },
+    {
+      "kind": "release",
+      "id": 10000,
+      "number": 1000,
+      "name": "Customer portal release",
+      "state": "Approved",
+      "priority": "High",
+      "planned_start_at": "2026-11-10T10:00:00Z",
+      "planned_end_at": "2026-11-12T10:00:00Z",
+      "assignee_email": "john.doe@email.com",
+      "assignee_name": "John Doe",
+      "group_assignee": {
+        "id": 1,
+        "name": "Helpdesk Team"
+      },
+      "configuration_items": [
+        {
+          "id": 100,
+          "name": "Customer database"
+        }
+      ],
+      "conflict_count": 2
+    },
+    {
+      "kind": "change",
+      "id": 10001,
+      "number": 1000,
+      "name": "Network switch firmware update",
+      "state": "Approved",
+      "priority": "High",
+      "planned_start_at": "2026-11-10T14:00:00Z",
+      "planned_end_at": "2026-11-10T16:00:00Z",
+      "assignee_email": "john.doe@email.com",
+      "assignee_name": "John Doe",
+      "group_assignee": {
+        "id": 3,
+        "name": "Network operations"
+      },
+      "configuration_items": [],
+      "conflict_count": 0
+    },
+    {
+      "kind": "release",
+      "id": 10002,
+      "number": 1000,
+      "name": "Monitoring agent rollout",
+      "state": "Scheduled",
+      "priority": "High",
+      "planned_start_at": "2026-11-12T09:00:00Z",
+      "assignee_email": "john.doe@email.com",
+      "assignee_name": "John Doe",
+      "group_assignee": {
+        "id": 1,
+        "name": "Helpdesk Team"
+      },
+      "configuration_items": [],
+      "conflict_count": 1
+    }
+  ],
+  "conflicts": [
+    {
+      "a": {
+        "kind": "change",
+        "id": 10000
+      },
+      "b": {
+        "kind": "release",
+        "id": 10000
+      },
+      "reasons": [
+        "shared CI: Customer database",
+        "same group: Helpdesk Team"
+      ],
+      "overlap_start": "2026-11-10T10:00:00.000Z",
+      "overlap_end": "2026-11-10T11:00:00.000Z"
+    },
+    {
+      "a": {
+        "kind": "release",
+        "id": 10000
+      },
+      "b": {
+        "kind": "release",
+        "id": 10002
+      },
+      "reasons": [
+        "same group: Helpdesk Team"
+      ],
+      "overlap_start": "2026-11-12T09:00:00.000Z",
+      "overlap_end": "2026-11-12T10:00:00.000Z"
+    }
+  ],
+  "days": [
+    {
+      "date": "2026-11-10",
+      "items": [
+        {
+          "kind": "change",
+          "id": 10000,
+          "number": 1000,
+          "name": "Database maintenance and operating system security updates for customer services",
+          "state": "Scheduled for implementation",
+          "priority": "High",
+          "planned_start_at": "2026-11-10T09:00:00Z",
+          "planned_end_at": "2026-11-10T11:00:00Z",
+          "assignee_email": "john.doe@email.com",
+          "assignee_name": "John Doe",
+          "group_assignee": {
+            "id": 1,
+            "name": "Helpdesk Team"
+          },
+          "configuration_items": [
+            {
+              "id": 100,
+              "name": "Customer database"
+            }
+          ],
+          "url": "https://tenant.example/changes/10000",
+          "conflict_count": 1
+        },
+        {
+          "kind": "release",
+          "id": 10000,
+          "number": 1000,
+          "name": "Customer portal release",
+          "state": "Approved",
+          "priority": "High",
+          "planned_start_at": "2026-11-10T10:00:00Z",
+          "planned_end_at": "2026-11-12T10:00:00Z",
+          "assignee_email": "john.doe@email.com",
+          "assignee_name": "John Doe",
+          "group_assignee": {
+            "id": 1,
+            "name": "Helpdesk Team"
+          },
+          "configuration_items": [
+            {
+              "id": 100,
+              "name": "Customer database"
+            }
+          ],
+          "conflict_count": 2
+        },
+        {
+          "kind": "change",
+          "id": 10001,
+          "number": 1000,
+          "name": "Network switch firmware update",
+          "state": "Approved",
+          "priority": "High",
+          "planned_start_at": "2026-11-10T14:00:00Z",
+          "planned_end_at": "2026-11-10T16:00:00Z",
+          "assignee_email": "john.doe@email.com",
+          "assignee_name": "John Doe",
+          "group_assignee": {
+            "id": 3,
+            "name": "Network operations"
+          },
+          "configuration_items": [],
+          "conflict_count": 0
+        }
+      ]
+    },
+    {
+      "date": "2026-11-12",
+      "items": [
+        {
+          "kind": "release",
+          "id": 10002,
+          "number": 1000,
+          "name": "Monitoring agent rollout",
+          "state": "Scheduled",
+          "priority": "High",
+          "planned_start_at": "2026-11-12T09:00:00Z",
+          "assignee_email": "john.doe@email.com",
+          "assignee_name": "John Doe",
+          "group_assignee": {
+            "id": 1,
+            "name": "Helpdesk Team"
+          },
+          "configuration_items": [],
+          "conflict_count": 1
+        }
+      ]
+    }
+  ],
+  "window": {
+    "from": "2026-11-10T00:00:00Z",
+    "to": "2026-11-13T00:00:00Z"
+  },
+  "scan": {
+    "pages_fetched": {
+      "change": 1,
+      "release": 1
+    },
+    "rows_scanned": 4,
+    "unscheduled": 0,
+    "truncated": false
+  },
+  "applied_filters": {}
+}

@@ -84,6 +84,7 @@ import {
   registerUpdateTimeTrack,
 } from '../tools/timeTracks/timeTrackTools.js';
 import { registerUploadAttachment } from '../tools/attachments/uploadAttachment.js';
+import { registerChangeCalendar } from '../tools/records/changeCalendar.js';
 
 export interface ToolContext {
   env: Env;
@@ -96,6 +97,7 @@ export interface ToolContext {
 type Registrar = (server: McpServer, ctx: ToolContext) => void;
 
 const REGISTRARS: Record<string, Registrar> = {
+  swsd_change_calendar: registerChangeCalendar,
   swsd_get_server_info: registerGetServerInfo,
   swsd_health_check: registerHealthCheck,
   swsd_get_me: registerGetMe,

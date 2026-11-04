@@ -1,9 +1,9 @@
 ---
 title: Widgets reference
-description: The eight MCP Apps UI bundles swsd-mcp ships, what they render, and which hosts support them.
+description: The nine MCP Apps UI bundles swsd-mcp ships, what they render, and which hosts support them.
 ---
 
-swsd-mcp ships **eight** interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Each one is a single-file HTML resource served at `ui://swsd-mcp/<widget-name>` with content type `text/html;profile=mcp-app`. When a tool with an attached widget is called from an MCP Apps-capable host, the host renders the bundle alongside (or in place of) the structured-content text response. Hosts without MCP Apps support are unaffected: the same tools still return their normal text + structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
+swsd-mcp ships **nine** interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Each one is a single-file HTML resource served at `ui://swsd/<widget-name>.html` with content type `text/html;profile=mcp-app`. When a tool with an attached widget is called from an MCP Apps-capable host, the host renders the bundle alongside (or in place of) the structured-content text response. Hosts without MCP Apps support are unaffected: the same tools still return their normal text + structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
 
 All widgets are self-contained. No external network access, no third-party scripts. HTML coming from SWSD (solution bodies, incident descriptions, comment bodies, catalog helptext) is sanitized client-side via [DOMPurify](https://github.com/cure53/DOMPurify) before insertion. Theme variables and host fonts are applied via the SDK's `applyHostStyleVariables` / `applyDocumentTheme` / `applyHostFonts` helpers, so widgets follow the host's light/dark mode and font settings automatically.
 
@@ -19,6 +19,7 @@ All widgets are self-contained. No external network access, no third-party scrip
 | [`audit-timeline`](#audit-timeline) | `swsd_get_record_audits` | Vertical audit-log timeline grouped by day with action chips and field diffs. |
 | [`catalog-item-form`](#catalog-item-form) | `swsd_get_catalog_item` | Renders catalog variables as a form; submits via `swsd_create_service_request`. |
 | [`custom-fields`](#custom-fields) | `swsd_describe_custom_fields` | Searchable explorer with scope/module filters and per-field detail panel. |
+| [`change-calendar`](#change-calendar) | `swsd_change_calendar` | Local-time day sections for changes/releases, with shared-CI/group conflict badges. |
 
 ## How widgets are loaded
 
@@ -35,9 +36,17 @@ Steps 4–6 run over JSON-RPC postMessage between the host and the iframe. The w
 
 ## Error handling
 
-All eight widgets handle `isError: true` tool results. Instead of an infinite "Loading…" spinner, they render a clear error state showing the tool's error message. This is the v2.1 fix for the v2.0 bug where tool errors silently spun forever.
+All nine widgets handle `isError: true` tool results. Instead of an infinite "Loading…" spinner, they render a clear error state showing the tool's error message. This is the v2.1 fix for the v2.0 bug where tool errors silently spun forever.
 
 ## Per-widget detail
+
+### `change-calendar`
+
+Bound to `swsd_change_calendar` in Agent, Operations and Full, with resource URI `ui://swsd/change-calendar.html`. The header shows the selected window as a friendly date range (for example “Nov 10 – Nov 12 · times in EST”) and Changes, Releases and Conflicts totals (conflicting pairs). Day sections use each item's start date in the viewer's timezone. Rows show a fixed-width time column, a blue Change or purple Release pill, the linked name (wrapping to two lines) with a muted state · group · assignee line beneath it, and a fixed Conflict badge column so rows line up. Red left borders and Conflict badges identify overlapping work; the badge tooltip lists shared CIs and groups.
+
+Times are shown in the viewer's local timezone (via `Intl`), including the one-hour assumption when an end is missing; the tool's structured output stays in UTC ISO timestamps. Times use the viewer's locale format (for example “4:00 – 6:00 AM” in en-US). Multiday work appears once under its start day as “5:00 AM →” with “Nov 12, 5:00 AM” on a second line. Tooltips keep the full name, metadata and raw ISO times. At 440px and below the time moves to its own line. The layout sizes to its content and follows the host's light/dark theme.
+
+An empty state explains when no scheduled work matches. A partial-calendar notice appears when the scan reaches its limit; hidden/unscanned or filtered-out records are not covered by the conflict check. See [calendar filters and scan accounting](/tools/#change--release-9).
 
 > The screenshots below are rendered with synthetic example data ("Acme Corp"). The harness lives at [`screenshots/host-mock.html`](https://github.com/mikimatsub/swsd-mcp/blob/main/screenshots/host-mock.html): run `npm run build` then serve the worktree over a local HTTP server to regenerate them. No real SWSD tenant data appears anywhere on this site.
 

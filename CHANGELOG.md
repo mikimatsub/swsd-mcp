@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Reuses the existing `incident-list` widget.
 - Factored shared `resolveCurrentUser` helper from `listMyIncidents` for reuse
   across tools that need JWT-based user resolution.
+- Added the read-only `swsd_change_calendar` tool to Agent, Operations and Full:
+  bounded change/release scans, client-side filters, UTC day grouping, shared-CI
+  and group overlap conflicts, and explicit unscheduled/truncated scan accounting.
+- Added the content-sized change calendar MCP Apps widget with viewer-local times,
+  responsive rows, safe record links, conflict details, and light/dark themes.
 
 ### Changed
 

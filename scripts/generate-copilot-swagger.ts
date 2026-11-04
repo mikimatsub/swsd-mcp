@@ -42,7 +42,8 @@ const DESCRIPTIONS: Record<keyof typeof PROFILE_TOOLS, string> = {
     'assign / state-transition / link-solution), comment reads and writes ' +
     '(public, private, edit), all six lookup tools (categories, sites, ' +
     'departments, users, groups, roles), solution reads (search + get) for KB ' +
-    'lookups while triaging, plus custom-field schema introspection.',
+    'lookups while triaging, plus custom-field schema introspection and a ' +
+    'read-only change/release calendar.',
   knowledge:
     'KB-author workflow: incident reads (for context), category/user lookups, ' +
     'full solution CRUD (search, get, create, update), and custom-field schema ' +
@@ -52,11 +53,10 @@ const DESCRIPTIONS: Record<keyof typeof PROFILE_TOOLS, string> = {
     'change/release management, asset and CMDB lookups, procurement context, ' +
     'risk lookup, work logs, and attachments.',
   full:
-    'Every non-destructive tool that has been validated against the live SWSD ' +
-    'tenant. Includes incident CRUD + solution-linking, comment CRU (create/' +
+    'Every registered tool. Includes incident CRUD + solution-linking, comment CRU (create/' +
     'read/update), all lookups, solution CRUD, change/release management, ' +
-    'ITAM/CMDB/procurement reads, time tracking, attachments, and custom-field ' +
-    'schema introspection.',
+    'ITAM/CMDB/procurement reads, time tracking, attachments, custom-field ' +
+    'schema introspection, and a read-only change/release calendar.',
 };
 
 const PROFILES: Record<string, ProfileMeta> = Object.fromEntries(
