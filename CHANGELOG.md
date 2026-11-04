@@ -14,7 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   window with PerMonitorV2 support, dark/light theme from system personalization
   settings, DWM immersive dark mode and Mica backdrop on supported builds,
   colored status chips with icon glyphs, and a subtle fade-in animation. All
-  existing behaviors, switches, and accessible names are preserved.
+  existing behaviors, switches, and accessible names are preserved. The window
+  now auto-sizes to show all options without scrolling or resizing on load,
+  clamped to the current monitor's working area, and re-layouts on per-monitor
+  DPI changes. An SWSD_UI_SCALE environment variable allows simulating higher
+  DPI scaling for testing.
 - Made manual release recovery skip only the Windows plugin's live npm-latest
   assertion while rebuilding an immutable tag. Deterministic plugin checks and
   the normal online PR, main, and initial tag gates remain enabled.

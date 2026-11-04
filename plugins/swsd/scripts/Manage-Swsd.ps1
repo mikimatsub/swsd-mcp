@@ -20,6 +20,21 @@ if ($CheckOnly) {
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
+# Last-resort safety net: never show the raw .NET "Unhandled exception" dialog.
+$script:SwsdLayoutFailures = @()
+[Windows.Forms.Application]::SetUnhandledExceptionMode([Windows.Forms.UnhandledExceptionMode]::CatchException)
+[Windows.Forms.Application]::add_ThreadException({
+    param($sender, $eventArgs)
+    $message = $eventArgs.Exception.Message
+    try { Add-Content -LiteralPath (Join-Path $env:TEMP 'swsd-settings.log') -Value ("{0:u} {1}" -f (Get-Date), $message) } catch {}
+    try {
+        if (Get-Command Set-SwsdStatus -ErrorAction SilentlyContinue) { Set-SwsdStatus -Kind error -Text "Something went wrong: $message" }
+        foreach ($name in 'install','save','test','remove','saveProfile','region','tokenBox','profile') {
+            $control = Get-Variable -Name $name -Scope Script -ValueOnly -ErrorAction SilentlyContinue
+            if ($control -is [Windows.Forms.Control]) { $control.Enabled = $true }
+        }
+    } catch {}
+})
 
 # DPI awareness before any window is created
 try {
@@ -171,16 +186,45 @@ function Get-SwsdIconGlyph([string]$Name) {
     }
 }
 
+# SWSD_UI_SCALE testing hook: multiplies base font size and all logical px constants.
+$script:SwsdUiScale = 1.0
+if ($env:SWSD_UI_SCALE) {
+    try { $script:SwsdUiScale = [double]$env:SWSD_UI_SCALE } catch { $script:SwsdUiScale = 1.0 }
+    if ($script:SwsdUiScale -lt 0.5) { $script:SwsdUiScale = 1.0 }
+    if ($script:SwsdUiScale -gt 4.0) { $script:SwsdUiScale = 4.0 }
+}
+
+function ScalePx([int]$LogicalPx) {
+    return [int][Math]::Round($LogicalPx * $script:SwsdUiScale)
+}
+
+function ScaleFont([double]$PointSize) {
+    return [float]($PointSize * $script:SwsdUiScale)
+}
+
+# Layout constants (logical px at scale 1.0)
+$script:SwsdCardPaddingH = 16
+$script:SwsdCardPaddingV = 12
+$script:SwsdCardGap = 12
+$script:SwsdRowGap = 8
+$script:SwsdRootPaddingH = 20
+$script:SwsdRootPaddingV = 16
+$script:SwsdButtonMinHeight = 32
+$script:SwsdButtonPaddingH = 14
+$script:SwsdButtonPaddingV = 4
+$script:SwsdButtonGap = 8
+$script:SwsdContentWidth = 560
+$script:SwsdScreenMargin = 16
+
 $form = New-Object Windows.Forms.Form
 $form.Text = 'SolarWinds Service Desk Setup'
-$form.StartPosition = 'CenterScreen'
+$form.StartPosition = 'Manual'
 $form.FormBorderStyle = 'Sizable'
 $form.MaximizeBox = $true
 $form.MinimizeBox = $true
-$form.MinimumSize = New-Object Drawing.Size(520, 580)
 $form.AutoSize = $false
 $form.AutoScaleMode = 'Dpi'
-$form.Font = New-Object Drawing.Font('Segoe UI', 10)
+$form.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
 $form.BackColor = $script:SwsdPalette.WindowBg
 $form.ForeColor = $script:SwsdPalette.TextPrimary
 
@@ -229,7 +273,7 @@ $form.Add_Shown({
 # Root layout panel
 $rootPanel = New-Object Windows.Forms.TableLayoutPanel
 $rootPanel.Dock = 'Fill'
-$rootPanel.Padding = New-Object Windows.Forms.Padding(20, 16, 20, 16)
+$rootPanel.Padding = New-Object Windows.Forms.Padding((ScalePx $script:SwsdRootPaddingH), (ScalePx $script:SwsdRootPaddingV), (ScalePx $script:SwsdRootPaddingH), (ScalePx $script:SwsdRootPaddingV))
 $rootPanel.ColumnCount = 1
 $rootPanel.RowCount = 5
 $rootPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
@@ -237,132 +281,9 @@ $rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
 $rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
 $rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
 $rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('Percent', 100)))
-$rootPanel.AutoScroll = $true
+$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+$rootPanel.AutoScroll = $false
 $form.Controls.Add($rootPanel)
-
-# Compute initial window size from content, capped to 90% of working area
-$form.Add_Load({
-    try {
-        $preferred = $rootPanel.GetPreferredSize([Drawing.Size]::Empty)
-        $screen = [Windows.Forms.Screen]::FromControl($form).WorkingArea
-        $maxWidth = [int]($screen.Width * 0.9)
-        $maxHeight = [int]($screen.Height * 0.9)
-        $frameWidth = $form.Width - $form.ClientSize.Width
-        $frameHeight = $form.Height - $form.ClientSize.Height
-        $targetWidth = [Math]::Max($form.MinimumSize.Width, [Math]::Min($preferred.Width + $frameWidth + 40, $maxWidth))
-        $targetHeight = [Math]::Max($form.MinimumSize.Height, [Math]::Min($preferred.Height + $frameHeight + 40, $maxHeight))
-        $form.Size = New-Object Drawing.Size($targetWidth, $targetHeight)
-    } catch {}
-})
-
-# Header band
-$headerPanel = New-Object Windows.Forms.TableLayoutPanel
-$headerPanel.Dock = 'Fill'
-$headerPanel.AutoSize = $true
-$headerPanel.ColumnCount = 2
-$headerPanel.RowCount = 2
-$headerPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
-$headerPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
-$headerPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-$headerPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-$headerPanel.Margin = New-Object Windows.Forms.Padding(0, 0, 0, 12)
-
-$headerIcon = New-Object Windows.Forms.Label
-$headerIcon.AutoSize = $true
-$headerIconFont = if ($script:SwsdIconFont) { $script:SwsdIconFont } else { 'Segoe UI' }
-$headerIcon.Font = New-Object Drawing.Font($headerIconFont, 22)
-$headerIcon.Text = Get-SwsdIconGlyph 'SolarWinds'
-$headerIcon.ForeColor = $script:SwsdAccentColor
-$headerIcon.Margin = New-Object Windows.Forms.Padding(0, 0, 10, 0)
-$headerIcon.Anchor = 'Left'
-$headerPanel.Controls.Add($headerIcon, 0, 0)
-$headerPanel.SetRowSpan($headerIcon, 2)
-
-$titleLabel = New-Object Windows.Forms.Label
-$titleLabel.AutoSize = $true
-$titleLabel.Text = 'SolarWinds Service Desk'
-$titleLabel.Font = New-Object Drawing.Font('Segoe UI Semibold', 16)
-$titleLabel.ForeColor = $script:SwsdPalette.TextPrimary
-$titleLabel.Anchor = 'Left,Bottom'
-$headerPanel.Controls.Add($titleLabel, 1, 0)
-
-$subtitleLabel = New-Object Windows.Forms.Label
-$subtitleLabel.AutoSize = $true
-$subtitleLabel.Text = 'Connect your own SolarWinds account. Your token stays in Windows Credential Manager on this computer.'
-$subtitleLabel.Font = New-Object Drawing.Font('Segoe UI', 9)
-$subtitleLabel.ForeColor = $script:SwsdPalette.TextSecondary
-$subtitleLabel.Anchor = 'Left,Top'
-$subtitleLabel.MaximumSize = New-Object Drawing.Size(500, 0)
-$headerPanel.Controls.Add($subtitleLabel, 1, 1)
-
-$rootPanel.Controls.Add($headerPanel, 0, 0)
-
-# Helper: create a card panel with title; stores inner layout in card.Tag
-function New-SwsdCard([string]$Title, [string]$IconName) {
-    $card = New-Object Windows.Forms.Panel
-    $card.BackColor = $script:SwsdPalette.CardBg
-    $card.Padding = New-Object Windows.Forms.Padding(16, 12, 16, 14)
-    $card.Margin = New-Object Windows.Forms.Padding(0, 0, 0, 10)
-    $card.AutoSize = $true
-    $card.AutoSizeMode = 'GrowAndShrink'
-    $card.Anchor = 'Top,Left,Right'
-
-    $innerLayout = New-Object Windows.Forms.TableLayoutPanel
-    $innerLayout.Dock = 'Fill'
-    $innerLayout.AutoSize = $true
-    $innerLayout.ColumnCount = 1
-    [void]$innerLayout.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
-    $innerLayout.RowCount = 1
-    $card.Controls.Add($innerLayout)
-    $card.Tag = $innerLayout
-
-    if ($Title) {
-        $titleRow = New-Object Windows.Forms.TableLayoutPanel
-        $titleRow.AutoSize = $true
-        $titleRow.Dock = 'Fill'
-        $titleRow.ColumnCount = 2
-        [void]$titleRow.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
-        [void]$titleRow.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
-        $titleRow.Margin = New-Object Windows.Forms.Padding(0, 0, 0, 8)
-
-        if ($IconName -and $script:SwsdIconFont) {
-            $iconLabel = New-Object Windows.Forms.Label
-            $iconLabel.AutoSize = $true
-            $iconLabel.Font = New-Object Drawing.Font($script:SwsdIconFont, 12)
-            $iconLabel.Text = Get-SwsdIconGlyph $IconName
-            $iconLabel.ForeColor = $script:SwsdAccentColor
-            $iconLabel.Margin = New-Object Windows.Forms.Padding(0, 0, 8, 0)
-            $iconLabel.Anchor = 'Left'
-            $titleRow.Controls.Add($iconLabel, 0, 0)
-        }
-
-        $sectionTitle = New-Object Windows.Forms.Label
-        $sectionTitle.AutoSize = $true
-        $sectionTitle.Text = $Title
-        $sectionTitle.Font = New-Object Drawing.Font('Segoe UI Semibold', 11)
-        $sectionTitle.ForeColor = $script:SwsdPalette.TextPrimary
-        $sectionTitle.Anchor = 'Left'
-        $col = if ($IconName -and $script:SwsdIconFont) { 1 } else { 0 }
-        $titleRow.Controls.Add($sectionTitle, $col, 0)
-
-        $innerLayout.Controls.Add($titleRow, 0, 0)
-        $innerLayout.RowCount = $innerLayout.RowCount + 1
-        [void]$innerLayout.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-    }
-    return ,$card
-}
-
-# Helper: add row to inner layout
-function Add-CardRow([Windows.Forms.Panel]$Card, [Windows.Forms.Control]$Control) {
-    $layout = [Windows.Forms.TableLayoutPanel]$Card.Tag
-    $rowIndex = $layout.RowCount
-    $layout.RowCount = $layout.RowCount + 1
-    [void]$layout.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-    $Control.Anchor = 'Top,Left,Right'
-    $Control.Margin = New-Object Windows.Forms.Padding(0, 2, 0, 2)
-    $layout.Controls.Add($Control, 0, $rowIndex)
-}
 
 # Helper: compute contrasting foreground color based on luminance
 function Get-SwsdContrastColor([Drawing.Color]$Bg) {
@@ -386,10 +307,10 @@ function New-SwsdButton([string]$Text, [bool]$Primary = $false) {
     $btn.FlatAppearance.BorderSize = 1
     $btn.AutoSize = $true
     $btn.AutoSizeMode = 'GrowAndShrink'
-    $btn.Padding = New-Object Windows.Forms.Padding(14, 4, 14, 4)
-    $btn.MinimumSize = New-Object Drawing.Size(0, 32)
+    $btn.Padding = New-Object Windows.Forms.Padding((ScalePx $script:SwsdButtonPaddingH), (ScalePx $script:SwsdButtonPaddingV), (ScalePx $script:SwsdButtonPaddingH), (ScalePx $script:SwsdButtonPaddingV))
+    $btn.MinimumSize = New-Object Drawing.Size(0, (ScalePx $script:SwsdButtonMinHeight))
     $btn.Cursor = [Windows.Forms.Cursors]::Hand
-    $btn.Font = New-Object Drawing.Font('Segoe UI', 9.5)
+    $btn.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
     if ($Primary) {
         $btn.BackColor = $script:SwsdAccentColor
         $btn.ForeColor = Get-SwsdContrastColor $script:SwsdAccentColor
@@ -406,13 +327,122 @@ function New-SwsdButton([string]$Text, [bool]$Primary = $false) {
     return $btn
 }
 
+# Helper: create a card panel with title; stores inner layout in card.Tag
+function New-SwsdCard([string]$Title, [string]$IconName) {
+    $card = New-Object Windows.Forms.Panel
+    $card.BackColor = $script:SwsdPalette.CardBg
+    $card.Padding = New-Object Windows.Forms.Padding((ScalePx $script:SwsdCardPaddingH), (ScalePx $script:SwsdCardPaddingV), (ScalePx $script:SwsdCardPaddingH), (ScalePx $script:SwsdCardPaddingV))
+    $card.Margin = New-Object Windows.Forms.Padding(0, 0, 0, (ScalePx $script:SwsdCardGap))
+    $card.AutoSize = $true
+    $card.AutoSizeMode = 'GrowAndShrink'
+    $card.Anchor = 'Top,Left,Right'
+
+    $innerLayout = New-Object Windows.Forms.TableLayoutPanel
+    $innerLayout.Dock = 'Fill'
+    $innerLayout.AutoSize = $true
+    $innerLayout.ColumnCount = 1
+    [void]$innerLayout.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
+    $innerLayout.RowCount = 0
+    $card.Controls.Add($innerLayout)
+    $card.Tag = $innerLayout
+
+    if ($Title) {
+        $titleRow = New-Object Windows.Forms.TableLayoutPanel
+        $titleRow.AutoSize = $true
+        $titleRow.Dock = 'Fill'
+        $titleRow.ColumnCount = 2
+        [void]$titleRow.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
+        [void]$titleRow.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
+        $titleRow.Margin = New-Object Windows.Forms.Padding(0, 0, 0, (ScalePx $script:SwsdRowGap))
+
+        if ($IconName -and $script:SwsdIconFont) {
+            $iconLabel = New-Object Windows.Forms.Label
+            $iconLabel.AutoSize = $true
+            $iconLabel.Font = New-Object Drawing.Font($script:SwsdIconFont, (ScaleFont 12))
+            $iconLabel.Text = Get-SwsdIconGlyph $IconName
+            $iconLabel.ForeColor = $script:SwsdAccentColor
+            $iconLabel.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx 8), 0)
+            $iconLabel.Anchor = 'Left'
+            $titleRow.Controls.Add($iconLabel, 0, 0)
+        }
+
+        $sectionTitle = New-Object Windows.Forms.Label
+        $sectionTitle.AutoSize = $true
+        $sectionTitle.Text = $Title
+        $sectionTitle.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 11))
+        $sectionTitle.ForeColor = $script:SwsdPalette.TextPrimary
+        $sectionTitle.Anchor = 'Left'
+        $col = if ($IconName -and $script:SwsdIconFont) { 1 } else { 0 }
+        $titleRow.Controls.Add($sectionTitle, $col, 0)
+
+        $innerLayout.Controls.Add($titleRow, 0, 0)
+        $innerLayout.RowCount = $innerLayout.RowCount + 1
+        [void]$innerLayout.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+    }
+    return ,$card
+}
+
+# Helper: add row to inner layout
+function Add-CardRow([Windows.Forms.Panel]$Card, [Windows.Forms.Control]$Control) {
+    $layout = [Windows.Forms.TableLayoutPanel]$Card.Tag
+    $rowIndex = $layout.RowCount
+    $layout.RowCount = $layout.RowCount + 1
+    [void]$layout.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+    $Control.Anchor = 'Top,Left,Right'
+    $Control.Margin = New-Object Windows.Forms.Padding(0, (ScalePx 2), 0, (ScalePx 2))
+    $layout.Controls.Add($Control, 0, $rowIndex)
+}
+
+# Header band
+$headerPanel = New-Object Windows.Forms.TableLayoutPanel
+$headerPanel.Dock = 'Fill'
+$headerPanel.AutoSize = $true
+$headerPanel.ColumnCount = 2
+$headerPanel.RowCount = 2
+$headerPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
+$headerPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
+$headerPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+$headerPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+$headerPanel.Margin = New-Object Windows.Forms.Padding(0, 0, 0, (ScalePx $script:SwsdCardGap))
+
+$headerIcon = New-Object Windows.Forms.Label
+$headerIcon.AutoSize = $true
+$headerIconFont = if ($script:SwsdIconFont) { $script:SwsdIconFont } else { 'Segoe UI' }
+$headerIcon.Font = New-Object Drawing.Font($headerIconFont, (ScaleFont 22))
+$headerIcon.Text = Get-SwsdIconGlyph 'SolarWinds'
+$headerIcon.ForeColor = $script:SwsdAccentColor
+$headerIcon.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx 10), 0)
+$headerIcon.Anchor = 'Left'
+$headerPanel.Controls.Add($headerIcon, 0, 0)
+$headerPanel.SetRowSpan($headerIcon, 2)
+
+$titleLabel = New-Object Windows.Forms.Label
+$titleLabel.AutoSize = $true
+$titleLabel.Text = 'SolarWinds Service Desk'
+$titleLabel.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 16))
+$titleLabel.ForeColor = $script:SwsdPalette.TextPrimary
+$titleLabel.Anchor = 'Left,Bottom'
+$headerPanel.Controls.Add($titleLabel, 1, 0)
+
+$subtitleLabel = New-Object Windows.Forms.Label
+$subtitleLabel.AutoSize = $true
+$subtitleLabel.Text = 'Connect your own SolarWinds account. Your token stays in Windows Credential Manager on this computer.'
+$subtitleLabel.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$subtitleLabel.ForeColor = $script:SwsdPalette.TextSecondary
+$subtitleLabel.Anchor = 'Left,Top'
+$subtitleLabel.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
+$headerPanel.Controls.Add($subtitleLabel, 1, 1)
+
+$rootPanel.Controls.Add($headerPanel, 0, 0)
+
 # Card 1: Install tools
 $card1 = New-SwsdCard '1. Install tools' 'Tools'
 $installDesc = New-Object Windows.Forms.Label
 $installDesc.AutoSize = $true
 $installDesc.Text = 'Requires Node.js 24.15 or newer within version 24.'
 $installDesc.ForeColor = $script:SwsdPalette.TextSecondary
-$installDesc.Font = New-Object Drawing.Font('Segoe UI', 9)
+$installDesc.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$installDesc.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 Add-CardRow $card1 $installDesc
 
 $install = New-SwsdButton 'Install / repair tools' $true
@@ -428,8 +458,8 @@ $region.DropDownStyle = 'DropDownList'
 $region.FlatStyle = 'Flat'
 $region.BackColor = $script:SwsdPalette.InputBg
 $region.ForeColor = $script:SwsdPalette.TextPrimary
-$region.Font = New-Object Drawing.Font('Segoe UI', 10)
-$region.Height = 30
+$region.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
+$region.Height = ScalePx 30
 $region.DrawMode = 'OwnerDrawFixed'
 $region.Add_DrawItem({
     param($sender, $e)
@@ -455,8 +485,8 @@ $tokenBox.UseSystemPasswordChar = $true
 $tokenBox.BackColor = $script:SwsdPalette.InputBg
 $tokenBox.ForeColor = $script:SwsdPalette.TextPrimary
 $tokenBox.BorderStyle = 'FixedSingle'
-$tokenBox.Font = New-Object Drawing.Font('Segoe UI', 10)
-$tokenBox.Height = 30
+$tokenBox.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
+$tokenBox.Height = ScalePx 30
 $tokenBox.Add_EnabledChanged({
     if (-not $tokenBox.Enabled) { $tokenBox.ForeColor = $script:SwsdPalette.TextSecondary }
     else { $tokenBox.ForeColor = $script:SwsdPalette.TextPrimary }
@@ -467,25 +497,26 @@ $tokenHint = New-Object Windows.Forms.Label
 $tokenHint.AutoSize = $true
 $tokenHint.Text = 'Saved tokens are never displayed. Paste a new token only to add or replace it.'
 $tokenHint.ForeColor = $script:SwsdPalette.TextSecondary
-$tokenHint.Font = New-Object Drawing.Font('Segoe UI', 9)
+$tokenHint.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$tokenHint.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 Add-CardRow $card2 $tokenHint
 
 $buttonRow2 = New-Object Windows.Forms.FlowLayoutPanel
 $buttonRow2.AutoSize = $true
-$buttonRow2.FlowDirection = 'LeftToRight'
 $buttonRow2.WrapContents = $true
+$buttonRow2.FlowDirection = 'LeftToRight'
 $buttonRow2.Anchor = 'Top,Left,Right'
-$buttonRow2.Margin = New-Object Windows.Forms.Padding(0, 6, 0, 0)
+$buttonRow2.Margin = New-Object Windows.Forms.Padding(0, (ScalePx 6), 0, 0)
 
 $save = New-SwsdButton 'Test and save token' $true
 $buttonRow2.Controls.Add($save)
 
 $test = New-SwsdButton 'Test saved connection'
-$test.Margin = New-Object Windows.Forms.Padding(6, 0, 0, 0)
+$test.Margin = New-Object Windows.Forms.Padding((ScalePx $script:SwsdButtonGap), 0, 0, 0)
 $buttonRow2.Controls.Add($test)
 
 $remove = New-SwsdButton 'Remove saved token'
-$remove.Margin = New-Object Windows.Forms.Padding(6, 0, 0, 0)
+$remove.Margin = New-Object Windows.Forms.Padding((ScalePx $script:SwsdButtonGap), 0, 0, 0)
 $buttonRow2.Controls.Add($remove)
 
 Add-CardRow $card2 $buttonRow2
@@ -498,7 +529,8 @@ $profileDesc = New-Object Windows.Forms.Label
 $profileDesc.AutoSize = $true
 $profileDesc.Text = 'You can change this later without re-entering a token.'
 $profileDesc.ForeColor = $script:SwsdPalette.TextSecondary
-$profileDesc.Font = New-Object Drawing.Font('Segoe UI', 9)
+$profileDesc.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$profileDesc.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 Add-CardRow $card3 $profileDesc
 
 $profile = New-Object Windows.Forms.ComboBox
@@ -507,8 +539,8 @@ $profile.AccessibleName = 'SWSD profile'
 $profile.FlatStyle = 'Flat'
 $profile.BackColor = $script:SwsdPalette.InputBg
 $profile.ForeColor = $script:SwsdPalette.TextPrimary
-$profile.Font = New-Object Drawing.Font('Segoe UI', 10)
-$profile.Height = 30
+$profile.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
+$profile.Height = ScalePx 30
 $profile.DrawMode = 'OwnerDrawFixed'
 $profile.Add_DrawItem({
     param($sender, $e)
@@ -530,19 +562,19 @@ Add-CardRow $card3 $profile
 
 $profileDescription = New-Object Windows.Forms.Label
 $profileDescription.AutoSize = $true
-$profileDescription.MaximumSize = New-Object Drawing.Size(500, 0)
+$profileDescription.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].description
 $profileDescription.ForeColor = $script:SwsdPalette.TextSecondary
-$profileDescription.Font = New-Object Drawing.Font('Segoe UI', 9)
+$profileDescription.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
 Add-CardRow $card3 $profileDescription
 $profile.Add_SelectedIndexChanged({ $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].description })
 
 $profileButtonRow = New-Object Windows.Forms.FlowLayoutPanel
 $profileButtonRow.AutoSize = $true
+$profileButtonRow.WrapContents = $true
 $profileButtonRow.FlowDirection = 'LeftToRight'
-$profileButtonRow.WrapContents = $false
 $profileButtonRow.Anchor = 'Top,Left,Right'
-$profileButtonRow.Margin = New-Object Windows.Forms.Padding(0, 6, 0, 0)
+$profileButtonRow.Margin = New-Object Windows.Forms.Padding(0, (ScalePx 6), 0, 0)
 
 $saveProfile = New-SwsdButton 'Save profile' $true
 $profileButtonRow.Controls.Add($saveProfile)
@@ -551,9 +583,9 @@ $currentProfile = New-Object Windows.Forms.Label
 $currentProfile.AutoSize = $true
 $currentProfile.Text = 'Saved profile: ' + $script:SwsdProfiles[$profile.SelectedIndex].name
 $currentProfile.ForeColor = $script:SwsdPalette.TextSecondary
-$currentProfile.Font = New-Object Drawing.Font('Segoe UI', 9)
+$currentProfile.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
 $currentProfile.Anchor = 'Left'
-$currentProfile.Margin = New-Object Windows.Forms.Padding(12, 8, 0, 0)
+$currentProfile.Margin = New-Object Windows.Forms.Padding((ScalePx 12), (ScalePx 8), 0, 0)
 $profileButtonRow.Controls.Add($currentProfile)
 
 Add-CardRow $card3 $profileButtonRow
@@ -563,15 +595,15 @@ $rootPanel.Controls.Add($card3, 0, 3)
 $statusPanel = New-Object Windows.Forms.Panel
 $statusPanel.Dock = 'Fill'
 $statusPanel.AutoSize = $true
-$statusPanel.Padding = New-Object Windows.Forms.Padding(4, 8, 4, 4)
+$statusPanel.Padding = New-Object Windows.Forms.Padding((ScalePx 4), (ScalePx 8), (ScalePx 4), (ScalePx 4))
 $statusPanel.Anchor = 'Top,Left,Right'
 
 $status = New-Object Windows.Forms.Label
 $status.AutoSize = $true
-$status.MaximumSize = New-Object Drawing.Size(550, 0)
+$status.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 $status.Text = 'Start with Install / repair tools. Then test and save your token. After setup, start a new chat.'
 $status.ForeColor = $script:SwsdPalette.TextSecondary
-$status.Font = New-Object Drawing.Font('Segoe UI', 9.5)
+$status.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
 $statusPanel.Controls.Add($status)
 
 $rootPanel.Controls.Add($statusPanel, 0, 4)
@@ -593,7 +625,7 @@ function Set-SwsdStatus {
     $status.Text = "$prefix$Text"
     $status.ForeColor = $colors.Fg
     $status.BackColor = $colors.Bg
-    $status.Padding = New-Object Windows.Forms.Padding(10, 6, 10, 6)
+    $status.Padding = New-Object Windows.Forms.Padding((ScalePx 10), (ScalePx 6), (ScalePx 10), (ScalePx 6))
 }
 
 # Reset status to plain style
@@ -602,6 +634,116 @@ function Reset-SwsdStatus {
     $status.Padding = New-Object Windows.Forms.Padding(0)
     $status.ForeColor = $script:SwsdPalette.TextSecondary
 }
+
+# Auto-size the form to fit content, clamped to working area
+function Update-SwsdFormSize {
+    try {
+        $scaledContentWidth = ScalePx $script:SwsdContentWidth
+
+        # First pass: set wrapping widths generously so GetPreferredSize sees unwrapped text
+        foreach ($lbl in @($subtitleLabel, $installDesc, $tokenHint, $profileDesc, $profileDescription, $status)) {
+            $lbl.MaximumSize = New-Object Drawing.Size(0, 0)
+        }
+
+        # Force layout recalculation
+        $form.PerformLayout()
+        $rootPanel.PerformLayout()
+
+        # Get preferred size without width constraint to see natural content width
+        $preferred = $rootPanel.GetPreferredSize([Drawing.Size]::Empty)
+
+        # Use the larger of natural width and target content width
+        $targetClientWidth = [Math]::Max($preferred.Width, $scaledContentWidth)
+
+        # Now set wrapping widths based on target width
+        $availableCardWidth = $targetClientWidth - (2 * (ScalePx $script:SwsdRootPaddingH)) - (2 * (ScalePx $script:SwsdCardPaddingH))
+        if ($availableCardWidth -lt 100) { $availableCardWidth = $scaledContentWidth }
+        $subtitleAvailable = $targetClientWidth - (2 * (ScalePx $script:SwsdRootPaddingH)) - (ScalePx 40)
+        if ($subtitleAvailable -lt 100) { $subtitleAvailable = $availableCardWidth }
+        $subtitleLabel.MaximumSize = New-Object Drawing.Size($subtitleAvailable, 0)
+        foreach ($lbl in @($installDesc, $tokenHint, $profileDesc, $profileDescription, $status)) {
+            $lbl.MaximumSize = New-Object Drawing.Size($availableCardWidth, 0)
+        }
+
+        # Re-layout with wrapping applied
+        $form.PerformLayout()
+        $rootPanel.PerformLayout()
+        $preferredWrapped = $rootPanel.GetPreferredSize([Drawing.Size]::Empty)
+
+        $screen = [Windows.Forms.Screen]::FromPoint([Windows.Forms.Cursor]::Position).WorkingArea
+        $margin = ScalePx $script:SwsdScreenMargin
+        $maxWidth = $screen.Width - (2 * $margin)
+        $maxHeight = $screen.Height - (2 * $margin)
+
+        $frameWidth = $form.Width - $form.ClientSize.Width
+        $frameHeight = $form.Height - $form.ClientSize.Height
+
+        $finalClientWidth = [Math]::Max($targetClientWidth, $preferredWrapped.Width)
+        $finalClientHeight = $preferredWrapped.Height
+
+        $targetWidth = $finalClientWidth + $frameWidth
+        $targetHeight = $finalClientHeight + $frameHeight
+
+        if ($targetWidth -gt $maxWidth) { $targetWidth = $maxWidth }
+        if ($targetHeight -gt $maxHeight) { $targetHeight = $maxHeight }
+
+        $form.MinimumSize = New-Object Drawing.Size($targetWidth, $targetHeight)
+        $form.Size = New-Object Drawing.Size($targetWidth, $targetHeight)
+
+        # Force layout after sizing
+        $form.PerformLayout()
+        $rootPanel.PerformLayout()
+
+        $needsScroll = $finalClientHeight -gt ($targetHeight - $frameHeight)
+        $rootPanel.AutoScroll = $needsScroll
+
+        $centerX = $screen.Left + [int](($screen.Width - $targetWidth) / 2)
+        $centerY = $screen.Top + [int](($screen.Height - $targetHeight) / 2)
+        $form.Location = New-Object Drawing.Point($centerX, $centerY)
+
+        # Final pass: update wrapping widths based on actual client width
+        Update-SwsdWrappingWidths
+
+        # Re-layout one more time after wrapping width update
+        $form.PerformLayout()
+        $rootPanel.PerformLayout()
+    } catch {}
+}
+
+# Update MaximumSize on wrapping labels when the card width changes
+function Update-SwsdWrappingWidths {
+    try {
+        $rootClientWidth = $rootPanel.ClientSize.Width
+        $availableCardWidth = $rootClientWidth - (2 * (ScalePx $script:SwsdRootPaddingH)) - (2 * (ScalePx $script:SwsdCardPaddingH))
+        if ($availableCardWidth -lt 100) { $availableCardWidth = ScalePx $script:SwsdContentWidth }
+
+        # Subtitle is in header panel, not a card; account for icon column width
+        $headerContentWidth = $rootClientWidth - (2 * (ScalePx $script:SwsdRootPaddingH))
+        $subtitleAvailable = $headerContentWidth - (ScalePx 40)
+        if ($subtitleAvailable -lt 100) { $subtitleAvailable = $availableCardWidth }
+        $subtitleLabel.MaximumSize = New-Object Drawing.Size($subtitleAvailable, 0)
+
+        foreach ($lbl in @($installDesc, $tokenHint, $profileDesc, $profileDescription, $status)) {
+            $lbl.MaximumSize = New-Object Drawing.Size($availableCardWidth, 0)
+        }
+    } catch {}
+}
+
+$form.Add_Load({ Update-SwsdFormSize })
+$form.Add_Resize({ Update-SwsdWrappingWidths })
+
+# Handle PerMonitorV2 DPI changes
+try {
+    $form.Add_DpiChanged({
+        param($sender, $e)
+        try {
+            if ($e.SuggestedRectangle -ne $null) {
+                $form.Bounds = $e.SuggestedRectangle
+            }
+            Update-SwsdFormSize
+        } catch {}
+    })
+} catch {}
 
 function Invoke-SetupAction([scriptblock]$Action) {
     $form.UseWaitCursor = $true
@@ -679,6 +821,122 @@ if ($ValidateWindow) {
     $probe.Interval = 200
     $probe.Add_Tick({
         $probe.Stop()
+        try {
+        $script:SwsdLayoutFailures = @()
+        $script:SwsdLayoutNotes = @()
+
+        $formClientScreen = $form.RectangleToScreen($form.ClientRectangle)
+        $workingArea = [Windows.Forms.Screen]::FromControl($form).WorkingArea
+
+        # Determine if scrolling is acceptable (working area too small for content)
+        $scaledContentWidth = ScalePx $script:SwsdContentWidth
+        $constraintSize = New-Object Drawing.Size($scaledContentWidth, 0)
+        $preferred = $rootPanel.GetPreferredSize($constraintSize)
+        $script:SwsdScrollAcceptable = ($rootPanel.AutoScroll -and $preferred.Height -gt $workingArea.Height)
+
+        function Test-ControlBounds([Windows.Forms.Control]$Ctrl, [string]$Path) {
+            if (-not $Ctrl.Visible) { return }
+            $bounds = $Ctrl.RectangleToScreen($Ctrl.ClientRectangle)
+            if ($bounds.Width -le 0 -or $bounds.Height -le 0) { return }
+
+            if (-not $script:SwsdScrollAcceptable) {
+                if (-not $formClientScreen.Contains($bounds)) {
+                    $script:SwsdLayoutFailures += "$Path outside form client rect"
+                }
+                $parent = $Ctrl.Parent
+                if ($parent -ne $null) {
+                    $parentScreen = $parent.RectangleToScreen($parent.ClientRectangle)
+                    if (-not $parentScreen.Contains($bounds)) {
+                        $script:SwsdLayoutFailures += "$Path outside parent client rect"
+                    }
+                }
+            }
+
+            if ($Ctrl -is [Windows.Forms.Button]) {
+                if (-not $Ctrl.AutoEllipsis) {
+                    $pref = $Ctrl.GetPreferredSize([Drawing.Size]::Empty)
+                    if ($pref.Width -gt $Ctrl.Width) {
+                        $script:SwsdLayoutFailures += "$Path text truncated (PreferredWidth=$($pref.Width) > Width=$($Ctrl.Width))"
+                    }
+                }
+            } elseif ($Ctrl -is [Windows.Forms.Label]) {
+                if (-not $Ctrl.AutoEllipsis) {
+                    # For wrapping labels (MaximumSize.Width > 0), check that actual width matches MaximumSize
+                    # For non-wrapping labels, check PreferredSize fits
+                    if ($Ctrl.MaximumSize.Width -gt 0 -and $Ctrl.AutoSize) {
+                        # Wrapping label: ensure container isn't narrower than MaximumSize
+                        if ($Ctrl.Width -lt $Ctrl.MaximumSize.Width -and $Ctrl.Width -lt 50) {
+                            $script:SwsdLayoutFailures += "$Path wrapping label too narrow (Width=$($Ctrl.Width) < MaxWidth=$($Ctrl.MaximumSize.Width))"
+                        }
+                    } else {
+                        $pref = $Ctrl.GetPreferredSize([Drawing.Size]::Empty)
+                        if ($pref.Width -gt $Ctrl.Width) {
+                            $script:SwsdLayoutFailures += "$Path text truncated (PreferredWidth=$($pref.Width) > Width=$($Ctrl.Width))"
+                        }
+                    }
+                }
+            }
+        }
+
+        function Enumerate-Controls([Windows.Forms.Control]$Parent, [string]$Prefix) {
+            foreach ($child in $Parent.Controls) {
+                $name = if ($child.AccessibleName) { $child.AccessibleName } elseif ($child.Name) { $child.Name } else { $child.GetType().Name }
+                $path = if ($Prefix) { "$Prefix/$name" } else { $name }
+                Test-ControlBounds $child $path
+                if ($child.HasChildren) { Enumerate-Controls $child $path }
+            }
+        }
+
+        Enumerate-Controls $form ''
+
+        # Check sibling overlaps within each container
+        function Test-SiblingOverlaps([Windows.Forms.Control]$Parent, [string]$Prefix) {
+            $visibleChildren = @()
+            foreach ($child in $Parent.Controls) {
+                if ($child.Visible -and $child.Width -gt 0 -and $child.Height -gt 0) {
+                    $visibleChildren += $child
+                }
+            }
+            for ($i = 0; $i -lt $visibleChildren.Count; $i++) {
+                for ($j = $i + 1; $j -lt $visibleChildren.Count; $j++) {
+                    $a = $visibleChildren[$i].RectangleToScreen($visibleChildren[$i].ClientRectangle)
+                    $b = $visibleChildren[$j].RectangleToScreen($visibleChildren[$j].ClientRectangle)
+                    if ($a.IntersectsWith($b)) {
+                        $nameA = if ($visibleChildren[$i].AccessibleName) { $visibleChildren[$i].AccessibleName } else { $visibleChildren[$i].GetType().Name }
+                        $nameB = if ($visibleChildren[$j].AccessibleName) { $visibleChildren[$j].AccessibleName } else { $visibleChildren[$j].GetType().Name }
+                        $script:SwsdLayoutFailures += "${Prefix}: ${nameA} overlaps ${nameB}"
+                    }
+                }
+            }
+            foreach ($child in $Parent.Controls) {
+                if ($child.HasChildren) {
+                    $name = if ($child.AccessibleName) { $child.AccessibleName } elseif ($child.Name) { $child.Name } else { $child.GetType().Name }
+                    $path = if ($Prefix) { "$Prefix/$name" } else { $name }
+                    Test-SiblingOverlaps $child $path
+                }
+            }
+        }
+
+        Test-SiblingOverlaps $form ''
+
+        # Vertical scroll check
+        if ($rootPanel.VerticalScroll.Visible) {
+            $scaledContentWidth = ScalePx $script:SwsdContentWidth
+            $constraintSize = New-Object Drawing.Size($scaledContentWidth, 0)
+            $preferred = $rootPanel.GetPreferredSize($constraintSize)
+            if ($preferred.Height -le $workingArea.Height) {
+                $script:SwsdLayoutFailures += "Root panel shows vertical scroll but preferred height ($($preferred.Height)) fits working area ($($workingArea.Height))"
+            } else {
+                $script:SwsdLayoutNotes += "Vertical scroll shown because preferred height ($($preferred.Height)) exceeds working area ($($workingArea.Height))"
+            }
+        }
+
+        # Window fits working area check
+        $formScreen = $form.RectangleToScreen($form.ClientRectangle)
+        if (-not $workingArea.Contains($formScreen)) {
+            $script:SwsdLayoutFailures += "Window extends outside working area"
+        }
+
         $script:SwsdWindowResult = @{
             visible = $form.Visible
             foreground = ([SwsdDesktop.Windows]::GetForegroundWindow() -eq $form.Handle)
@@ -688,6 +946,11 @@ if ($ValidateWindow) {
             presentationCount = $script:SwsdPresentationCount
             consoleVisible = [SwsdDesktop.Windows]::IsWindowVisible([SwsdDesktop.Windows]::GetConsoleWindow())
             tokenEntryEnabled = $tokenBox.Enabled
+            layoutFailures = $script:SwsdLayoutFailures
+            layoutNotes = $script:SwsdLayoutNotes
+        }
+        } catch {
+            $script:SwsdWindowResult = @{ error = $_.Exception.Message }
         }
     })
     $close = New-Object Windows.Forms.Timer
@@ -702,6 +965,10 @@ if ($ValidateWindow) {
             $script:SwsdWindowResult.alwaysOnTop -or
             $script:SwsdPresentationCount -ne 1 -or $script:SwsdWindowResult.consoleVisible -or
             $script:SwsdWindowResult.tokenEntryEnabled) { throw 'Setup window presentation check failed.' }
+        if ($script:SwsdWindowResult.layoutFailures -and $script:SwsdWindowResult.layoutFailures.Count -gt 0) {
+            $failureList = ($script:SwsdWindowResult.layoutFailures -join '; ')
+            throw "Layout validation failed: $failureList"
+        }
     } finally {
         $probe.Dispose(); $close.Dispose()
         $tokenBox.Clear(); $form.Dispose()
