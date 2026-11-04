@@ -2,6 +2,13 @@ import { mountApp } from '../shared/host.js';
 import { el, clear } from '../shared/dom.js';
 import { renderError } from '../shared/error.js';
 import { pickString, pickNumber, isSafeHttpUrl } from '../shared/format.js';
+import {
+  RISK_LABELS,
+  RISK_CHIP_CLASSES,
+  RISK_PILL_CLASSES,
+  formatDueText,
+  type RiskLevel,
+} from './logic.js';
 
 interface SlaViolation {
   name?: string;
@@ -28,32 +35,6 @@ interface Payload {
   counts?: Record<string, number>;
   now?: string;
 }
-
-type RiskLevel = 'breached' | 'critical' | 'warning' | 'ok' | 'no_due_date';
-
-const RISK_LABELS: Record<RiskLevel, string> = {
-  breached: 'Breached',
-  critical: 'Critical',
-  warning: 'Warning',
-  ok: 'OK',
-  no_due_date: 'No Due Date',
-};
-
-const RISK_CHIP_CLASSES: Record<RiskLevel, string> = {
-  breached: 'chip chip-breached',
-  critical: 'chip chip-critical',
-  warning: 'chip chip-warning',
-  ok: 'chip chip-ok',
-  no_due_date: 'chip chip-nodate',
-};
-
-const RISK_PILL_CLASSES: Record<RiskLevel, string> = {
-  breached: 'pill pill-breached',
-  critical: 'pill pill-critical',
-  warning: 'pill pill-warning',
-  ok: 'pill pill-ok',
-  no_due_date: 'pill pill-nodate',
-};
 
 const rootEl = document.getElementById('root');
 const titleEl = document.getElementById('title');
@@ -105,24 +86,6 @@ function renderChips(counts: Record<string, number>): void {
       ]),
     );
   }
-}
-
-function formatDueText(minutes: number | undefined, risk: RiskLevel): string {
-  if (risk === 'no_due_date') return 'No due date';
-  if (minutes === undefined) return '';
-  if (minutes < 0) {
-    const absMin = Math.abs(minutes);
-    const h = Math.floor(absMin / 60);
-    const m = absMin % 60;
-    if (h > 0 && m > 0) return `Overdue by ${String(h)}h ${String(m)}m`;
-    if (h > 0) return `Overdue by ${String(h)}h`;
-    return `Overdue by ${String(m)}m`;
-  }
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h > 0 && m > 0) return `Due in ${String(h)}h ${String(m)}m`;
-  if (h > 0) return `Due in ${String(h)}h`;
-  return `Due in ${String(m)}m`;
 }
 
 function renderRows(incidents: RiskIncident[]): void {
