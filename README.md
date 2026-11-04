@@ -17,7 +17,7 @@ The server holds **zero credentials at rest**. Tokens are forwarded per-request,
 
 ## Upgrading to 3.0.0
 
-MCP SDK v2 preserves all 66 tools, five profiles, seven widgets and four legacy
+MCP SDK v2 preserves tool, profile and widget compatibility and four legacy
 HTTP/STDIO protocol revisions. Unknown tool names now raise JSON-RPC `-32602`
 errors; SDK callers should catch those rejected calls. Known-tool validation
 errors still return `isError: true`, with updated error text. Strict schema
@@ -107,16 +107,16 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 
 ---
 
-## Tools (66 across 15 categories)
+## Tools (69 across 15 categories)
 
 | Category | Tools |
 |---|---|
 | **Utility** | `swsd_get_server_info`, `swsd_health_check`, `swsd_get_me` |
-| **Incidents** | `swsd_list_incidents`, `swsd_list_my_incidents`, `swsd_get_incident`, `swsd_create_incident`, `swsd_update_incident`, `swsd_assign_incident`, `swsd_update_incident_state`, `swsd_link_solution_to_incident` |
+| **Incidents** | `swsd_list_incidents`, `swsd_list_my_incidents`, `swsd_sla_risk`, `swsd_my_queue`, `swsd_get_incident`, `swsd_create_incident`, `swsd_update_incident`, `swsd_assign_incident`, `swsd_update_incident_state`, `swsd_link_solution_to_incident` |
 | **Comments** | `swsd_list_incident_comments`, `swsd_add_incident_comment`, `swsd_update_comment` |
 | **Tasks** | `swsd_list_incident_tasks`, `swsd_create_incident_task`, `swsd_update_task_state` |
 | **Problems** | `swsd_list_problems`, `swsd_get_problem`, `swsd_create_problem` |
-| **Change & Release** | `swsd_list_changes`, `swsd_get_change`, `swsd_create_change`, `swsd_update_change`, `swsd_list_releases`, `swsd_get_release`, `swsd_create_release`, `swsd_update_release` |
+| **Change & Release** | `swsd_change_calendar`, `swsd_list_changes`, `swsd_get_change`, `swsd_create_change`, `swsd_update_change`, `swsd_list_releases`, `swsd_get_release`, `swsd_create_release`, `swsd_update_release` |
 | **Assets & CMDB** | `swsd_list_hardware_assets`, `swsd_get_hardware_asset`, `swsd_list_mobile_devices`, `swsd_get_mobile_device`, `swsd_list_printers`, `swsd_get_printer`, `swsd_list_software_assets`, `swsd_get_software_asset`, `swsd_list_other_assets`, `swsd_get_other_asset`, `swsd_list_configuration_items`, `swsd_get_configuration_item` |
 | **Procurement & Risk** | `swsd_list_contracts`, `swsd_get_contract`, `swsd_list_purchase_orders`, `swsd_get_purchase_order`, `swsd_list_vendors`, `swsd_get_vendor`, `swsd_list_risks` |
 | **Time tracking** | `swsd_list_time_tracks`, `swsd_log_time`, `swsd_update_time_track` |
@@ -133,21 +133,33 @@ Each tool's input schema, description, and output shape is auto-discovered by yo
 
 ## MCP Apps widgets (rich UI)
 
-Seven read tools ship interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25). On capable hosts (Claude Desktop, Claude Web, VS Code Copilot Chat, ChatGPT, Goose, Postman), the tool returns a rendered widget alongside the structured response. On text-only hosts (Claude Code, LM Studio), the same tools return their normal structured payload.
+Nine interactive UI bundles ship with read tools using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25). On capable hosts (Claude Desktop, Claude Web, VS Code Copilot Chat, ChatGPT, Goose, Postman), the tool returns a rendered widget alongside the structured response. On text-only hosts (Claude Code, LM Studio), the same tools return their normal structured payload.
 
 ![incident-list widget rendering a sortable table of synthetic Acme Corp tickets](docs-site/public/widgets/incident-list-dark.png)
 
-*Example: `swsd_list_incidents` rendering the `incident-list` widget. Synthetic data; no real tenant info. See the [full gallery](https://mcp-swsd.pages.dev/widgets/) for screenshots of all seven widgets.*
+*Example: `swsd_list_incidents` rendering the `incident-list` widget. Synthetic data; no real tenant info. See the [full gallery](https://mcp-swsd.pages.dev/widgets/) for screenshots of all nine widgets.*
 
 | Tool | Widget | What it renders |
 |---|---|---|
 | `swsd_get_incident` | `incident-detail` | Single-record card (description, due date, SLA, resolution, custom fields) |
 | `swsd_get_solution` | `solution-detail` | Knowledge-base article with sanitized HTML body |
 | `swsd_list_incidents`, `swsd_list_my_incidents` | `incident-list` | Filterable, sortable table |
+| `swsd_sla_risk` | `sla-risk` | Risk-count chips + color-coded table with due countdowns |
 | `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips, public/private badges |
 | `swsd_get_record_audits` | `audit-timeline` | Timeline grouped by day with action chips and field diffs |
 | `swsd_get_catalog_item` | `catalog-item-form` | Form that submits via `swsd_create_service_request` |
 | `swsd_describe_custom_fields` | `custom-fields` | Searchable explorer with scope/module filters |
+| `swsd_change_calendar` | `change-calendar` | Local-time day sections for changes/releases with shared-CI/group conflict badges |
+
+`swsd_change_calendar` is read-only and available in Agent, Operations and Full.
+It defaults to the next 30 days from UTC midnight today and scans up to three
+100-row pages per kind (maximum ten pages). All window, state, assignee, group
+and name-search filters are **client-side**; only pagination is sent to SWSD.
+The response reports scanned pages/rows, unscheduled records and truncation.
+Conflicts cover returned items only; unscanned or filtered-out records can hide
+additional conflicts. Touching window edges do not overlap; missing ends assume
+one hour. See the [tool reference](https://mcp-swsd.pages.dev/tools/#change--release-9)
+for inputs, UTC window semantics and scan accounting.
 
 See the [Widgets reference](https://mcp-swsd.pages.dev/widgets/) for screenshots and per-widget detail.
 
@@ -175,11 +187,11 @@ Profiles control which tools are registered at startup. Cannot be changed mid-se
 
 | Profile | Intent | Tool count |
 |---|---|---|
-| `triage` | Read-heavy first-line support + commenting | 14 |
-| `agent` | Full ticket-handler workflow (default) | 37 |
+| `triage` | Read-heavy first-line support + commenting | 16 |
+| `agent` | Full ticket-handler workflow (default) | 40 |
 | `knowledge` | KB-author workflow + incident reads | 15 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 64 |
-| `full` | Every tool | 66 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 67 |
+| `full` | Every tool | 69 |
 
 Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a profile.
 

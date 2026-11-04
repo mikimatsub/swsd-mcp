@@ -9,6 +9,8 @@ import { registerGetMe } from '../tools/utility/getMe.js';
 
 import { registerListIncidents } from '../tools/incidents/listIncidents.js';
 import { registerListMyIncidents } from '../tools/incidents/listMyIncidents.js';
+import { registerSlaRisk } from '../tools/incidents/slaRisk.js';
+import { registerMyQueue } from '../tools/incidents/myQueue.js';
 import { registerGetIncident } from '../tools/incidents/getIncident.js';
 import { registerCreateIncident } from '../tools/incidents/createIncident.js';
 import { registerUpdateIncident } from '../tools/incidents/updateIncident.js';
@@ -82,6 +84,7 @@ import {
   registerUpdateTimeTrack,
 } from '../tools/timeTracks/timeTrackTools.js';
 import { registerUploadAttachment } from '../tools/attachments/uploadAttachment.js';
+import { registerChangeCalendar } from '../tools/records/changeCalendar.js';
 
 export interface ToolContext {
   env: Env;
@@ -94,12 +97,15 @@ export interface ToolContext {
 type Registrar = (server: McpServer, ctx: ToolContext) => void;
 
 const REGISTRARS: Record<string, Registrar> = {
+  swsd_change_calendar: registerChangeCalendar,
   swsd_get_server_info: registerGetServerInfo,
   swsd_health_check: registerHealthCheck,
   swsd_get_me: registerGetMe,
 
   swsd_list_incidents: registerListIncidents,
   swsd_list_my_incidents: registerListMyIncidents,
+  swsd_sla_risk: registerSlaRisk,
+  swsd_my_queue: registerMyQueue,
   swsd_get_incident: registerGetIncident,
   swsd_create_incident: registerCreateIncident,
   swsd_update_incident: registerUpdateIncident,

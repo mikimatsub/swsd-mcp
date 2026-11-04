@@ -1,0 +1,337 @@
+{
+  "description": "Official public response examples fetched from the specification; not a live tenant capture.",
+  "captured": "2026-11-04",
+  "release": {
+    "release": {
+      "id": "10000",
+      "number": "1000",
+      "name": "Release Name",
+      "description": "description",
+      "state": "New",
+      "plan": "plan description",
+      "build": "build description",
+      "deploy": "deploy description",
+      "planned_start_at": "2024-12-31T18:00:00-05:00",
+      "planned_end_at": "2024-12-31T23:00:00-05:00",
+      "site": {
+        "id": "1",
+        "name": "Austin TX, USA",
+        "location": "AUS",
+        "description": "",
+        "time_zone": "",
+        "default_assignee_id": "1",
+        "default_group_assignee_id": "1"
+      },
+      "department": {
+        "id": "1",
+        "name": "Support",
+        "description": "",
+        "default_assignee_id": "1",
+        "default_group_assignee_id": "1"
+      },
+      "priority": "High",
+      "created_by": {
+        "id": "1",
+        "account_id": "1",
+        "user_id": "1",
+        "email": "john.doe@email.com",
+        "name": "John Doe",
+        "disabled": false,
+        "avatar": {
+          "type": "initials",
+          "color": "#fd4165",
+          "initials": "JD"
+        }
+      },
+      "assignee": {
+        "group_id": "1",
+        "is_user": "true",
+        "id": "1",
+        "name": "John Doe",
+        "email": "john.doe@email.com",
+        "avatar": {
+          "type": "initials",
+          "color": "#fd4165",
+          "initials": "JD"
+        }
+      },
+      "group_assignee": {
+        "id": 1,
+        "name": "Helpdesk Team",
+        "disabled": false,
+        "is_user": false,
+        "avatar": {
+          "type": "group",
+          "color": "#2eabcf",
+          "klass": "RealGroup"
+        },
+        "reports_to": {
+          "id": 1,
+          "avatar": null,
+          "name": "Super Manager"
+        },
+        "type": "RealGroup",
+        "send_notifications": true,
+        "memberships": [
+          {
+            "id": 11,
+            "type": "User",
+            "user": "John Doe"
+          }
+        ]
+      },
+      "requester": {
+        "id": "1",
+        "account_id": "1",
+        "user_id": "1",
+        "email": "john.doe@email.com",
+        "name": "John Doe",
+        "disabled": false,
+        "avatar": {
+          "type": "initials",
+          "color": "#fd4165",
+          "initials": "JD"
+        }
+      },
+      "custom_fields_values": [
+        {
+          "id": "10",
+          "custom_field_id": "1",
+          "name": "Text custom field",
+          "value": "content",
+          "options": "",
+          "type_name": "Text"
+        },
+        {
+          "id": "100",
+          "custom_field_id": "2",
+          "name": "User custom field",
+          "value": "1",
+          "options": "",
+          "type_name": "User",
+          "user": {
+            "group_id": 1,
+            "is_user": true,
+            "id": 1,
+            "name": "John Doe",
+            "email": "john.doe@email.com"
+          }
+        }
+      ],
+      "tags": [
+        {
+          "id": 1,
+          "name": "tag1",
+          "taggings_count": 1
+        }
+      ],
+      "approvers": [
+        {
+          "group_id": "1",
+          "is_user": "true",
+          "id": "1",
+          "name": "John Doe",
+          "email": "john.doe@email.com",
+          "avatar": {
+            "type": "initials",
+            "color": "#fd4165",
+            "initials": "JD"
+          }
+        }
+      ],
+      "changes": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/changes/100"
+        }
+      ],
+      "configuration_items": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/configuration_items/100"
+        }
+      ],
+      "incidents": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/incidents/100"
+        }
+      ],
+      "problems": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/problems/100"
+        }
+      ],
+      "releases": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/releases/100"
+        }
+      ],
+      "solutions": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/solutions/100"
+        }
+      ],
+      "purchase_orders": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/purchase_orders/100"
+        }
+      ]
+    }
+  },
+  "change": {
+    "change": {
+      "id": "10000",
+      "number": "1000",
+      "name": "Change Name",
+      "description": "description",
+      "state": "New",
+      "site": {
+        "id": "1",
+        "name": "Austin TX, USA",
+        "location": "AUS",
+        "description": "",
+        "time_zone": "",
+        "default_assignee_id": "1",
+        "default_group_assignee_id": "1"
+      },
+      "department": {
+        "id": "1",
+        "name": "Support",
+        "description": "",
+        "default_assignee_id": "1",
+        "default_group_assignee_id": "1"
+      },
+      "priority": "High",
+      "assignee": {
+        "group_id": "1",
+        "is_user": "true",
+        "id": "1",
+        "name": "John Doe",
+        "email": "john.doe@email.com",
+        "avatar": {
+          "type": "initials",
+          "color": "#fd4165",
+          "initials": "JD"
+        }
+      },
+      "group_assignee": {
+        "id": 1,
+        "name": "Helpdesk Team",
+        "disabled": false,
+        "is_user": false,
+        "avatar": {
+          "type": "group",
+          "color": "#2eabcf",
+          "klass": "RealGroup"
+        },
+        "reports_to": {
+          "id": 1,
+          "avatar": null,
+          "name": "Super Manager"
+        },
+        "type": "RealGroup",
+        "send_notifications": true,
+        "memberships": [
+          {
+            "id": 11,
+            "type": "User",
+            "user": "John Doe"
+          }
+        ]
+      },
+      "requester": {
+        "id": "1",
+        "account_id": "1",
+        "user_id": "1",
+        "email": "john.doe@email.com",
+        "name": "John Doe",
+        "disabled": false,
+        "avatar": {
+          "type": "initials",
+          "color": "#fd4165",
+          "initials": "JD"
+        }
+      },
+      "custom_fields_values": [
+        {
+          "id": "10",
+          "custom_field_id": "1",
+          "name": "Text custom field",
+          "value": "content",
+          "options": "",
+          "type_name": "Text"
+        },
+        {
+          "id": "100",
+          "custom_field_id": "2",
+          "name": "User custom field",
+          "value": "1",
+          "options": "",
+          "type_name": "User",
+          "user": {
+            "group_id": 1,
+            "is_user": true,
+            "id": 1,
+            "name": "John Doe",
+            "email": "john.doe@email.com"
+          }
+        }
+      ],
+      "change_plan": "change plan",
+      "rollback_plan": "rollback plan",
+      "test_plan": "test plan",
+      "planned_start_at": "2024-12-31T18:00:00-05:00",
+      "planned_end_at": "2024-12-31T23:00:00-05:00",
+      "origin": "api",
+      "created_at": "2024-12-31T18:00:00-05:00",
+      "incidents": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/incidents/100"
+        }
+      ],
+      "problems": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/problems/100"
+        }
+      ],
+      "changes": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/changes/100"
+        }
+      ],
+      "solutions": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/solutions/100"
+        }
+      ],
+      "releases": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/releases/100"
+        }
+      ],
+      "configuration_items": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/configuration_items/100"
+        }
+      ],
+      "purchase_orders": [
+        {
+          "id": "100",
+          "href": "https://mydomain.com/purchase_orders/100"
+        }
+      ]
+    }
+  },
+  "source": "https://apidoc.samanage.com/redoc/schema/resolved_schema.json"
+}
