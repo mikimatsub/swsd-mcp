@@ -10,6 +10,8 @@ export interface IncidentSummary {
   updated_at?: string;
   /** SWSD UI URL for this incident (from `href_account_domain`). */
   url?: string;
+  /** ISO 8601 timestamp the incident is due. May be null/absent on list responses. */
+  due_at?: string;
 }
 
 /**

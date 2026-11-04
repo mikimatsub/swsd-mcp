@@ -1,21 +1,22 @@
 ---
 title: Tools reference
-description: All 66 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 68 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **66 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **68 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
 ## MCP Apps UI bundles
 
-Seven read tools ship interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Hosts that support MCP Apps render rich UI alongside the structured response, including single-record detail views, filterable and sortable tables, comment threads, audit timelines, searchable explorers, and submit-ready forms. This UI appears instead of, or in addition to, plain text. Hosts without MCP Apps support are unaffected: the same tools continue to return their normal text and structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
+Eight read tools ship interactive UI bundles using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Hosts that support MCP Apps render rich UI alongside the structured response, including single-record detail views, filterable and sortable tables, comment threads, audit timelines, searchable explorers, submit-ready forms, and SLA risk dashboards. This UI appears instead of, or in addition to, plain text. Hosts without MCP Apps support are unaffected: the same tools continue to return their normal text and structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
 
 | Tool | Widget | UI |
 |---|---|---|
 | `swsd_get_incident` | `incident-detail` | Single-record detail view (description, due date, SLA, resolution, custom fields) |
 | `swsd_get_solution` | `solution-detail` | Single-record detail view with sanitized HTML body |
 | `swsd_list_incidents`, `swsd_list_my_incidents` | `incident-list` | Filterable, sortable table with overflow scroll |
+| `swsd_sla_risk` | `sla-risk` | Risk-count chips + color-coded table with due countdowns |
 | `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips, timestamps, public/private badges, sanitized HTML bodies |
 | `swsd_get_record_audits` | `audit-timeline` | Vertical timeline grouped by day with action chips and field-level diffs |
 | `swsd_get_catalog_item` | `catalog-item-form` | Renders catalog variables as a form; submits via `swsd_create_service_request` (calls back into the server through `app.callServerTool`) |
@@ -61,12 +62,14 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 
 ---
 
-## Incidents (8)
+## Incidents (10)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_incidents` | R, UI | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `swsd_list_my_incidents` | R, UI | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_sla_risk` | R, UI | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_my_queue` | R, UI | ✓ | ✓ |   | ✓ | ✓ |
 | `swsd_get_incident` | R, UI | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `swsd_create_incident` | W |   | ✓ |   | ✓ | ✓ |
 | `swsd_update_incident` | W |   | ✓ |   | ✓ | ✓ |
@@ -76,6 +79,8 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 
 - **`swsd_list_incidents`**: paginated list with structured filters using SWSD repeated-key array semantics (multiple values within a filter are OR-ed). Filters: `states`, `priorities`, `categories`, `assignee_email`, `requester_email`, `sites`, `departments`, `assigned_to_group` (group ID, not user ID), `created_from`/`created_to`, `updated_from`/`updated_to`, `updated_within` (date-natural-language alias, such as `"24h"`, `"7d"`, `"1w"`, or `"30d"`), `state_is_not` (negative state filter, such as `["Resolved", "Closed"]` to see only open work), `sort_by` (`created_at`, `updated_at`, `priority`, `name`, `due_at`), `sort_order` (`ASC`/`DESC`), and `query` (free-text across title and description). Returns compact summaries (id, name, state, priority, assignee_email, requester_email, category, updated_at); call `swsd_get_incident` for full detail of any one row.
 - **`swsd_list_my_incidents`**: thin wrapper over `swsd_list_incidents` that auto-resolves the authenticated user's email (via JWT decode + `/users/{user_ic}.json`) and applies it as `assignee_email`. One round-trip instead of two for first-person queries ("my tickets", "tickets assigned to me"). Same input shape as `swsd_list_incidents` minus `assignee_email`. Renders the same `incident-list` widget as `swsd_list_incidents` in MCP Apps-capable hosts. For tenant-wide queries use `swsd_list_incidents` with explicit filters.
+- **`swsd_sla_risk`**: lists open incidents ranked by SLA breach risk. Computes a risk level for each incident based on `due_at` and `sla_violations`: "breached" (overdue or has violations), "critical" (due within 4 hours), "warning" (due within `at_risk_within_hours`, default 24h), "ok", or "no_due_date". Results are sorted breached-first (most overdue first), then by time-to-breach ascending, no_due_date last. Defaults to excluding Resolved and Closed states. Supports `assignee_email` (client-side filter), `assigned_to_group` (server-side), `include_no_due_date`, and `max_results`. Renders the `sla-risk` widget in MCP Apps-capable hosts (risk-count chips + color-coded table with due countdowns). Limitation: list rows normally only include `due_at`; `sla_violations[]` is only present on SWSD's long incident layout, so rows are ranked primarily by `due_at` and violations are counted only when SWSD includes them on the row. Use `swsd_get_incident` with `detail_level: "long"` for full per-incident SLA detail.
+- **`swsd_my_queue`**: work-queue view for the authenticated user (or a given assignee/group). Defaults to open incidents assigned to you, sorted by `due_at` ascending. Each row includes a computed SLA risk level for at-a-glance triage. Supports `assignee_email` override (client-side filter), `assigned_to_group` (server-side), `states`/`priorities` filters, and `sort_by` options (`due_at`, `updated_at`, `priority`, `created_at`). Reuses the `incident-list` widget.
 - **`swsd_get_incident`**: full incident detail as returned by SWSD (passthrough), including custom-field values. Accepts the incident's `id` or human-facing `number`. Pass `detail_level: "long"` to include comments, attachments, audits, SLA data, tags, statistics, satisfaction, and resolution detail in one call. Default `"short"` is faster and cheaper; recommend `"long"` when the user asks "show me everything about ticket X" or wants comments/attachments/audits. Renders the `incident-detail` widget in MCP Apps-capable hosts (description, due date with Overdue badge, SLA violations, resolution body, custom fields).
 - **`swsd_create_incident`**: minimum required: `name`. Strongly recommended: `description`, `requester`, `category`, `site`. Returns the created incident's full payload. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`: call `swsd_describe_custom_fields` first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.
 - **`swsd_update_incident`**: partial-update semantics: pass only the fields you want to change. Accepts the incident's `id` or human-facing `number`. To clear a field, pass `null`. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`: call `swsd_describe_custom_fields` first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.

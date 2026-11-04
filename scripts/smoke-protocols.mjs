@@ -6,6 +6,7 @@ import net from 'node:net';
 import { resolve } from 'node:path';
 import { PROFILE_TOOLS } from '../dist/config/profiles.js';
 import { SERVER_VERSION } from '../dist/mcp/server.js';
+import { UI_TOOLS } from './ui-tools.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const versions = ['2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25'];
@@ -69,7 +70,7 @@ async function check(exchange, version) {
   assert.ok(!info.result?.isError);
   assert.equal(info.result?.structuredContent.version, SERVER_VERSION);
   const resources = await exchange(request(4, 'resources/list'));
-  assert.equal(resources.result.resources.length, 7);
+  assert.equal(resources.result.resources.length, UI_TOOLS.length);
   assert.ok(resources.result.resources.every(resource => resource.mimeType === 'text/html;profile=mcp-app'));
   const unknown = await exchange(request(5, 'tools/call', { name: '__swsd_unknown_tool__', arguments: {} }));
   assert.equal(unknown.error?.code, -32602, 'Unknown tools must use the SDK v2 protocol error');
