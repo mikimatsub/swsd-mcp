@@ -122,3 +122,35 @@ function nestedString(parent: unknown, key: string): string | undefined {
   const v = parent[key];
   return typeof v === 'string' ? v : undefined;
 }
+
+export interface GroupMember {
+  id: number;
+  name: string;
+  email?: string;
+}
+
+/**
+ * Members of a group from `GET /groups/{id}.json`. Per the SWSD API spec
+ * (apidoc.samanage.com, Group → getGroupById) each `memberships[]` entry is
+ * a user-like object: `{ id, name, email, is_user, group_id, avatar }`.
+ * Non-user entries (`is_user: false`) and entries without an id are skipped.
+ */
+export function toGroupMembers(raw: unknown): GroupMember[] {
+  if (!isPlainObject(raw) || !Array.isArray(raw.memberships)) return [];
+  const out: GroupMember[] = [];
+  for (const m of raw.memberships) {
+    if (!isPlainObject(m) || m.is_user === false) continue;
+    const id = numberOrNull(m.id);
+    if (id === null) continue;
+    out.push({ id, name: stringOrEmpty(m.name), email: stringOrUndefined(m.email) });
+  }
+  return out;
+}
+
+/** Group ids a user belongs to (`group_ids` on `GET /users/{id}.json`). */
+export function toUserGroupIds(raw: unknown): number[] | undefined {
+  if (!isPlainObject(raw) || !Array.isArray(raw.group_ids)) return undefined;
+  return raw.group_ids
+    .map((g) => numberOrNull(g))
+    .filter((g): g is number => g !== null);
+}

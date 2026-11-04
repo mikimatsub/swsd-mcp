@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 69 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 74 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **69 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **74 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
@@ -280,20 +280,25 @@ Procurement context helps agents answer warranty, vendor, and purchase-history q
 
 ---
 
-## Lookups (6)
+## Lookups (11)
 
 All lookup tools are read-only. They exist to validate IDs/names before passing to write tools (e.g., look up a site name before creating an incident with `site_name`).
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_categories` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_get_category` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `swsd_list_sites` | R |   | ✓ |   | ✓ | ✓ |
+| `swsd_get_site` | R |   | ✓ |   | ✓ | ✓ |
 | `swsd_list_departments` | R |   | ✓ |   | ✓ | ✓ |
+| `swsd_get_department` | R |   | ✓ |   | ✓ | ✓ |
 | `swsd_list_users` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `swsd_get_user` | R | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `swsd_list_groups` | R |   | ✓ |   | ✓ | ✓ |
+| `swsd_get_group` | R |   | ✓ |   | ✓ | ✓ |
 | `swsd_list_roles` | R |   | ✓ |   | ✓ | ✓ |
 
-Each returns `id`, `name`, plus type-specific fields (e.g., `time_zone` for sites, `disabled` for groups).
+Each returns `id`, `name`, plus type-specific fields (e.g., `time_zone` for sites, `disabled` for groups). The `swsd_get_*` lookups fetch one record by id: `swsd_get_user` adds `group_ids`, and `swsd_get_group` adds its `members` (id, name, email).
 
 ---
 

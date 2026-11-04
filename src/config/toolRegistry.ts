@@ -32,6 +32,13 @@ import { registerCreateProblem } from '../tools/problems/createProblem.js';
 
 import { registerListCategories } from '../tools/lookups/listCategories.js';
 import { registerListSites } from '../tools/lookups/listSites.js';
+import {
+  registerGetCategory,
+  registerGetDepartment,
+  registerGetGroup,
+  registerGetSite,
+  registerGetUser,
+} from '../tools/lookups/getLookups.js';
 import { registerListDepartments } from '../tools/lookups/listDepartments.js';
 import { registerListUsers } from '../tools/lookups/listUsers.js';
 import { registerListGroups } from '../tools/lookups/listGroups.js';
@@ -131,6 +138,11 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_list_users: registerListUsers,
   swsd_list_groups: registerListGroups,
   swsd_list_roles: registerListRoles,
+  swsd_get_user: registerGetUser,
+  swsd_get_group: registerGetGroup,
+  swsd_get_site: registerGetSite,
+  swsd_get_department: registerGetDepartment,
+  swsd_get_category: registerGetCategory,
 
   swsd_search_solutions: registerSearchSolutions,
   swsd_get_solution: registerGetSolution,
