@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   title: SWSD MCP: triage profile
   description: |
-    SolarWinds Service Desk MCP server, triage profile (18 tools).
+    SolarWinds Service Desk MCP server, triage profile (19 tools).
 
     Read-heavy first-line support workflow including incident lookup, comment reading, comment posting, and category/user lookups.
 
