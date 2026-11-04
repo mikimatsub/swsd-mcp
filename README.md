@@ -148,7 +148,7 @@ Eight interactive UI bundles ship with read tools using the [MCP Apps capability
 | `swsd_get_record_audits` | `audit-timeline` | Timeline grouped by day with action chips and field diffs |
 | `swsd_get_catalog_item` | `catalog-item-form` | Form that submits via `swsd_create_service_request` |
 | `swsd_describe_custom_fields` | `custom-fields` | Searchable explorer with scope/module filters |
-| `swsd_change_calendar` | `change-calendar` | UTC day sections for changes/releases with shared-CI/group conflict badges |
+| `swsd_change_calendar` | `change-calendar` | Local-time day sections for changes/releases with shared-CI/group conflict badges |
 
 `swsd_change_calendar` is read-only and available in Agent, Operations and Full.
 It defaults to the next 30 days from UTC midnight today and scans up to three

@@ -1,30 +1,66 @@
 import type { CalendarConflict, CalendarItem } from '../../schemas/changeCalendar.js';
 
-const time = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-const date = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
-const day = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
+const HOUR = 3600000;
 
-export function formatDay(value: string): string {
-  const parsed = new Date(value);
-  return Number.isFinite(parsed.getTime()) ? day.format(parsed) : value;
+/** Viewer's IANA zone; falls back to UTC when Intl cannot resolve one. */
+export function viewerTimeZone(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; }
 }
 
-export function formatTimeRange(item: Pick<CalendarItem, 'planned_start_at' | 'planned_end_at'>): string {
-  const start = new Date(item.planned_start_at);
-  if (!Number.isFinite(start.getTime())) return 'Unscheduled';
-  const rawEnd = item.planned_end_at ? new Date(item.planned_end_at) : undefined;
-  const end = rawEnd && rawEnd > start ? rawEnd : new Date(start.getTime() + 3600000);
-  return start.toISOString().slice(0, 10) === end.toISOString().slice(0, 10)
-    ? `${time.format(start)}–${time.format(end)}`
-    : `${date.format(start)} ${time.format(start)} → ${date.format(end)}`;
+function valid(value: string | undefined): Date | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return Number.isFinite(d.getTime()) ? d : undefined;
 }
 
-export function formatWindow(window?: { from: string; to: string }): string {
-  if (!window) return 'All times UTC';
-  const from = new Date(window.from);
-  const to = new Date(window.to);
-  if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime())) return 'All times UTC';
-  return `${from.toISOString().slice(0, 10)} ${time.format(from)} → ${to.toISOString().slice(0, 10)} ${time.format(to)} · UTC · end exclusive`;
+/** YYYY-MM-DD in the given zone. */
+export function localDateKey(d: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+
+/** Short zone label such as "EST" or "GMT+9". */
+export function zoneLabel(timeZone: string, at: Date = new Date()): string {
+  const part = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' })
+    .formatToParts(at).find(p => p.type === 'timeZoneName');
+  return part?.value ?? timeZone;
+}
+
+function fmtTime(d: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+}
+function fmtDate(d: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone, month: 'short', day: 'numeric' }).format(d);
+}
+
+/** Day heading for a local YYYY-MM-DD key (rendered at noon UTC so it never shifts). */
+export function formatDay(key: string): string {
+  const d = valid(/^\d{4}-\d{2}-\d{2}$/.test(key) ? `${key}T12:00:00Z` : key);
+  return d ? new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(d) : key;
+}
+
+export interface TimeRange { range: string; until?: string; }
+
+/** Always "HH:MM–HH:MM"; multi-day windows add an "until Nov 12" line. */
+export function formatTimeRange(item: Pick<CalendarItem, 'planned_start_at' | 'planned_end_at'>, timeZone = viewerTimeZone()): TimeRange {
+  const start = valid(item.planned_start_at);
+  if (!start) return { range: 'Unscheduled' };
+  const rawEnd = valid(item.planned_end_at);
+  const end = rawEnd && rawEnd > start ? rawEnd : new Date(start.getTime() + HOUR);
+  const range = `${fmtTime(start, timeZone)}–${fmtTime(end, timeZone)}`;
+  return localDateKey(start, timeZone) === localDateKey(end, timeZone)
+    ? { range } : { range, until: `until ${fmtDate(end, timeZone)}` };
+}
+
+/** Friendly window such as "Nov 10 – Nov 12 · times in EST" (end is exclusive, so shown as the prior instant). */
+export function formatWindow(window?: { from: string; to: string }, timeZone = viewerTimeZone()): string {
+  const tz = `times in ${zoneLabel(timeZone)}`;
+  const from = valid(window?.from);
+  const to = valid(window?.to);
+  if (!from || !to || to <= from) return `Upcoming changes and releases · ${tz}`;
+  const last = new Date(to.getTime() - 1);
+  const a = fmtDate(from, timeZone);
+  const b = fmtDate(last, timeZone);
+  return `${a === b ? a : `${a} – ${b}`} · ${tz}`;
 }
 
 export function conflictReasons(item: Pick<CalendarItem, 'kind' | 'id'>, conflicts: readonly CalendarConflict[]): string[] {
@@ -33,13 +69,14 @@ export function conflictReasons(item: Pick<CalendarItem, 'kind' | 'id'>, conflic
     .flatMap(c => c.reasons))];
 }
 
-export function groupDays(items: readonly CalendarItem[]): { date: string; items: CalendarItem[] }[] {
+/** Groups by the viewer-local start date. */
+export function groupDays(items: readonly CalendarItem[], timeZone = viewerTimeZone()): { date: string; items: CalendarItem[] }[] {
   const days = new Map<string, CalendarItem[]>();
   const sorted = [...items].sort((a, b) => Date.parse(a.planned_start_at) - Date.parse(b.planned_start_at));
   for (const item of sorted) {
-    const start = new Date(item.planned_start_at);
-    if (!Number.isFinite(start.getTime())) continue;
-    const key = start.toISOString().slice(0, 10);
+    const start = valid(item.planned_start_at);
+    if (!start) continue;
+    const key = localDateKey(start, timeZone);
     const entries = days.get(key) ?? [];
     entries.push(item);
     days.set(key, entries);

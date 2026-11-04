@@ -31,15 +31,20 @@ export function renderRow(item: CalendarItem, conflicts: readonly CalendarConfli
   const label = item.url && isSafeHttpUrl(item.url)
     ? el('a', { class: 'name', title: name, href: item.url, target: '_blank', rel: 'noopener noreferrer' }, [name])
     : el('span', { class: 'name', title: name }, [name]);
-  const owner = [item.group_assignee?.name, item.assignee_name ?? item.assignee_email].filter(Boolean).join(' · ');
+  const meta = [item.state, item.group_assignee?.name, item.assignee_name ?? item.assignee_email].filter(Boolean).join(' · ');
   const reasons = conflictReasons(item, conflicts).join('\n');
+  const t = formatTimeRange(item);
   return el('li', { class: `calendar-row${item.conflict_count > 0 ? ' has-conflict' : ''}` }, [
-    el('span', { class: 'time', title: `${item.planned_start_at} → ${item.planned_end_at ?? 'start + 1 hour (assumed)'}` }, [formatTimeRange(item)]),
+    el('span', { class: 'time', title: `${item.planned_start_at} → ${item.planned_end_at ?? 'start + 1 hour (assumed)'}` }, [
+      el('span', { class: 'range' }, [t.range]),
+      t.until ? el('span', { class: 'until' }, [t.until]) : null,
+    ]),
     el('span', { class: `pill ${item.kind}` }, [item.kind === 'change' ? 'Change' : 'Release']),
-    el('div', { class: 'name-cell', title: name }, [label]),
-    el('span', { class: 'state', title: item.state }, [item.state ?? '']),
-    el('div', { class: 'row-details' }, [
-      el('span', { class: 'owner', title: owner }, [owner]),
+    el('div', { class: 'name-cell', title: name }, [
+      label,
+      meta ? el('span', { class: 'meta', title: meta }, [meta]) : null,
+    ]),
+    el('span', { class: 'badge-cell' }, [
       item.conflict_count > 0 ? el('span', { class: 'badge conflict', title: reasons || 'Overlapping scheduled work', 'aria-label': `Conflict: ${reasons}` }, ['Conflict']) : null,
     ]),
   ]);

@@ -30,19 +30,19 @@ beforeEach(async () => {
 });
 
 describe('change calendar rendering', () => {
-  it('renders day sections, five row cells, kind pills, UTC window and accurate chips', () => {
+  it('renders day sections, four row cells, kind pills, local-time window and accurate chips', () => {
     const items = [item, { ...item, kind: 'release' as const, conflict_count: 1, planned_start_at: '2026-11-12T09:00:00Z', planned_end_at: undefined }];
     host.options!.onResult({ items, conflicts: [conflict], window: { from: '2026-11-10', to: '2026-11-13' } });
     expect(targets.title.textContent).toBe('Change calendar');
-    expect(targets.window.textContent).toContain('UTC');
+    expect(targets.window.textContent).toMatch(/· times in \S+/);
     expect([...targets.chips.children].map(c => c.textContent)).toEqual(['Changes 1', 'Releases 1', 'Conflicts 1']);
     expect(targets.chips.lastElementChild?.className).toBe('chip conflict');
     expect([...targets.days.querySelectorAll('h2')].map(e => e.textContent)).toEqual(['Tue, Nov 10', 'Thu, Nov 12']);
     const rows = targets.days.querySelectorAll('.calendar-row');
     expect(rows).toHaveLength(2);
-    expect([...rows[0]!.children].map(e => e.className)).toEqual(['time', 'pill change', 'name-cell', 'state', 'row-details']);
-    expect(rows[0]?.querySelector('.time')?.textContent).toBe('09:00–11:00');
-    expect(rows[0]?.querySelector('.owner')?.textContent).toBe('Helpdesk Team · John Doe');
+    expect([...rows[0]!.children].map(e => e.className)).toEqual(['time', 'pill change', 'name-cell', 'badge-cell']);
+    expect(rows[0]?.querySelector('.range')?.textContent).toMatch(/^\d\d:\d\d–\d\d:\d\d$/);
+    expect(rows[0]?.querySelector('.meta')?.textContent).toBe(`${item.state!} · Helpdesk Team · John Doe`);
     expect(rows[1]?.querySelector('.pill')?.textContent).toBe('Release');
     expect(targets.empty.hidden).toBe(true);
   });
@@ -89,7 +89,7 @@ describe('change calendar rendering', () => {
     renderPayload(targets, null);
     expect(targets.notice.hidden).toBe(true);
     expect(targets.notice.textContent).toBe('');
-    expect(targets.window.textContent).toBe('All times UTC');
+    expect(targets.window.textContent).toMatch(/^Upcoming changes and releases · times in /);
   });
   it('renders tool errors through the shared error component', () => {
     host.options!.onError!({ message: 'Forbidden calendar' });
@@ -97,8 +97,9 @@ describe('change calendar rendering', () => {
   });
   it('keeps responsive, theme and content-sizing CSS contracts', () => {
     const css = readFileSync('src/ui/change-calendar/styles.css', 'utf8');
-    expect(css).toContain('grid-template-columns: 8.75rem 4.25rem minmax(0,1fr) minmax(0,10rem) auto');
-    expect(css).toMatch(/@media \(max-width: 600px\)[\s\S]*?\.owner \{ display: none/);
+    expect(css).toContain('grid-template-columns: 6.25rem 4.25rem minmax(0,1fr) 4.75rem');
+    expect(css).toContain('-webkit-line-clamp: 2');
+    expect(css).toMatch(/@media \(max-width: 600px\)[\s\S]*?\.calendar-row \{ gap: 10px; grid-template-columns: 5\.75rem/);
     expect(css).toMatch(/@media \(max-width: 440px\)[\s\S]*?\.time \{ grid-column: 1 \/ -1/);
     expect(css).toContain(':root[data-theme="dark"] { color-scheme: dark; }');
     expect(css).toContain(':root[data-theme="light"] { color-scheme: light; }');

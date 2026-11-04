@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the read-only `swsd_change_calendar` tool to Agent, Operations and Full:
   bounded change/release scans, client-side filters, UTC day grouping, shared-CI
   and group overlap conflicts, and explicit unscheduled/truncated scan accounting.
-- Added the content-sized change calendar MCP Apps widget with UTC times,
+- Added the content-sized change calendar MCP Apps widget with viewer-local times,
   responsive rows, safe record links, conflict details, and light/dark themes.
 
 ### Changed

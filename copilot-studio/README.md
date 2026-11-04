@@ -21,7 +21,7 @@ Re-run after any profile change.
 | `full.swagger.yaml` | `full` | 67 | Every tool. |
 
 Agent, Operations and Full include the read-only `swsd_change_calendar` tool.
-Its UTC calendar scans bounded pages and applies all filters client-side;
+Its calendar (shown in the viewer's local time) scans bounded pages and applies all filters client-side;
 `scan.truncated` warns when more matches or conflicts may exist. App-capable
 hosts can render its change/release calendar widget; other hosts receive the
 same structured calendar output.

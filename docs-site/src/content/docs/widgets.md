@@ -18,7 +18,7 @@ All widgets are self-contained. No external network access, no third-party scrip
 | [`audit-timeline`](#audit-timeline) | `swsd_get_record_audits` | Vertical audit-log timeline grouped by day with action chips and field diffs. |
 | [`catalog-item-form`](#catalog-item-form) | `swsd_get_catalog_item` | Renders catalog variables as a form; submits via `swsd_create_service_request`. |
 | [`custom-fields`](#custom-fields) | `swsd_describe_custom_fields` | Searchable explorer with scope/module filters and per-field detail panel. |
-| [`change-calendar`](#change-calendar) | `swsd_change_calendar` | UTC day sections for changes/releases, with shared-CI/group conflict badges. |
+| [`change-calendar`](#change-calendar) | `swsd_change_calendar` | Local-time day sections for changes/releases, with shared-CI/group conflict badges. |
 
 ## How widgets are loaded
 
@@ -41,9 +41,9 @@ All eight widgets handle `isError: true` tool results. Instead of an infinite "L
 
 ### `change-calendar`
 
-Bound to `swsd_change_calendar` in Agent, Operations and Full, with resource URI `ui://swsd/change-calendar.html`. The header shows the selected UTC window and Changes, Releases and Conflicts totals (conflicting pairs). Day sections use each item's UTC start date. Rows show the time range, blue Change or purple Release pill, linked name, state, and group/assignee. Red left borders and Conflict badges identify overlapping work; the badge tooltip lists shared CIs and groups.
+Bound to `swsd_change_calendar` in Agent, Operations and Full, with resource URI `ui://swsd/change-calendar.html`. The header shows the selected window as a friendly date range (for example “Nov 10 – Nov 12 · times in EST”) and Changes, Releases and Conflicts totals (conflicting pairs). Day sections use each item's start date in the viewer's timezone. Rows show a fixed-width time column, a blue Change or purple Release pill, the linked name (wrapping to two lines) with a muted state · group · assignee line beneath it, and a fixed Conflict badge column so rows line up. Red left borders and Conflict badges identify overlapping work; the badge tooltip lists shared CIs and groups.
 
-All times use UTC, including the one-hour assumption when an end is missing. Multiday work appears once under its start day with a range such as “Nov 10 09:00 → Nov 12”. Name tooltips preserve the full text when it is truncated. Group/assignee is hidden at 600px and below; time moves to its own line at 440px and below. The layout sizes to its content and follows the host's light/dark theme.
+Times are shown in the viewer's local timezone (via `Intl`), including the one-hour assumption when an end is missing; the tool's structured output stays in UTC ISO timestamps. Multiday work appears once under its start day as “10:00–11:00” with a small “until Nov 12” line. Tooltips keep the full name, metadata and raw ISO times. At 440px and below the time moves to its own line. The layout sizes to its content and follows the host's light/dark theme.
 
 An empty state explains when no scheduled work matches. A partial-calendar notice appears when the scan reaches its limit; hidden/unscanned or filtered-out records are not covered by the conflict check. See [calendar filters and scan accounting](/tools/#change--release-9).
 
