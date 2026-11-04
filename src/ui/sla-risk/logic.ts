@@ -5,6 +5,24 @@
 
 export type RiskLevel = 'breached' | 'critical' | 'warning' | 'ok' | 'no_due_date';
 
+export const RISK_LEVELS: readonly RiskLevel[] = [
+  'breached',
+  'critical',
+  'warning',
+  'ok',
+  'no_due_date',
+];
+
+/**
+ * Coerce a wire value into a known `RiskLevel`. The tool's output schema
+ * constrains `risk` to the five levels, but payloads arriving from a host are
+ * opaque at runtime — an unexpected value falls back to `no_due_date` rather
+ * than rendering a pill with an `undefined` class.
+ */
+export function normalizeRisk(value: unknown): RiskLevel {
+  return RISK_LEVELS.find((level) => level === value) ?? 'no_due_date';
+}
+
 export const RISK_LABELS: Record<RiskLevel, string> = {
   breached: 'Breached',
   critical: 'Critical',

@@ -47,7 +47,12 @@ export function registerSlaRisk(server: McpServer, ctx: ToolContext): void {
         'or has violations), "critical" (due within 4 hours), "warning" (due within ' +
         'at_risk_within_hours), "ok", or "no_due_date". Results are sorted with ' +
         'breached first (most overdue first), then by time-to-breach ascending, ' +
-        'no_due_date last. Defaults to excluding Resolved and Closed states.',
+        'no_due_date last. Defaults to excluding Resolved and Closed states. ' +
+        'Limitation: incident list rows only normally include due_at. The ' +
+        'sla_violations[] array is only present on the long incident layout, so rows ' +
+        'are ranked primarily by due_at and violations are counted only when SWSD ' +
+        'happens to include them on the row. Use swsd_get_incident with ' +
+        'detail_level long for a complete per-incident SLA picture.',
       inputSchema: SlaRiskInput,
       outputSchema: z.object({
         incidents: z.array(SlaRiskIncidentOutput),

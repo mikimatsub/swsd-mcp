@@ -71,7 +71,7 @@ Pagination chip in the footer shows `page X of Y matching your filters` (when `p
 
 ### `sla-risk`
 
-Bound to `swsd_sla_risk`. Header with color-coded risk-count chips (breached/critical/warning/ok/no due date) and a table of incidents sorted by risk priority. Each row shows the incident number/name (linked), a color-coded risk pill, human-readable due countdown ("Overdue by 3h 12m" / "Due in 45m"), priority, and assignee. Risk colors: red for breached, orange for critical, amber for warning, green for ok, gray for no due date. Follows host light/dark theme via CSS custom properties.
+Bound to `swsd_sla_risk`. Header with color-coded risk-count chips (breached/critical/warning/ok/no due date) and a table of incidents sorted by risk priority. Each row shows the incident number/name (linked), a color-coded risk pill, human-readable due countdown ("Overdue by 3h 12m" / "Due in 45m"), priority, and assignee. Long names truncate with the full text available on hover. The layout sizes to its content and adapts to narrow hosts: below 640px the Priority and Assignee columns drop, and below 440px the number column folds into the name cell with the chips wrapping under the title. Risk colors: red for breached, orange for critical, amber for warning, green for ok, gray for no due date. Follows host light/dark theme via CSS custom properties and `color-scheme`.
 
 ### `comment-thread`
 

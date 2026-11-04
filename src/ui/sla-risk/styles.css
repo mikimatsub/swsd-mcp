@@ -1,24 +1,45 @@
 @import "../shared/error.css";
 
+/*
+ * SLA-risk widget.
+ *
+ * Sizing: the widget sizes to its content — no fixed heights, no min-heights,
+ * no 100vh. The table uses `table-layout: fixed` with explicit column widths,
+ * so long incident names truncate inside the Name column instead of widening
+ * the table (which is what used to force a horizontal scrollbar).
+ *
+ * Theming: `light-dark()` tokens flip with the document's `color-scheme`.
+ * `:root` sets `light dark`, so the widget follows `prefers-color-scheme`
+ * when embedded without a host, and the `[data-theme]` rules below pin it to
+ * the value `shared/host.ts:applyDocumentTheme` writes when the host sends a
+ * theme. Same approach as incident-list / incident-detail.
+ */
+
 :root {
   color-scheme: light dark;
   --fg: light-dark(#1a1a1a, #f5f5f5);
   --fg-muted: light-dark(#666, #aaa);
   --bg: light-dark(#ffffff, #1a1a1a);
-  --bg-alt: light-dark(#f7f7f7, #2a2a2a);
+  --bg-alt: light-dark(#f7f7f7, #242424);
   --border: light-dark(#e0e0e0, #333);
-  --hover: light-dark(#eaeaea, #3a3a3a);
+  --hover: light-dark(#eaeaea, #323232);
   --link: light-dark(#0066cc, #4da3ff);
-  --risk-breached-bg: light-dark(#fee2e2, #5c1a1a);
-  --risk-breached-fg: light-dark(#991b1b, #fca5a5);
-  --risk-critical-bg: light-dark(#fff7ed, #5c2d0e);
-  --risk-critical-fg: light-dark(#9a3412, #fdba74);
-  --risk-warning-bg: light-dark(#fffbeb, #5c4813);
-  --risk-warning-fg: light-dark(#92400e, #fde68a);
+  --risk-breached-bg: light-dark(#fee2e2, #7f1d1d);
+  --risk-breached-fg: light-dark(#991b1b, #fee2e2);
+  --risk-critical-bg: light-dark(#fff7ed, #7c2d12);
+  --risk-critical-fg: light-dark(#9a3412, #ffedd5);
+  --risk-warning-bg: light-dark(#fef9c3, #713f12);
+  --risk-warning-fg: light-dark(#854d0e, #fef3c7);
   --risk-ok-bg: light-dark(#f0fdf4, #14532d);
-  --risk-ok-fg: light-dark(#166534, #86efac);
-  --risk-nodate-bg: light-dark(#f5f5f5, #333);
-  --risk-nodate-fg: light-dark(#666, #aaa);
+  --risk-ok-fg: light-dark(#166534, #dcfce7);
+  --risk-nodate-bg: light-dark(#f5f5f5, #3f3f46);
+  --risk-nodate-fg: light-dark(#666, #e4e4e7);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 * {
   box-sizing: border-box;
@@ -33,20 +54,21 @@ body {
 }
 header {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   flex-wrap: wrap;
 }
 header h1 {
   margin: 0;
   font-size: 1.1rem;
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   word-break: break-word;
 }
 .chips {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 .chip {
@@ -56,25 +78,22 @@ header h1 {
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 .chip-breached { background: var(--risk-breached-bg); color: var(--risk-breached-fg); }
 .chip-critical { background: var(--risk-critical-bg); color: var(--risk-critical-fg); }
 .chip-warning { background: var(--risk-warning-bg); color: var(--risk-warning-fg); }
 .chip-ok { background: var(--risk-ok-bg); color: var(--risk-ok-fg); }
 .chip-nodate { background: var(--risk-nodate-bg); color: var(--risk-nodate-fg); }
-.table-scroll {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
 table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
 th,
 td {
-  padding: 0.4rem 0.6rem;
+  padding: 0.4rem 0.55rem;
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
@@ -82,24 +101,93 @@ td {
 th {
   background: var(--bg-alt);
   white-space: nowrap;
+  font-size: 0.8rem;
   font-weight: 600;
 }
-td {
-  word-break: break-word;
+/* Column widths: "#" and the risk/priority/assignee columns are compact, the
+ * Name column takes whatever is left and truncates. Percentages keep the sum
+ * below 100% at every width (so the table can never overflow the host), and
+ * the narrow breakpoints below swap in rem widths once the columns are
+ * actually hidden. */
+th.col-number { width: 5rem; }
+th.col-risk { width: 7rem; }
+th.col-due { width: 9.5rem; }
+th.col-priority { width: 5.75rem; }
+th.col-assignee { width: 24%; }
+tbody tr:nth-child(even) {
+  background: var(--bg-alt);
 }
-td a {
+tbody tr:hover {
+  background: var(--hover);
+}
+td.col-number {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted);
+}
+td.col-name {
+  overflow: hidden;
+}
+.name-cell {
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  min-width: 0;
+}
+.name-cell .name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* Muted copy of "#<n>" shown inside the Name cell on very narrow hosts, where
+ * the dedicated number column is hidden. */
+.row-number {
+  flex: 0 0 auto;
+  display: none;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted);
+}
+.row-number:empty {
+  display: none;
+}
+td.col-risk {
+  white-space: nowrap;
+  overflow: hidden;
+}
+td.col-due {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+td.col-priority {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+td.col-assignee {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+td a.name {
   color: var(--link);
   text-decoration: none;
 }
-td a:hover {
+td a.name:hover {
   text-decoration: underline;
 }
 .pill {
   display: inline-block;
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 .pill-breached { background: var(--risk-breached-bg); color: var(--risk-breached-fg); }
@@ -108,7 +196,55 @@ td a:hover {
 .pill-ok { background: var(--risk-ok-bg); color: var(--risk-ok-fg); }
 .pill-nodate { background: var(--risk-nodate-bg); color: var(--risk-nodate-fg); }
 .empty {
+  margin: 0;
+  padding: 0.75rem 0;
   color: var(--fg-muted);
   font-style: italic;
-  padding: 1rem 0;
 }
+
+/* Narrow hosts drop the two least critical columns so the Name column keeps a
+ * usable width instead of every cell collapsing. */
+@media (max-width: 640px) {
+  th.col-priority,
+  td.col-priority,
+  th.col-assignee,
+  td.col-assignee {
+    display: none;
+  }
+  th.col-number { width: 4.75rem; }
+  th.col-risk { width: 6.5rem; }
+  th.col-due { width: 9.5rem; }
+}
+
+/* Below 440px the number column also goes away; the number moves into the
+ * Name cell and the chips wrap underneath the title. */
+@media (max-width: 440px) {
+  th.col-number,
+  td.col-number {
+    display: none;
+  }
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+  body {
+    padding: 0.75rem;
+  }
+  th,
+  td {
+    padding: 0.35rem 0.4rem;
+  }
+  th.col-risk { width: 5.5rem; }
+  th.col-due { width: 10rem; }
+  td.col-due { font-size: 0.85rem; }
+}
+/* Whole-pixel row metrics: the MCP Apps host sizes the iframe from the
+ * document's rounded height, so fractional rem-based row heights can leave a
+ * 1px overflow (and a stray scrollbar). Pin the vertical rhythm to integers. */
+table { line-height: 20px; }
+th,
+td { padding-top: 6px; padding-bottom: 6px; }
+.pill,
+.chip { line-height: 16px; }
+header h1 { line-height: 24px; }
