@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Windows settings app: one shared button style so buttons in a row have identical top, height and width; field labels and token placeholder; themed dark-mode dropdown borders; clear disabled-button look; -ValidateWindow fails on any 1px button-row mismatch.
+
 ### Changed
 
 - Restyled the Windows settings app to a Windows 11 look using WinForms only:
