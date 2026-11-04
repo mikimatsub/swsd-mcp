@@ -38,6 +38,27 @@ namespace SwsdDesktop {
     [DllImport("advapi32.dll", EntryPoint="CredDeleteW", CharSet=CharSet.Unicode, SetLastError=true)]
     private static extern bool DeleteNative(string target, uint type, uint flags);
     [DllImport("advapi32.dll")] private static extern void CredFree(IntPtr pointer);
+    // Presence-only dashboard probe. Never dereference CredentialBlob or materialize a secret.
+    // CredEnumerateW returns a prefix-filtered array; check the exact target and generic type.
+    [DllImport("advapi32.dll", EntryPoint="CredEnumerateW", CharSet=CharSet.Unicode, SetLastError=true)]
+    private static extern bool EnumerateNative(string filter, uint flags, out uint count, out IntPtr credentials);
+    public static bool Exists(string target) {
+      uint count;
+      IntPtr pointers;
+      if (!EnumerateNative(target + "*", 0, out count, out pointers)) {
+        int error = Marshal.GetLastWin32Error();
+        if (error == 1168) return false;
+        throw new Win32Exception(error);
+      }
+      try {
+        for (int i = 0; i < count; i++) {
+          IntPtr pointer = Marshal.ReadIntPtr(pointers, i * IntPtr.Size);
+          Credential metadata = (Credential)Marshal.PtrToStructure(pointer, typeof(Credential));
+          if (metadata.Type == 1 && String.Equals(metadata.TargetName, target, StringComparison.OrdinalIgnoreCase)) return true;
+        }
+        return false;
+      } finally { CredFree(pointers); }
+    }
     public static string Read(string target) {
       IntPtr pointer;
       if (!ReadNative(target, 1, 0, out pointer)) {
@@ -155,6 +176,49 @@ function Test-SwsdToken {
         if ($_.Exception.Message -match '^SolarWinds ') { throw $_.Exception.Message }
         throw 'Connection failed. Check network access, proxy settings, and the selected SWSD region.'
     } finally { $client.Dispose(); $handler.Dispose() }
+}
+
+function Get-SwsdStatus {
+    $nodeVersion = $null
+    $nodeSupported = $false
+    try {
+        $nodeCmd = Get-Command node.exe -ErrorAction SilentlyContinue
+        if ($nodeCmd) {
+            $nodeVersion = (& $nodeCmd.Source --version).Trim().TrimStart('v')
+            $parsed = [version]$nodeVersion
+            if ($parsed.Major -eq 24 -and $parsed -ge [version]'24.15.0') {
+                $nodeSupported = $true
+            }
+        }
+    } catch {}
+    $entryPoint = Get-SwsdEntryPoint
+    $toolsInstalled = Test-Path -LiteralPath $entryPoint -PathType Leaf
+    $installedVersion = $null
+    if ($toolsInstalled) {
+        try {
+            $manifestPath = Join-Path (Split-Path (Split-Path $entryPoint)) 'package.json'
+            $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+            $installedVersion = [string]$manifest.version
+            $toolsInstalled = ($installedVersion -eq $script:SwsdPackageVersion)
+        } catch { $toolsInstalled = $false }
+    }
+    $credentialSaved = $false
+    $credentialAvailable = $true
+    try { $credentialSaved = [SwsdDesktop.Credentials]::Exists($script:SwsdCredentialTarget) }
+    catch { $credentialAvailable = $false }
+    $settings = Get-SwsdSettings
+    $regionLabel = if ($settings.baseUrl -eq 'https://apieu.samanage.com') { 'EU' } else { 'US' }
+    return [pscustomobject]@{
+        nodeSupported   = $nodeSupported
+        nodeVersion     = $nodeVersion
+        toolsInstalled  = $toolsInstalled
+        credentialSaved = $credentialSaved
+        credentialAvailable = $credentialAvailable
+        packageVersion  = $script:SwsdPackageVersion
+        installedVersion = $installedVersion
+        profile         = $settings.profile
+        region          = $regionLabel
+    }
 }
 
 function Install-SwsdTools {
