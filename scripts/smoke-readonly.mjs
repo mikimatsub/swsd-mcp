@@ -5,6 +5,7 @@ import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { PROFILE_TOOLS } from '../dist/config/profiles.js';
 import { SERVER_VERSION } from '../dist/mcp/server.js';
+import { UI_TOOLS } from './ui-tools.mjs';
 
 assert.ok(process.env.SWSD_TOKEN, 'SWSD_TOKEN must already be configured');
 const repoRoot = resolve(import.meta.dirname, '..');
@@ -56,7 +57,7 @@ for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full']) {
     await call('swsd_search_solutions', { per_page: 1 });
     const resources = await client.listResources();
     const ui = resources.resources.filter((item) => item.uri.startsWith('ui://swsd/'));
-    assert.ok(ui.length === 7, 'Expected seven widget resources');
+    assert.ok(ui.length === UI_TOOLS.length, `Expected ${String(UI_TOOLS.length)} widget resources`);
     for (const resource of ui) {
       currentCheck = 'widget resource';
       const result = await client.readResource({ uri: resource.uri });
