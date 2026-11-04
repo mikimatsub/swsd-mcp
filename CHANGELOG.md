@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and group overlap conflicts, and explicit unscheduled/truncated scan accounting.
 - Added the content-sized change calendar MCP Apps widget with viewer-local times,
   responsive rows, safe record links, conflict details, and light/dark themes.
+- Added read-only get-by-id lookups: `swsd_get_user` (with `group_ids`),
+  `swsd_get_group` (with members), `swsd_get_site`, `swsd_get_department` and
+  `swsd_get_category`. User and category lookups join every profile that lists
+  them; group, site and department lookups join Agent, Operations and Full.
 
 ### Changed
 
