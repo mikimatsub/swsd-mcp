@@ -71,7 +71,23 @@ const DIRECTORY_WRITE_TOOLS = [
   'swsd_add_group_member',
 ] as const;
 
+const ASSET_WRITE_TOOLS = [
+  'swsd_create_hardware_asset',
+  'swsd_update_hardware_asset',
+  'swsd_create_mobile_device',
+  'swsd_update_mobile_device',
+  'swsd_create_other_asset',
+  'swsd_update_other_asset',
+  'swsd_create_configuration_item',
+  'swsd_update_configuration_item',
+  'swsd_update_printer',
+] as const;
+
 const DELETE_TOOLS = [
+  'swsd_delete_hardware_asset',
+  'swsd_delete_mobile_device',
+  'swsd_delete_other_asset',
+  'swsd_delete_configuration_item',
   'swsd_delete_incident',
   'swsd_delete_problem',
   'swsd_delete_change',
@@ -139,7 +155,7 @@ export const PROFILE_TOOLS = {
     'swsd_list_problems',
   ],
   agent: AGENT_TOOLS,
-  operations: [...new Set([...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DIRECTORY_WRITE_TOOLS, ...DELETE_TOOLS])],
+  operations: [...new Set([...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DIRECTORY_WRITE_TOOLS, ...ASSET_WRITE_TOOLS, ...DELETE_TOOLS])],
   knowledge: [
     'swsd_get_server_info',
     'swsd_health_check',
@@ -209,6 +225,7 @@ export const PROFILE_TOOLS = {
     ...TIME_AND_ATTACHMENT_TOOLS,
     ...OPERATIONS_RECORD_TOOLS,
     ...DIRECTORY_WRITE_TOOLS,
+    ...ASSET_WRITE_TOOLS,
     ...DELETE_TOOLS,
   ])],
 } as const satisfies Record<ProfileName, readonly string[]>;
