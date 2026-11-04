@@ -4,56 +4,80 @@ $ErrorActionPreference = 'Stop'
 if ($ValidateUi -or $ValidateWindow -or $ValidateHandlers) {
     # Exercise the real controls and save handler without touching a user's settings or credential.
     $script:SwsdHome = Join-Path ([IO.Path]::GetTempPath()) ('swsd-ui-test-' + [guid]::NewGuid().ToString('N'))
-    if ($ValidateHandlers) { $script:SwsdCredentialTarget = 'swsd-mcp/handler-test-' + [guid]::NewGuid().ToString('N') }
+    $script:SwsdCredentialTarget = 'swsd-mcp/ui-test-' + [guid]::NewGuid().ToString('N')
 }
 if ($CheckOnly) {
-    $nodeOk = $false
-    try { $null = Get-SwsdNode; $nodeOk = $true } catch {}
+    $s = Get-SwsdStatus
     [pscustomobject]@{
-        nodeSupported = $nodeOk
-        toolsInstalled = (Test-Path -LiteralPath (Get-SwsdEntryPoint))
-        credentialSaved = (-not [string]::IsNullOrWhiteSpace([SwsdDesktop.Credentials]::Read($script:SwsdCredentialTarget)))
-        packageVersion = $script:SwsdPackageVersion
-        profile = (Get-SwsdSettings).profile
+        nodeSupported   = $s.nodeSupported
+        nodeVersion     = $s.nodeVersion
+        toolsInstalled  = $s.toolsInstalled
+        credentialSaved = $s.credentialSaved
+        packageVersion  = $s.packageVersion
+        profile         = $s.profile
+        region          = $s.region
     } | ConvertTo-Json
     exit 0
 }
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
+# Display only authored messages. Raw exception text can contain request data or credentials.
+function Format-SwsdFriendlyError([Exception]$Exception) {
+    $msg = $Exception.GetBaseException().Message
+    $friendly = 'The action could not be completed. Try again, or ask IT to check the SWSD setup.'
+    $kind = 'error'
+    switch -Regex ($msg) {
+        'Node\.js.*required|Node\.js.*newer' { $friendly = 'Node.js is missing or unsupported. Ask IT to install the supported Node.js version shown below.'; $kind = 'warn'; break }
+        'npm is missing' { $friendly = 'npm is missing from this Node.js installation. Ask IT to repair Node.js.'; break }
+        'timed out' { $friendly = 'Installation timed out. Check npm registry access and retry.'; break }
+        'Tool installation failed|npm registry|registry\.npmjs' { $friendly = 'Tool installation failed. Ask IT to check access to registry.npmjs.org and npm proxy configuration.'; break }
+        '\(401\)' { $friendly = 'SolarWinds rejected this token (401). Generate or supply a valid personal API token.'; break }
+        '\(403\)' { $friendly = 'SolarWinds denied incident access (403). Ask your SWSD administrator to review your account permissions.'; break }
+        'Connection failed|network|DNS|proxy' { $friendly = 'Connection failed. Check network access, proxy settings, and the selected SWSD region.'; break }
+        '^No token is saved\.' { $friendly = 'No token is saved. Paste one into the masked field, then select Test and save token.'; $kind = 'warn'; break }
+        '^Paste your personal SWSD token' { $friendly = 'Paste your personal SWSD token into the masked field first.'; $kind = 'warn'; break }
+        'recipe does not match|version does not match|installation is incomplete' { $friendly = 'The tools need repair. Ask IT to sync the reviewed plugin package, then select Install / repair tools.'; break }
+    }
+    if ($Exception.GetBaseException() -is [ComponentModel.Win32Exception] -and $Exception.GetBaseException().NativeErrorCode -eq 1312) { $friendly = 'Windows Credential Manager is unavailable in this session. Open setup from your signed-in Windows desktop.' }
+    if ($ValidateHandlers -and $msg -in @('mock install failure', 'synthetic handler crash')) { $friendly = $msg }
+    return @{ Friendly = $friendly; Kind = $kind; Technical = ('Error type: ' + $Exception.GetBaseException().GetType().Name + '. ' + $friendly) }
+}
+
 # Last-resort safety net: never show the raw .NET "Unhandled exception" dialog.
 $script:SwsdLayoutFailures = @()
 [Windows.Forms.Application]::SetUnhandledExceptionMode([Windows.Forms.UnhandledExceptionMode]::CatchException)
 [Windows.Forms.Application]::add_ThreadException({
-    param($sender, $eventArgs)
-    $message = $eventArgs.Exception.Message
+    param($sender, $eventArgs) Invoke-SwsdSafe -Source 'ThreadException' {
+    $message = (Format-SwsdFriendlyError $eventArgs.Exception).Friendly
     try { Add-Content -LiteralPath (Join-Path $env:TEMP 'swsd-settings.log') -Value ("{0:u} {1}" -f (Get-Date), $message) } catch {}
     try {
         if (Get-Command Set-SwsdStatus -ErrorAction SilentlyContinue) { Set-SwsdStatus -Kind error -Text "Something went wrong: $message" }
-        foreach ($name in 'install','save','test','remove','saveProfile','region','tokenBox','profile') {
+        foreach ($name in 'install','save','test','remove','saveProfile','showDetails','region','tokenBox','profile') {
             $control = Get-Variable -Name $name -Scope Script -ValueOnly -ErrorAction SilentlyContinue
             if ($control -is [Windows.Forms.Control]) { $control.Enabled = $true }
         }
     } catch {}
-})
+} })
 
 $script:SwsdHandlerErrors = @()
 # Every event handler runs inside this: a failure shows a friendly in-window error and re-enables controls.
 function Invoke-SwsdSafe {
     param([string]$Source = 'handler', [switch]$Quiet, [Parameter(Mandatory, Position = 0)][scriptblock]$Body)
     try { . $Body } catch {
-        $message = $_.Exception.Message
+        $message = (Format-SwsdFriendlyError $_.Exception).Friendly
         $script:SwsdHandlerErrors += "${Source}: $message"
         try { Add-Content -LiteralPath (Join-Path $env:TEMP 'swsd-settings.log') -Value ("{0:u} [{1}] {2}" -f (Get-Date), $Source, $message) } catch {}
         if ($Quiet) { return }
         try {
             if (Get-Command Set-SwsdStatus -ErrorAction SilentlyContinue) { Set-SwsdStatus -Kind error -Text "Something went wrong: $message" }
-            foreach ($name in 'install','save','test','remove','saveProfile','region','tokenBox','profile') {
+            foreach ($name in 'install','save','test','remove','saveProfile','showDetails','region','tokenBox','profile') {
                 $control = Get-Variable -Name $name -Scope Script -ValueOnly -ErrorAction SilentlyContinue
                 if ($control -is [Windows.Forms.Control]) { $control.Enabled = $true }
             }
             $f = Get-Variable -Name form -Scope Script -ValueOnly -ErrorAction SilentlyContinue
             if ($f -is [Windows.Forms.Form]) { $f.UseWaitCursor = $false }
+            if (Get-Command Update-SwsdDashboard -ErrorAction SilentlyContinue) { Update-SwsdDashboard }
         } catch {}
     }
 }
@@ -154,6 +178,29 @@ namespace SwsdDesktop {
   }
 }
 "@
+}
+
+if (-not ('SwsdDesktop.ThemedProgressBar' -as [type])) {
+    Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition @'
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+namespace SwsdDesktop {
+  public class ThemedProgressBar : ProgressBar {
+    private int phase;
+    public ThemedProgressBar() {
+      SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+    }
+    public void Advance() { phase = (phase + 3) % 100; Invalidate(); }
+    protected override void OnPaint(PaintEventArgs e) {
+      e.Graphics.Clear(BackColor);
+      int segment = Math.Max(1, Width / 4);
+      int left = (Width + segment) * phase / 100 - segment;
+      using (SolidBrush brush = new SolidBrush(ForeColor)) { e.Graphics.FillRectangle(brush, left, 0, segment, Height); }
+    }
+  }
+}
+'@
 }
 
 # Theme detection
@@ -315,7 +362,7 @@ try {
 } catch {}
 
 # DWM attributes applied after handle creation
-$form.Add_HandleCreated({ Invoke-SwsdSafe -Source 'HandleCreated' -Quiet {
+$form.Add_HandleCreated({ param($sender, $e) Invoke-SwsdSafe -Source 'HandleCreated' -Quiet {
     try {
         [SwsdDesktop.Windows]::ApplyDarkMode($form.Handle, $script:SwsdDarkMode)
         $osBuild = [Environment]::OSVersion.Version.Build
@@ -325,11 +372,11 @@ $form.Add_HandleCreated({ Invoke-SwsdSafe -Source 'HandleCreated' -Quiet {
  }})
 
 $script:SwsdPresentationCount = 0
-$form.Add_Shown({ Invoke-SwsdSafe -Source 'Shown' {
+$form.Add_Shown({ param($sender, $e) Invoke-SwsdSafe -Source 'Shown' {
     # Start with the token field focused (or nothing), never a drop-down showing its focus frame.
     try { if ($tokenBox.Enabled) { $form.ActiveControl = $tokenBox } else { $form.ActiveControl = $null } } catch {}
     # Present once after the dialog has a visible handle, even when its console is hidden.
-    [void]$form.BeginInvoke([Action]{
+    [void]$form.BeginInvoke([Action]{ Invoke-SwsdSafe -Source 'Present' {
         $script:SwsdPresentationCount++
         $form.WindowState = 'Normal'
         try {
@@ -342,19 +389,19 @@ $form.Add_Shown({ Invoke-SwsdSafe -Source 'Shown' {
             # Other applications can cover the settings window normally afterwards.
             $form.TopMost = $false
         }
-    })
+    } })
     # Fade-in animation (skip during validation)
-    if (-not $ValidateUi -and -not $ValidateWindow) {
+    if (-not $ValidateUi -and -not $ValidateWindow -and -not $ValidateHandlers) {
         $form.Opacity = 0
-        $fadeTimer = New-Object Windows.Forms.Timer
-        $fadeTimer.Interval = 15
-        $fadeSteps = 0
-        $fadeTimer.Add_Tick({ Invoke-SwsdSafe -Source 'Tick' {
-            $fadeSteps++
-            $form.Opacity = [Math]::Min(1.0, $fadeSteps / 10.0)
-            if ($form.Opacity -ge 1.0) { $fadeTimer.Stop(); $fadeTimer.Dispose() }
+        $script:SwsdFadeTimer = New-Object Windows.Forms.Timer
+        $script:SwsdFadeTimer.Interval = 15
+        $script:SwsdFadeSteps = 0
+        $script:SwsdFadeTimer.Add_Tick({ param($sender, $e) Invoke-SwsdSafe -Source 'Tick' {
+            $script:SwsdFadeSteps++
+            $form.Opacity = [Math]::Min(1.0, $script:SwsdFadeSteps / 10.0)
+            if ($form.Opacity -ge 1.0) { $script:SwsdFadeTimer.Stop(); $script:SwsdFadeTimer.Dispose() }
          }})
-        $fadeTimer.Start()
+        $script:SwsdFadeTimer.Start()
     }
  }})
 
@@ -363,8 +410,9 @@ $rootPanel = New-Object Windows.Forms.TableLayoutPanel
 $rootPanel.Dock = 'Fill'
 $rootPanel.Padding = New-Object Windows.Forms.Padding((ScalePx $script:SwsdRootPaddingH), (ScalePx $script:SwsdRootPaddingV), (ScalePx $script:SwsdRootPaddingH), (ScalePx $script:SwsdRootPaddingV))
 $rootPanel.ColumnCount = 1
-$rootPanel.RowCount = 5
+$rootPanel.RowCount = 6
 [void]$rootPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
+[void]$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
 [void]$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
 [void]$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
 [void]$rootPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
@@ -574,6 +622,154 @@ $headerPanel.Controls.Add($subtitleLabel, 1, 1)
 
 $rootPanel.Controls.Add($headerPanel, 0, 0)
 
+# Status dashboard: only credential presence is queried, never the saved token value.
+$statusCard = New-SwsdCard 'Status' 'Info'
+$statusRowTable = New-Object Windows.Forms.TableLayoutPanel
+$statusRowTable.Dock = 'Fill'
+$statusRowTable.AutoSize = $true
+$statusRowTable.ColumnCount = 2
+[void]$statusRowTable.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 50)))
+[void]$statusRowTable.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 50)))
+$statusRowTable.RowCount = 3
+for ($ri = 0; $ri -lt 3; $ri++) { [void]$statusRowTable.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize'))) }
+
+function New-StatusRow([string]$AccessibleName, [string]$IconGlyph, [string]$Label) {
+    $rowPanel = New-Object Windows.Forms.TableLayoutPanel
+    $rowPanel.AutoSize = $true
+    $rowPanel.Dock = 'Fill'
+    $rowPanel.ColumnCount = 4
+    [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
+    [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
+    [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
+    [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
+    $rowPanel.RowCount = 1
+    [void]$rowPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
+    $rowPanel.Margin = New-Object Windows.Forms.Padding(0, (ScalePx 2), 0, (ScalePx 2))
+    $rowPanel.AccessibleName = "Status $AccessibleName"
+
+    $icon = New-Object Windows.Forms.Label
+    $icon.AutoSize = $true
+    $iconFont = if ($script:SwsdIconFont) { $script:SwsdIconFont } else { 'Segoe UI' }
+    $icon.Font = New-Object Drawing.Font($iconFont, (ScaleFont 10))
+    $icon.Text = $IconGlyph
+    $icon.ForeColor = $script:SwsdPalette.TextSecondary
+    $icon.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx 6), 0)
+    $icon.Anchor = 'Left'
+    $rowPanel.Controls.Add($icon, 0, 0)
+
+    $lbl = New-Object Windows.Forms.Label
+    $lbl.AutoSize = $true
+    $lbl.Text = $Label
+    $lbl.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
+    $lbl.ForeColor = $script:SwsdPalette.TextPrimary
+    $lbl.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx 8), 0)
+    $lbl.Anchor = 'Left'
+    $rowPanel.Controls.Add($lbl, 1, 0)
+
+    $value = New-Object Windows.Forms.Label
+    $value.AutoSize = $true
+    $value.Text = '-'
+    $value.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
+    $value.ForeColor = $script:SwsdPalette.TextSecondary
+    $value.Anchor = 'Left'
+    $rowPanel.Controls.Add($value, 2, 0)
+
+    $chip = New-Object Windows.Forms.Label
+    $chip.AutoSize = $true
+    $chip.Text = ''
+    $chip.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 8.5))
+    $chip.Padding = New-Object Windows.Forms.Padding((ScalePx 8), (ScalePx 2), (ScalePx 8), (ScalePx 2))
+    $chip.Anchor = 'Right'
+    $chip.Visible = $false
+    $rowPanel.Controls.Add($chip, 3, 0)
+
+    return @{ Panel = $rowPanel; Icon = $icon; Value = $value; Chip = $chip }
+}
+
+$srNode = New-StatusRow 'Node.js' (Get-SwsdIconGlyph 'Tools') 'Node.js'
+$srTools = New-StatusRow 'Tools installed' (Get-SwsdIconGlyph 'Check') 'Tools installed'
+$srToken = New-StatusRow 'Token saved' (Get-SwsdIconGlyph 'Key') 'Token saved'
+$srRegion = New-StatusRow 'Region' (Get-SwsdIconGlyph 'Info') 'Region'
+$srProfile = New-StatusRow 'Profile' (Get-SwsdIconGlyph 'Profile') 'Profile'
+$statusRows = @($srNode, $srTools, $srToken, $srRegion, $srProfile)
+for ($si = 0; $si -lt $statusRows.Count; $si++) { $statusRowTable.Controls.Add($statusRows[$si].Panel, ($si % 2), [int][Math]::Floor($si / 2)) }
+Add-CardRow $statusCard $statusRowTable
+
+$ctaChip = New-Object Windows.Forms.Label
+$ctaChip.AutoSize = $true
+$ctaChip.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 9))
+$ctaChip.Text = 'Done - fully quit and restart ChatGPT, then start a new chat.'
+$ctaChip.Padding = New-Object Windows.Forms.Padding((ScalePx 8), (ScalePx 4), (ScalePx 8), (ScalePx 4))
+$ctaChip.BackColor = $script:SwsdPalette.StatusSuccessBg
+$ctaChip.ForeColor = $script:SwsdPalette.StatusSuccessFg
+$ctaChip.Visible = $false
+$ctaChip.AccessibleName = 'Restart guidance'
+Add-CardRow $statusCard $ctaChip
+
+$progressText = New-Object Windows.Forms.Label
+$progressText.AutoSize = $true
+$progressText.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$progressText.ForeColor = $script:SwsdPalette.StatusInfoFg
+$progressText.Text = 'Installing tools... this window stays available.'
+$progressText.Visible = $false
+$progressText.AccessibleName = 'Installation progress'
+Add-CardRow $statusCard $progressText
+$progressBar = New-Object SwsdDesktop.ThemedProgressBar
+$progressBar.Style = 'Marquee'
+$progressBar.MarqueeAnimationSpeed = 0
+$progressBar.BackColor = $script:SwsdPalette.InputBg
+$progressBar.ForeColor = $script:SwsdAccentColor
+$progressBar.Height = ScalePx 6
+$progressBar.Visible = $false
+$progressBar.AccessibleName = 'Progress'
+Add-CardRow $statusCard $progressBar
+
+$showDetails = New-SwsdButton 'Show details'
+$showDetails.AccessibleName = 'Show details'
+$showDetails.Visible = $false
+Add-CardRow $statusCard $showDetails
+$errorDetails = New-Object Windows.Forms.Label
+$errorDetails.AutoSize = $true
+$errorDetails.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$errorDetails.ForeColor = $script:SwsdPalette.TextSecondary
+$errorDetails.AccessibleName = 'Error details'
+$errorDetails.Visible = $false
+Add-CardRow $statusCard $errorDetails
+$script:SwsdDetailsExpanded = $false
+$showDetails.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'DetailsClick' {
+    $script:SwsdDetailsExpanded = -not $script:SwsdDetailsExpanded
+    $errorDetails.Visible = $script:SwsdDetailsExpanded
+    $showDetails.Text = if ($script:SwsdDetailsExpanded) { 'Hide details' } else { 'Show details' }
+    Update-SwsdDashboard
+    if ($form.Visible) { Update-SwsdFormSize }
+} })
+$rootPanel.Controls.Add($statusCard, 0, 1)
+
+function Set-SwsdDashboardRow($Row, [string]$Value, [string]$Chip, [string]$Kind) {
+    $Row.Value.Text = $Value
+    $Row.Chip.Text = $Chip
+    $Row.Chip.BackColor = $script:SwsdPalette[('Status' + $Kind + 'Bg')]
+    $Row.Chip.ForeColor = $script:SwsdPalette[('Status' + $Kind + 'Fg')]
+    $Row.Icon.ForeColor = $Row.Chip.ForeColor
+    $Row.Chip.Visible = $true
+}
+function Update-SwsdDashboard {
+    $s = Get-SwsdStatus
+    if ($s.nodeSupported) { Set-SwsdDashboardRow $srNode ('v' + $s.nodeVersion) 'OK' 'Success' }
+    elseif ($s.nodeVersion) { Set-SwsdDashboardRow $srNode ('v' + $s.nodeVersion) 'Unsupported' 'Warn' }
+    else { Set-SwsdDashboardRow $srNode 'Not installed' 'Missing' 'Error' }
+    if ($s.toolsInstalled) { Set-SwsdDashboardRow $srTools ('swsd-mcp ' + $s.installedVersion) 'OK' 'Success' }
+    elseif ($s.installedVersion) { Set-SwsdDashboardRow $srTools ('swsd-mcp ' + $s.installedVersion) 'Repair needed' 'Warn' }
+    else { Set-SwsdDashboardRow $srTools 'Not installed' 'Missing' 'Warn' }
+    if (-not $s.credentialAvailable) { Set-SwsdDashboardRow $srToken 'Unavailable' 'Check access' 'Error' }
+    elseif ($s.credentialSaved) { Set-SwsdDashboardRow $srToken 'Yes' 'Saved' 'Success' }
+    else { Set-SwsdDashboardRow $srToken 'No' 'Needed' 'Warn' }
+    Set-SwsdDashboardRow $srRegion $s.region 'Saved' 'Info'
+    $profileName = ($script:SwsdProfiles | Where-Object { $_.id -eq $s.profile }).name
+    Set-SwsdDashboardRow $srProfile $profileName 'Saved' 'Info'
+    $currentProfile.Text = 'Saved profile: ' + $profileName
+}
+
 # Card 1: Install tools
 $card1 = New-SwsdCard '1. Install tools' 'Tools'
 $installDesc = New-Object Windows.Forms.Label
@@ -587,7 +783,7 @@ Add-CardRow $card1 $installDesc
 $install = New-SwsdButton 'Install / repair tools' $true
 $install.Anchor = 'Top,Left'
 Add-CardRow $card1 $install
-$rootPanel.Controls.Add($card1, 0, 1)
+$rootPanel.Controls.Add($card1, 0, 2)
 
 # Card 2: Region + token
 $card2 = New-SwsdCard '2. Connect your account' 'Key'
@@ -628,7 +824,7 @@ $tokenBox.ForeColor = $script:SwsdPalette.TextPrimary
 $tokenBox.BorderStyle = 'None'
 $tokenBox.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
 $tokenBox.Height = ScalePx 30
-$tokenBox.Add_EnabledChanged({ Invoke-SwsdSafe -Source 'EnabledChanged' {
+$tokenBox.Add_EnabledChanged({ param($sender, $e) Invoke-SwsdSafe -Source 'EnabledChanged' {
     if (-not $tokenBox.Enabled) { $tokenBox.ForeColor = $script:SwsdPalette.TextSecondary }
     else { $tokenBox.ForeColor = $script:SwsdPalette.TextPrimary }
  }})
@@ -662,7 +858,7 @@ $buttonRow2.Controls.Add($remove)
 
 Set-SwsdButtonRow @($save, $test, $remove)
 Add-CardRow $card2 $buttonRow2
-$rootPanel.Controls.Add($card2, 0, 2)
+$rootPanel.Controls.Add($card2, 0, 3)
 
 # Card 3: Profile selection
 $card3 = New-SwsdCard '3. Choose your tools' 'Profile'
@@ -711,7 +907,7 @@ $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].descript
 $profileDescription.ForeColor = $script:SwsdPalette.TextSecondary
 $profileDescription.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
 Add-CardRow $card3 $profileDescription
-$profile.Add_SelectedIndexChanged({ Invoke-SwsdSafe -Source 'SelectedIndexChanged' { $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].description  }})
+$profile.Add_SelectedIndexChanged({ param($sender, $e) Invoke-SwsdSafe -Source 'SelectedIndexChanged' { $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].description  }})
 
 $profileButtonRow = New-Object Windows.Forms.FlowLayoutPanel
 $profileButtonRow.AutoSize = $true
@@ -736,7 +932,7 @@ $currentProfile.Size = New-Object Drawing.Size(([Windows.Forms.TextRenderer]::Me
 $profileButtonRow.Controls.Add($currentProfile)
 
 Add-CardRow $card3 $profileButtonRow
-$rootPanel.Controls.Add($card3, 0, 3)
+$rootPanel.Controls.Add($card3, 0, 4)
 
 # Status area with chip support
 $statusPanel = New-Object Windows.Forms.Panel
@@ -753,7 +949,7 @@ $status.ForeColor = $script:SwsdPalette.TextSecondary
 $status.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
 $statusPanel.Controls.Add($status)
 
-$rootPanel.Controls.Add($statusPanel, 0, 4)
+$rootPanel.Controls.Add($statusPanel, 0, 5)
 
 # Status chip helper
 function Set-SwsdStatus {
@@ -788,7 +984,7 @@ function Update-SwsdFormSize {
         $scaledContentWidth = ScalePx $script:SwsdContentWidth
 
         # First pass: set wrapping widths generously so GetPreferredSize sees unwrapped text
-        foreach ($lbl in @($subtitleLabel, $installDesc, $tokenHint, $profileDesc, $profileDescription, $status)) {
+        foreach ($lbl in @($subtitleLabel, $installDesc, $tokenHint, $profileDesc, $profileDescription, $status, $ctaChip, $progressText, $errorDetails)) {
             $lbl.MaximumSize = New-Object Drawing.Size(0, 0)
         }
 
@@ -808,7 +1004,7 @@ function Update-SwsdFormSize {
         $subtitleAvailable = $targetClientWidth - (2 * (ScalePx $script:SwsdRootPaddingH)) - (ScalePx 40)
         if ($subtitleAvailable -lt 100) { $subtitleAvailable = $availableCardWidth }
         $subtitleLabel.MaximumSize = New-Object Drawing.Size($subtitleAvailable, 0)
-        foreach ($lbl in @($installDesc, $tokenHint, $profileDesc, $profileDescription, $status)) {
+        foreach ($lbl in @($installDesc, $tokenHint, $profileDesc, $profileDescription, $status, $ctaChip, $progressText, $errorDetails)) {
             $lbl.MaximumSize = New-Object Drawing.Size($availableCardWidth, 0)
         }
 
@@ -870,14 +1066,14 @@ function Update-SwsdWrappingWidths {
         if ($subtitleAvailable -lt 100) { $subtitleAvailable = $availableCardWidth }
         $subtitleLabel.MaximumSize = New-Object Drawing.Size($subtitleAvailable, 0)
 
-        foreach ($lbl in @($installDesc, $tokenHint, $profileDesc, $profileDescription, $status)) {
+        foreach ($lbl in @($installDesc, $tokenHint, $profileDesc, $profileDescription, $status, $ctaChip, $progressText, $errorDetails)) {
             $lbl.MaximumSize = New-Object Drawing.Size($availableCardWidth, 0)
         }
     } catch {}
 }
 
-$form.Add_Load({ Invoke-SwsdSafe -Source 'Load' { Update-SwsdFormSize  }})
-$form.Add_Resize({ Invoke-SwsdSafe -Source 'Resize' -Quiet { Update-SwsdWrappingWidths  }})
+$form.Add_Load({ param($sender, $e) Invoke-SwsdSafe -Source 'Load' { Update-SwsdFormSize  }})
+$form.Add_Resize({ param($sender, $e) Invoke-SwsdSafe -Source 'Resize' -Quiet { Update-SwsdWrappingWidths  }})
 
 # Handle PerMonitorV2 DPI changes
 try {
@@ -892,35 +1088,138 @@ try {
      }})
 } catch {}
 
-function Invoke-SetupAction([scriptblock]$Action) {
-    $form.UseWaitCursor = $true
-    foreach ($button in @($install, $save, $test, $remove, $saveProfile)) { $button.Enabled = $false }
+$script:SwsdInstallWorker = $null
+$script:SwsdInstallTimer = New-Object Windows.Forms.Timer
+$script:SwsdInstallTimer.Interval = 50
+
+function Set-SwsdBusy([bool]$Busy) {
+    foreach ($control in @($install, $save, $test, $remove, $saveProfile, $showDetails, $region, $tokenBox, $profile)) { $control.Enabled = -not $Busy }
+    $progressBar.Visible = $Busy
+    $progressText.Visible = $Busy
+    $form.UseWaitCursor = $false
+}
+function Reset-SwsdAction {
+    $script:SwsdDetailsExpanded = $false
+    $ctaChip.Visible = $false
+    $showDetails.Visible = $false
+    $showDetails.Text = 'Show details'
+    $errorDetails.Visible = $false
+    $errorDetails.Text = ''
     Reset-SwsdStatus
+}
+function Show-SwsdError([Exception]$Exception) {
+    $info = Format-SwsdFriendlyError $Exception
+    Set-SwsdStatus -Kind $info.Kind -Text $info.Friendly
+    $errorDetails.Text = $info.Technical
+    $showDetails.Visible = $true
+}
+function Invoke-SetupAction([scriptblock]$Action) {
+    if ($null -ne $script:SwsdInstallWorker) { return }
+    Set-SwsdBusy $true
+    Reset-SwsdAction
     $status.Text = 'Working... please wait.'
     $form.Refresh()
-    try { & $Action } catch {
-        Set-SwsdStatus -Kind error -Text $_.Exception.Message
-    } finally {
-        $form.UseWaitCursor = $false
-        foreach ($button in @($install, $save, $test, $remove, $saveProfile)) { $button.Enabled = $true }
+    try { & $Action } catch { Show-SwsdError $_.Exception } finally {
+        Set-SwsdBusy $false
+        Update-SwsdDashboard
+        if ($form.Visible) { Update-SwsdFormSize }
     }
 }
-$install.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
-    $sourceRoot = Split-Path $PSScriptRoot
-    if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'runtime\package.json')) { $sourceRoot = $PSScriptRoot }
-    # Installed settings windows already reside beside the launcher; only repair the runtime there.
-    if ($sourceRoot -eq $PSScriptRoot) {
-        $stage = Join-Path $script:SwsdHome 'repair-source'
-        New-Item -ItemType Directory -Path (Join-Path $stage 'scripts') -Force | Out-Null
-        foreach ($name in @('Common.ps1','Manage-Swsd.ps1','Start-Swsd.ps1')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $stage 'scripts') -Force }
-        New-Item -ItemType Directory -Path (Join-Path $stage 'runtime') -Force | Out-Null
-        Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'runtime\package.json'),(Join-Path $PSScriptRoot 'runtime\package-lock.json') -Destination (Join-Path $stage 'runtime') -Force
-        $sourceRoot = $stage
+function Start-SwsdInstall {
+    if ($null -ne $script:SwsdInstallWorker) { return }
+    Reset-SwsdAction
+    Set-SwsdBusy $true
+    Set-SwsdStatus -Kind info -Text 'Installing tools... please wait.'
+    $powershell = $null
+    $runspace = $null
+    $script:SwsdInstallPollCount = 0
+    try {
+        # The worker receives paths and optional test doubles, never controls or token values.
+        $runspace = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace()
+        $runspace.ApartmentState = 'STA'
+        $runspace.ThreadOptions = 'ReuseThread'
+        $runspace.Open()
+        $powershell = [System.Management.Automation.PowerShell]::Create()
+        $powershell.Runspace = $runspace
+        $mockBody = $null
+        $mockFails = $false
+        $mockCalls = $null
+        if ($ValidateHandlers) {
+            $mockBody = (Get-Item Function:Install-SwsdTools).ScriptBlock.ToString()
+            $mockFails = $script:SwsdMockInstallFails
+            $mockCalls = $script:SwsdMockCalls
+        }
+        [void]$powershell.AddScript({
+            param($ScriptsRoot, $HomeOverride, $CredentialTarget, $MockBody, $MockFails, $MockCalls)
+            . (Join-Path $ScriptsRoot 'Common.ps1')
+            # Common.ps1 initializes defaults; overrides must be applied after loading it.
+            $script:SwsdHome = $HomeOverride
+            $script:SwsdCredentialTarget = $CredentialTarget
+            if ($MockBody) {
+                $script:SwsdMockInstallFails = $MockFails
+                $script:SwsdMockCalls = $MockCalls
+                Set-Item Function:Install-SwsdTools ([scriptblock]::Create($MockBody))
+            }
+            $sourceRoot = Split-Path $ScriptsRoot
+            if (Test-Path -LiteralPath (Join-Path $ScriptsRoot 'runtime\package.json')) { $sourceRoot = $ScriptsRoot }
+            # Preserve repair from the installed Start menu client and its retained recipe.
+            if ($sourceRoot -eq $ScriptsRoot) {
+                $stage = Join-Path $script:SwsdHome 'repair-source'
+                New-Item -ItemType Directory -Path (Join-Path $stage 'scripts') -Force | Out-Null
+                foreach ($name in @('Common.ps1','Manage-Swsd.ps1','Start-Swsd.ps1')) { Copy-Item -LiteralPath (Join-Path $ScriptsRoot $name) -Destination (Join-Path $stage 'scripts') -Force }
+                New-Item -ItemType Directory -Path (Join-Path $stage 'runtime') -Force | Out-Null
+                Copy-Item -LiteralPath (Join-Path $ScriptsRoot 'runtime\package.json'),(Join-Path $ScriptsRoot 'runtime\package-lock.json') -Destination (Join-Path $stage 'runtime') -Force
+                $sourceRoot = $stage
+            }
+            Install-SwsdTools -SourceRoot $sourceRoot
+        }).AddArgument($PSScriptRoot).AddArgument($script:SwsdHome).AddArgument($script:SwsdCredentialTarget).AddArgument($mockBody).AddArgument($mockFails).AddArgument($mockCalls)
+        $handle = $powershell.BeginInvoke()
+        # Script scope keeps the worker alive after the Click callback returns.
+        $script:SwsdInstallWorker = @{ PowerShell = $powershell; Runspace = $runspace; Handle = $handle }
+        $script:SwsdInstallTimer.Start()
+    } catch {
+        if ($null -ne $powershell) { $powershell.Dispose() }
+        if ($null -ne $runspace) { $runspace.Dispose() }
+        $script:SwsdInstallWorker = $null
+        Set-SwsdBusy $false
+        Show-SwsdError $_.Exception
+        Update-SwsdDashboard
     }
-    Install-SwsdTools -SourceRoot $sourceRoot
-    Set-SwsdStatus -Kind success -Text 'Tools installed. Test and save your token next. This window is also available from the Windows Start menu.'
-}  }})
-$save.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
+    if ($form.Visible) { Update-SwsdFormSize }
+}
+function Complete-SwsdInstall {
+    $worker = $script:SwsdInstallWorker
+    if ($null -eq $worker -or -not $worker.Handle.IsCompleted) { return }
+    $script:SwsdInstallTimer.Stop()
+    try {
+        $null = $worker.PowerShell.EndInvoke($worker.Handle)
+        if ($worker.PowerShell.HadErrors) { throw $worker.PowerShell.Streams.Error[0].Exception }
+        Set-SwsdStatus -Kind success -Text 'Tools installed. Test and save your token next. This window is also available from the Windows Start menu.'
+        $ctaChip.Visible = $true
+    } catch { Show-SwsdError $_.Exception } finally {
+        $worker.PowerShell.Dispose()
+        $worker.Runspace.Dispose()
+        $script:SwsdInstallWorker = $null
+        Set-SwsdBusy $false
+        Update-SwsdDashboard
+        if ($form.Visible) { Update-SwsdFormSize }
+    }
+}
+$script:SwsdInstallTimer.Add_Tick({ param($sender, $e) Invoke-SwsdSafe -Source 'InstallTick' {
+    $script:SwsdInstallPollCount++
+    $progressBar.Advance()
+    Complete-SwsdInstall
+} })
+$form.Add_FormClosing({ param($sender, $e) Invoke-SwsdSafe -Source 'FormClosing' {
+    # npm has its own bounded timeout. Keep ownership until it exits, avoiding an orphaned repair.
+    if ($null -ne $script:SwsdInstallWorker) {
+        $e.Cancel = $true
+        Set-SwsdStatus -Kind info -Text 'Installation is still running. Please wait for it to finish before closing this window.'
+    }
+} })
+$form.Add_FormClosed({ param($sender, $e) Invoke-SwsdSafe -Source 'FormClosed' { $script:SwsdInstallTimer.Dispose() } })
+$install.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'InstallClick' { Start-SwsdInstall } })
+$save.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
     $secret = $tokenBox.Text.Trim()
     $tokenBox.Clear()
     try {
@@ -936,9 +1235,10 @@ $save.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
             throw
         }
         Set-SwsdStatus -Kind success -Text 'Connection verified and token saved. Start a new chat. If an old connection remains, fully quit and reopen the desktop app.'
+        $ctaChip.Visible = $true
     } finally { $secret = $null }
 }  }})
-$test.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
+$test.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
     $secret = [SwsdDesktop.Credentials]::Read($script:SwsdCredentialTarget)
     try {
         if ([string]::IsNullOrWhiteSpace($secret)) { throw 'No token is saved. Paste one into the masked field, then select Test and save token.' }
@@ -946,27 +1246,30 @@ $test.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
         Set-SwsdStatus -Kind success -Text 'Saved connection verified. SolarWinds accepted the token and allowed the read-only check.'
     } finally { $secret = $null }
 }  }})
-$remove.Add_Click({ Invoke-SwsdSafe -Source 'Click' {
+$remove.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'Click' {
     $choice = Confirm-SwsdRemove
     if ($choice -eq 'Yes') { Invoke-SetupAction {
         [SwsdDesktop.Credentials]::Remove($script:SwsdCredentialTarget)
         $tokenBox.Clear()
         Set-SwsdStatus -Kind info -Text 'Saved token removed. Fully quit ChatGPT to stop running connections. Revoke the token in SolarWinds if needed.'
     } }
+    Update-SwsdDashboard
  }})
-$saveProfile.Add_Click({ Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
+$saveProfile.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
     $selection = $script:SwsdProfiles[$profile.SelectedIndex]
     Save-SwsdProfile -Profile $selection.id
     $currentProfile.Text = 'Saved profile: ' + $selection.name
     Set-SwsdStatus -Kind success -Text 'Profile saved. Fully quit and reopen the desktop app, then start a new chat to load this tool set. Your saved token is unchanged.'
 }  }})
+Update-SwsdDashboard
+
 if ($ValidateWindow) {
     # Visible lifecycle probe: no token entry, installation, settings or credential actions.
     if ($env:SWSD_PREVIEW_ENABLED -ne '1') { foreach ($control in @($install,$region,$tokenBox,$save,$test,$remove,$profile,$saveProfile)) { $control.Enabled = $false } }
     $script:SwsdWindowResult = $null
     $probe = New-Object Windows.Forms.Timer
     $probe.Interval = 200
-    $probe.Add_Tick({ Invoke-SwsdSafe -Source 'Tick' {
+    $probe.Add_Tick({ param($sender, $e) Invoke-SwsdSafe -Source 'Tick' {
         $probe.Stop()
         try {
         $script:SwsdLayoutFailures = @()
@@ -984,7 +1287,7 @@ if ($ValidateWindow) {
             if ($heights.Count -ne 1) { $script:SwsdLayoutFailures += "Button row heights differ: $($heights -join ',')" }
             if ($widths.Count -ne 1) { $script:SwsdLayoutFailures += "Button row widths differ: $($widths -join ',')" }
         }
-        $allHeights = @(@($install, $save, $test, $remove, $saveProfile) | ForEach-Object { $_.Height } | Sort-Object -Unique)
+        $allHeights = @(@($install, $save, $test, $remove, $saveProfile, $showDetails) | ForEach-Object { $_.Height } | Sort-Object -Unique)
         if ($allHeights.Count -ne 1) { $script:SwsdLayoutFailures += "Button heights differ across cards: $($allHeights -join ',')" }
 
         $formClientScreen = $form.RectangleToScreen($form.ClientRectangle)
@@ -1117,8 +1420,8 @@ if ($ValidateWindow) {
      }})
     $close = New-Object Windows.Forms.Timer
     $close.Interval = $WindowTestSeconds * 1000
-    $close.Add_Tick({ Invoke-SwsdSafe -Source 'Tick' { $close.Stop(); $form.Close()  }})
-    $form.Add_Shown({ Invoke-SwsdSafe -Source 'Shown' { $probe.Start(); $close.Start()  }})
+    $close.Add_Tick({ param($sender, $e) Invoke-SwsdSafe -Source 'Tick' { $close.Stop(); $form.Close()  }})
+    $form.Add_Shown({ param($sender, $e) Invoke-SwsdSafe -Source 'Shown' { $probe.Start(); $close.Start()  }})
     try {
         [void]$form.ShowDialog()
         $script:SwsdWindowResult | ConvertTo-Json
@@ -1138,17 +1441,47 @@ if ($ValidateWindow) {
     exit 0
 } elseif ($ValidateHandlers) {
     Set-StrictMode -Version Latest
-    $script:SwsdMockCalls = @()
+    $script:SwsdMockCalls = New-Object 'System.Collections.Concurrent.ConcurrentQueue[string]'
     $script:SwsdMockInstallFails = $false
-    function script:Install-SwsdTools { param($SourceRoot) $script:SwsdMockCalls += 'install'; if ($script:SwsdMockInstallFails) { throw 'mock install failure' } }
-    function script:Test-SwsdToken { param($Token, $BaseUrl) $script:SwsdMockCalls += 'test' }
+    function script:Install-SwsdTools {
+        param($SourceRoot)
+        $script:SwsdMockCalls.Enqueue('install')
+        Start-Sleep -Milliseconds 350
+        if ($script:SwsdMockInstallFails) { throw 'mock install failure' }
+        # Synthetic install payload, confined to the UI test home; no npm or real shortcuts.
+        $entry = Get-SwsdEntryPoint
+        New-Item -ItemType Directory -Path (Split-Path $entry) -Force | Out-Null
+        Set-Content -LiteralPath $entry -Value '// synthetic UI test entry point'
+        @{ version = $script:SwsdPackageVersion } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path (Split-Path (Split-Path $entry)) 'package.json')
+    }
+    function script:Test-SwsdToken { param($Token, $BaseUrl) $script:SwsdMockCalls.Enqueue('test') }
     function script:Confirm-SwsdRemove { return 'Yes' }
     $onClick = [Windows.Forms.Button].GetMethod('OnClick', [Reflection.BindingFlags]'Instance,NonPublic')
-    $buttons = @($install, $save, $test, $remove, $saveProfile)
+    $buttons = @($install, $save, $test, $remove, $saveProfile, $showDetails)
     function Assert-SwsdClick([Windows.Forms.Button]$Button, [string]$Expect) {
         $script:SwsdHandlerErrors = @()
         $Button.Enabled = $true
         $onClick.Invoke($Button, @([EventArgs]::Empty))
+        if ($Button -eq $install) {
+            if ($null -eq $script:SwsdInstallWorker) { throw 'Install click did not start a background worker.' }
+            foreach ($b in $buttons) { if ($b.Enabled) { throw 'Action button remained enabled during installation.' } }
+            if (-not $script:SwsdInstallTimer.Enabled) { throw 'Install polling timer did not start.' }
+            $firstWorker = $script:SwsdInstallWorker
+            $onClick.Invoke($install, @([EventArgs]::Empty))
+            if ($script:SwsdInstallWorker -ne $firstWorker) { throw 'A second install started while one was running.' }
+            $closing = New-Object Windows.Forms.FormClosingEventArgs([Windows.Forms.CloseReason]::UserClosing, $false)
+            $form.GetType().GetMethod('OnFormClosing', [Reflection.BindingFlags]'Instance,NonPublic').Invoke($form, @($closing.PSObject.BaseObject))
+            if (-not $closing.Cancel) { throw 'Closing the form would abandon the active install.' }
+            $deadline = [DateTime]::UtcNow.AddSeconds(15)
+            while ($null -ne $script:SwsdInstallWorker -and [DateTime]::UtcNow -lt $deadline) {
+                # Pump the same WinForms timer used by the visible app; no synchronous shortcut.
+                [Windows.Forms.Application]::DoEvents()
+                Start-Sleep -Milliseconds 20
+            }
+            if ($null -ne $script:SwsdInstallWorker) { throw 'Background install did not finish within the validation timeout.' }
+            if ($script:SwsdInstallTimer.Enabled) { throw 'Install polling timer stayed active after completion.' }
+            if ($script:SwsdInstallPollCount -lt 2) { throw 'UI timer did not remain responsive during installation.' }
+        }
         if ($script:SwsdHandlerErrors.Count) { throw "Unhandled exception in '$($Button.Text)': $($script:SwsdHandlerErrors -join '; ')" }
         if ($status.Text -notlike "*$Expect*") { throw "'$($Button.Text)' status was '$($status.Text)', expected '*$Expect*'." }
         foreach ($b in $buttons) { if (-not $b.Enabled) { throw "'$($b.Text)' stayed disabled after '$($Button.Text)'." } }
@@ -1156,28 +1489,51 @@ if ($ValidateWindow) {
     }
     try {
         Assert-SwsdClick $install 'Tools installed'
+        if ($srTools.Chip.Text -ne 'OK' -or $srTools.Value.Text -ne ('swsd-mcp ' + $script:SwsdPackageVersion)) { throw 'Dashboard did not refresh the installed version.' }
         $tokenBox.Text = 'synthetic-demo-token'
         Assert-SwsdClick $save 'token saved'
         if ($tokenBox.Text) { throw 'Token field was not cleared after save.' }
+        if ($srToken.Value.Text -ne 'Yes') { throw 'Dashboard did not show saved token presence.' }
         Assert-SwsdClick $test 'Saved connection verified'
         Assert-SwsdClick $saveProfile 'Profile saved'
         Assert-SwsdClick $remove 'Saved token removed'
+        if ($srToken.Value.Text -ne 'No') { throw 'Dashboard did not refresh after removing the token.' }
         Assert-SwsdClick $test 'No token is saved'
         Assert-SwsdClick $save 'Paste your personal SWSD token'
         $script:SwsdMockInstallFails = $true
         Assert-SwsdClick $install 'mock install failure'
+        Assert-SwsdClick $showDetails 'mock install failure'
+        if ($showDetails.Text -ne 'Hide details') { throw 'Error details button did not toggle.' }
+        Assert-SwsdClick $showDetails 'mock install failure'
+        if ($showDetails.Text -ne 'Show details') { throw 'Error details button did not close details.' }
+        $script:SwsdMockInstallFails = $false
+        Assert-SwsdClick $install 'Tools installed'
+        $unsafeError = Format-SwsdFriendlyError ([Exception]::new('synthetic-secret-must-never-be-displayed'))
+        if ($unsafeError.Friendly -like '*synthetic-secret*' -or $unsafeError.Technical -like '*synthetic-secret*') { throw 'Error formatting exposed arbitrary exception text.' }
         # A handler that escapes every inner catch must still surface as a friendly in-window error.
         $script:SwsdHandlerErrors = @()
         foreach ($b in $buttons) { $b.Enabled = $false }
         Invoke-SwsdSafe -Source 'probe' { throw 'synthetic handler crash' }
         if ($status.Text -notlike '*Something went wrong: synthetic handler crash*') { throw 'Safe wrapper did not show a friendly error.' }
         foreach ($b in $buttons) { if (-not $b.Enabled) { throw 'Safe wrapper did not re-enable controls.' } }
-        if ($script:SwsdMockCalls -notcontains 'install' -or $script:SwsdMockCalls -notcontains 'test') { throw 'Mocks were not used.' }
-        Write-Output 'PASS: every button clicked under StrictMode with mocked install/test; friendly errors, controls re-enabled, no unhandled exceptions.'
+        if ($script:SwsdMockCalls.ToArray() -notcontains 'install' -or $script:SwsdMockCalls.ToArray() -notcontains 'test') { throw 'Mocks were not used.' }
+        Write-Output 'PASS: every button clicked under StrictMode; background install awaited via responsive timer; failure/retry, duplicate install and close guards, dashboard refresh, friendly errors, controls re-enabled, no unhandled exceptions.'
     } finally {
+        $script:SwsdInstallTimer.Stop()
+        $script:SwsdInstallTimer.Dispose()
+        if ($null -ne $script:SwsdInstallWorker) {
+            $script:SwsdInstallWorker.PowerShell.Stop()
+            $script:SwsdInstallWorker.PowerShell.Dispose()
+            $script:SwsdInstallWorker.Runspace.Dispose()
+            $script:SwsdInstallWorker = $null
+        }
         try { [SwsdDesktop.Credentials]::Remove($script:SwsdCredentialTarget) } catch {}
         $settingsPath = Join-Path $script:SwsdHome 'settings.json'
         if (Test-Path -LiteralPath $settingsPath) { Remove-Item -LiteralPath $settingsPath -Force }
+        $resolved = [IO.Path]::GetFullPath($script:SwsdHome)
+        $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
+        if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
+            [IO.Path]::GetFileName($resolved) -notmatch '^swsd-ui-test-[a-f0-9]{32}$') { throw 'Unsafe UI test cleanup path.' }
         $repair = Join-Path $script:SwsdHome 'repair-source'
         if (Test-Path -LiteralPath $repair) { Remove-Item -LiteralPath $repair -Recurse -Force }
         if (Test-Path -LiteralPath $script:SwsdHome) { Remove-Item -LiteralPath $script:SwsdHome -Recurse -Force }
@@ -1187,15 +1543,21 @@ if ($ValidateWindow) {
         if (-not $tokenBox.UseSystemPasswordChar) { throw 'Token field must be masked.' }
         if ($profile.Items.Count -ne 5) { throw 'Five profile choices are required.' }
         if ($profile.SelectedItem -ne 'Agent') { throw 'New installations must default to Agent.' }
+        foreach ($expectedName in @('Status Node.js','Status Tools installed','Status Token saved','Status Region','Status Profile')) {
+            if (@($statusRows | Where-Object { $_.Panel.AccessibleName -eq $expectedName }).Count -ne 1) { throw "Status row '$expectedName' is missing." }
+        }
+        if ($progressBar.AccessibleName -ne 'Progress') { throw 'Progress bar AccessibleName must be Progress.' }
+        if ($srProfile.Chip.Text -ne 'Saved' -or $srToken.Value.Text -notin @('No', 'Unavailable')) { throw 'Dashboard initial state is incorrect.' }
         $onClick = $saveProfile.GetType().GetMethod('OnClick', [Reflection.BindingFlags]'Instance,NonPublic')
         foreach ($index in 0..4) {
             $profile.SelectedIndex = $index
             $onClick.Invoke($saveProfile, @([EventArgs]::Empty))
             if ((Get-SwsdSettings).profile -ne $script:SwsdProfiles[$index].id) { throw 'Profile button failed to persist selection.' }
             if ($profileDescription.Text -ne $script:SwsdProfiles[$index].description) { throw 'Profile description did not update.' }
+            if ($srProfile.Value.Text -ne $script:SwsdProfiles[$index].name) { throw 'Dashboard profile did not update.' }
             if ($status.Text -notlike '*Profile saved.*') { throw 'Profile save did not display success and restart guidance.' }
         }
-        Write-Output 'PASS: masked entry, Agent default, all five dropdown choices, actual Save profile event, persistence, descriptions, and restart guidance.'
+        Write-Output 'PASS: masked entry, Agent default, all five dropdown choices, actual Save profile event, persistence, descriptions, restart guidance, dashboard rows and profile refresh.'
     } finally {
         # Only delete the two explicitly named files created by this UI test.
         $settingsPath = Join-Path $script:SwsdHome 'settings.json'

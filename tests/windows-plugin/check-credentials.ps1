@@ -4,12 +4,15 @@ $root = Resolve-Path (Join-Path $PSScriptRoot '../../plugins/swsd')
 $target = 'swsd-mcp/test/' + [guid]::NewGuid().ToString('N')
 try {
     if ($null -ne [SwsdDesktop.Credentials]::Read($target)) { throw 'Test target must start empty.' }
+    if ([SwsdDesktop.Credentials]::Exists($target)) { throw 'Missing credential was reported present.' }
     [SwsdDesktop.Credentials]::Save($target, 'test-only-not-a-real-token')
+    if (-not [SwsdDesktop.Credentials]::Exists($target)) { throw 'Saved credential presence was not detected.' }
     if ([SwsdDesktop.Credentials]::Read($target) -ne 'test-only-not-a-real-token') { throw 'Credential round trip failed.' }
     [SwsdDesktop.Credentials]::Save($target, 'replacement-test-only')
     if ([SwsdDesktop.Credentials]::Read($target) -ne 'replacement-test-only') { throw 'Credential replacement failed.' }
     [SwsdDesktop.Credentials]::Remove($target)
     if ($null -ne [SwsdDesktop.Credentials]::Read($target)) { throw 'Credential removal failed.' }
+    if ([SwsdDesktop.Credentials]::Exists($target)) { throw 'Removed credential was reported present.' }
     [SwsdDesktop.Credentials]::Remove($target)
     $rejected = $false
     try { [SwsdDesktop.Credentials]::Save($target, '') } catch { $rejected = $true }
