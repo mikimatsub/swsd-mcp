@@ -1,5 +1,26 @@
 ﻿param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [ValidateRange(1,15)][int]$WindowTestSeconds = 2)
 $ErrorActionPreference = 'Stop'
+if ($ValidateHandlers) {
+    # Handler checks exercise credential flows without depending on a signed-in desktop.
+    # Reject every target outside this invocation's isolated UI-test namespace.
+    Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+namespace SwsdDesktop {
+  public static class Credentials {
+    private static readonly Dictionary<string, string> values = new Dictionary<string, string>();
+    private static void Check(string target) {
+      if (!target.StartsWith("swsd-mcp/ui-test-", StringComparison.Ordinal))
+        throw new InvalidOperationException("Non-test credential target is forbidden.");
+    }
+    public static bool Exists(string target) { Check(target); return values.ContainsKey(target); }
+    public static string Read(string target) { Check(target); string value; return values.TryGetValue(target, out value) ? value : null; }
+    public static void Save(string target, string secret) { Check(target); values[target] = secret; }
+    public static void Remove(string target) { Check(target); values.Remove(target); }
+  }
+}
+'@
+}
 . (Join-Path $PSScriptRoot 'Common.ps1')
 if ($ValidateUi -or $ValidateWindow -or $ValidateHandlers) {
     # Exercise the real controls and save handler without touching a user's settings or credential.
@@ -29,6 +50,9 @@ function Format-SwsdFriendlyError([Exception]$Exception) {
     $kind = 'error'
     switch -Regex ($msg) {
         'Node\.js.*required|Node\.js.*newer' { $friendly = 'Node.js is missing or unsupported. Ask IT to install the supported Node.js version shown below.'; $kind = 'warn'; break }
+        '^Windows Package Manager is unavailable' { $friendly = 'Windows Package Manager is unavailable. Ask IT to install Node.js 24.22.1, then reopen setup.'; $kind = 'warn'; break }
+        '^Node\.js installation timed out' { $friendly = 'Node.js installation timed out. Ask IT to check Windows Package Manager, then reopen setup.'; break }
+        '^Node\.js installation failed' { $friendly = 'Node.js installation failed. Ask IT to install Node.js 24.22.1, then reopen setup.'; break }
         'npm is missing' { $friendly = 'npm is missing from this Node.js installation. Ask IT to repair Node.js.'; break }
         'timed out' { $friendly = 'Installation timed out. Check npm registry access and retry.'; break }
         'Tool installation failed|npm registry|registry\.npmjs' { $friendly = 'Tool installation failed. Ask IT to check access to registry.npmjs.org and npm proxy configuration.'; break }
@@ -53,7 +77,7 @@ $script:SwsdLayoutFailures = @()
     try { Add-Content -LiteralPath (Join-Path $env:TEMP 'swsd-settings.log') -Value ("{0:u} {1}" -f (Get-Date), $message) } catch {}
     try {
         if (Get-Command Set-SwsdStatus -ErrorAction SilentlyContinue) { Set-SwsdStatus -Kind error -Text "Something went wrong: $message" }
-        foreach ($name in 'install','save','test','remove','saveProfile','showDetails','region','tokenBox','profile') {
+        foreach ($name in 'install','checkUpdates','nodeInstallButton','save','test','remove','saveProfile','showDetails','region','tokenBox','profile') {
             $control = Get-Variable -Name $name -Scope Script -ValueOnly -ErrorAction SilentlyContinue
             if ($control -is [Windows.Forms.Control]) { $control.Enabled = $true }
         }
@@ -71,7 +95,7 @@ function Invoke-SwsdSafe {
         if ($Quiet) { return }
         try {
             if (Get-Command Set-SwsdStatus -ErrorAction SilentlyContinue) { Set-SwsdStatus -Kind error -Text "Something went wrong: $message" }
-            foreach ($name in 'install','save','test','remove','saveProfile','showDetails','region','tokenBox','profile') {
+            foreach ($name in 'install','checkUpdates','nodeInstallButton','save','test','remove','saveProfile','showDetails','region','tokenBox','profile') {
                 $control = Get-Variable -Name $name -Scope Script -ValueOnly -ErrorAction SilentlyContinue
                 if ($control -is [Windows.Forms.Control]) { $control.Enabled = $true }
             }
@@ -83,6 +107,10 @@ function Invoke-SwsdSafe {
 }
 function Confirm-SwsdRemove {
     return [Windows.Forms.MessageBox]::Show('Remove this computer''s saved SWSD token? Fully quit ChatGPT afterwards to end running connections. This does not revoke the token in SolarWinds.', 'Remove saved token', 'YesNo', 'Question')
+}
+
+function Confirm-SwsdNodeInstall {
+    return [Windows.Forms.MessageBox]::Show('Install Node.js 24.22.1 using Windows Package Manager? Windows may ask for administrator approval. Reopen setup after installation.', 'Install Node.js 24', 'YesNo', 'Question')
 }
 
 # DPI awareness before any window is created
@@ -630,7 +658,7 @@ $statusCard = New-SwsdCard 'Status' 'Info'
 # Absolute TableLayoutPanel columns keep state text from moving neighboring fields.
 $dashboardFont = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
 $dashboardChipFont = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
-$dashboardChipTexts = @('OK', 'Unsupported', 'Missing', 'Repair needed', 'Check access', 'Saved', 'Needed')
+$dashboardChipTexts = @('OK', 'Unsupported', 'Missing', 'Repair needed', 'Check access', 'Saved', 'Needed', 'Not checked', 'Checking', 'Offline', 'Current', 'Available', 'Ahead', 'Install first')
 function Measure-SwsdGridText([string[]]$Texts, [Drawing.Font]$Font, [int]$PaddingPx) {
     $width = 0
     foreach ($text in $Texts) {
@@ -639,7 +667,7 @@ function Measure-SwsdGridText([string[]]$Texts, [Drawing.Font]$Font, [int]$Paddi
     return ScalePx ([int](8 * [Math]::Ceiling(($width / $script:SwsdUiScale + $PaddingPx) / 8)))
 }
 $dashboardIconWidth = ScalePx 32
-$dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'Tools', 'Token', 'Region', 'Profile') $dashboardFont 8
+$dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'Tools', 'Token', 'Region', 'Profile', 'Updates') $dashboardFont 8
 $dashboardValueWidth = [Math]::Max((ScalePx 144), (Measure-SwsdGridText (@('Not installed', 'Unavailable', ('swsd-mcp ' + $script:SwsdPackageVersion)) + @($script:SwsdProfiles | ForEach-Object { $_.name })) $dashboardFont 8))
 $dashboardChipWidth = Measure-SwsdGridText $dashboardChipTexts $dashboardChipFont 16
 $dashboardTextHeight = [Windows.Forms.TextRenderer]::MeasureText('Ag', $dashboardFont).Height
@@ -716,7 +744,10 @@ $srTools = New-StatusRow 'Tools installed' (Get-SwsdIconGlyph 'Tools') 'Tools'
 $srToken = New-StatusRow 'Token saved' (Get-SwsdIconGlyph 'Key') 'Token'
 $srRegion = New-StatusRow 'Region' (Get-SwsdIconGlyph 'Region') 'Region'
 $srProfile = New-StatusRow 'Profile' (Get-SwsdIconGlyph 'Profile') 'Profile'
-$statusRows = @($srNode, $srTools, $srToken, $srRegion, $srProfile)
+$srUpdate = New-StatusRow 'Updates' (Get-SwsdIconGlyph 'Info') 'Updates'
+$script:SwsdLatestVersion = $null
+$script:SwsdUpdateState = 'unchecked'
+$statusRows = @($srNode, $srTools, $srToken, $srRegion, $srProfile, $srUpdate)
 for ($si = 0; $si -lt $statusRows.Count; $si++) {
     $column = $si % 2
     # Split the 16px gutter evenly; both cells retain identical widths.
@@ -801,6 +832,23 @@ function Update-SwsdDashboard {
     $profileName = ($script:SwsdProfiles | Where-Object { $_.id -eq $s.profile }).name
     Set-SwsdDashboardRow $srProfile $profileName 'Saved' 'Info'
     $currentProfile.Text = 'Saved profile: ' + $profileName
+    # Layout validation includes the helper even on a machine that already has supported Node.
+    $nodeInstallButton.Visible = (-not $s.nodeSupported) -or $ValidateWindow
+    $updateValue = if ($script:SwsdLatestVersion) { 'v' + $script:SwsdLatestVersion } else { '-' }
+    switch ($script:SwsdUpdateState) {
+        'checking' { Set-SwsdDashboardRow $srUpdate $updateValue 'Checking' 'Info' }
+        'offline' { Set-SwsdDashboardRow $srUpdate '-' 'Offline' 'Warn' }
+        'checked' {
+            $comparison = Compare-SwsdVersion -Installed (Get-SwsdInstalledVersion) -Latest $script:SwsdLatestVersion
+            switch ($comparison) {
+                'current' { Set-SwsdDashboardRow $srUpdate $updateValue 'Current' 'Success' }
+                'update' { Set-SwsdDashboardRow $srUpdate $updateValue 'Available' 'Warn' }
+                'newer' { Set-SwsdDashboardRow $srUpdate $updateValue 'Ahead' 'Info' }
+                default { Set-SwsdDashboardRow $srUpdate $updateValue 'Install first' 'Info' }
+            }
+        }
+        default { Set-SwsdDashboardRow $srUpdate '-' 'Not checked' 'Info' }
+    }
 }
 
 # Card 1: Install tools
@@ -815,7 +863,17 @@ Add-CardRow $card1 $installDesc
 
 $install = New-SwsdButton 'Install / repair tools' $true
 $install.Anchor = 'Top,Left'
-Add-CardRow $card1 $install
+$checkUpdates = New-SwsdButton 'Check for updates'
+$checkUpdates.AccessibleName = 'Check for updates'
+$nodeInstallButton = New-SwsdButton 'Install Node.js 24'
+$nodeInstallButton.AccessibleName = 'Install Node.js'
+$installButtonRow = New-Object Windows.Forms.FlowLayoutPanel
+$installButtonRow.AutoSize = $true
+$installButtonRow.FlowDirection = 'LeftToRight'
+$installButtonRow.WrapContents = $false
+Set-SwsdButtonRow @($install, $checkUpdates, $nodeInstallButton)
+$installButtonRow.Controls.AddRange(@($install, $checkUpdates, $nodeInstallButton))
+Add-CardRow $card1 $installButtonRow
 $rootPanel.Controls.Add($card1, 0, 2)
 
 # Card 2: Region + token
@@ -1126,7 +1184,7 @@ $script:SwsdInstallTimer = New-Object Windows.Forms.Timer
 $script:SwsdInstallTimer.Interval = 50
 
 function Set-SwsdBusy([bool]$Busy) {
-    foreach ($control in @($install, $save, $test, $remove, $saveProfile, $showDetails, $region, $tokenBox, $profile)) { $control.Enabled = -not $Busy }
+    foreach ($control in @($install, $checkUpdates, $nodeInstallButton, $save, $test, $remove, $saveProfile, $showDetails, $region, $tokenBox, $profile)) { $control.Enabled = -not $Busy }
     $progressBar.Visible = $Busy
     $progressText.Visible = $Busy
     $form.UseWaitCursor = $false
@@ -1158,11 +1216,26 @@ function Invoke-SetupAction([scriptblock]$Action) {
         if ($form.Visible) { Update-SwsdFormSize }
     }
 }
+function Show-SwsdUpdateUnavailable {
+    $script:SwsdLatestVersion = $null
+    $script:SwsdUpdateState = 'offline'
+    Set-SwsdStatus -Kind warn -Text 'Could not check for updates. Check your connection and npm installation, then try again.'
+}
 function Start-SwsdInstall {
+    param([ValidateSet('Install', 'CheckUpdates', 'Node')][string]$Operation = 'Install')
     if ($null -ne $script:SwsdInstallWorker) { return }
     Reset-SwsdAction
     Set-SwsdBusy $true
-    Set-SwsdStatus -Kind info -Text 'Installing tools... please wait.'
+    $progressText.Text = switch ($Operation) {
+        'CheckUpdates' { 'Checking for updates... this window stays available.' }
+        'Node' { 'Installing Node.js 24... this window stays available.' }
+        default { 'Installing tools... this window stays available.' }
+    }
+    Set-SwsdStatus -Kind info -Text $progressText.Text
+    if ($Operation -eq 'CheckUpdates') {
+        $script:SwsdUpdateState = 'checking'
+        Update-SwsdDashboard
+    }
     $powershell = $null
     $runspace = $null
     $script:SwsdInstallPollCount = 0
@@ -1177,13 +1250,20 @@ function Start-SwsdInstall {
         $mockBody = $null
         $mockFails = $false
         $mockCalls = $null
+        $mockResult = $null
+        $operationFunction = switch ($Operation) {
+            'CheckUpdates' { 'Get-SwsdLatestVersion' }
+            'Node' { 'Install-SwsdNode' }
+            default { 'Install-SwsdTools' }
+        }
         if ($ValidateHandlers) {
-            $mockBody = (Get-Item Function:Install-SwsdTools).ScriptBlock.ToString()
-            $mockFails = $script:SwsdMockInstallFails
+            $mockBody = (Get-Item ("Function:" + $operationFunction)).ScriptBlock.ToString()
+            $mockFails = if ($Operation -eq 'Node') { $script:SwsdMockNodeFails } else { $script:SwsdMockInstallFails }
             $mockCalls = $script:SwsdMockCalls
+            $mockResult = $script:SwsdMockLatestVersion
         }
         [void]$powershell.AddScript({
-            param($ScriptsRoot, $HomeOverride, $CredentialTarget, $MockBody, $MockFails, $MockCalls)
+            param($ScriptsRoot, $HomeOverride, $CredentialTarget, $MockBody, $MockFails, $MockCalls, $Operation, $OperationFunction, $MockResult)
             . (Join-Path $ScriptsRoot 'Common.ps1')
             # Common.ps1 initializes defaults; overrides must be applied after loading it.
             $script:SwsdHome = $HomeOverride
@@ -1191,8 +1271,11 @@ function Start-SwsdInstall {
             if ($MockBody) {
                 $script:SwsdMockInstallFails = $MockFails
                 $script:SwsdMockCalls = $MockCalls
-                Set-Item Function:Install-SwsdTools ([scriptblock]::Create($MockBody))
+                $script:SwsdMockLatestVersion = $MockResult
+                Set-Item ("Function:" + $OperationFunction) ([scriptblock]::Create($MockBody))
             }
+            if ($Operation -eq 'CheckUpdates') { return Get-SwsdLatestVersion }
+            if ($Operation -eq 'Node') { Install-SwsdNode; return }
             $sourceRoot = Split-Path $ScriptsRoot
             if (Test-Path -LiteralPath (Join-Path $ScriptsRoot 'runtime\package.json')) { $sourceRoot = $ScriptsRoot }
             # Preserve repair from the installed Start menu client and its retained recipe.
@@ -1205,17 +1288,18 @@ function Start-SwsdInstall {
                 $sourceRoot = $stage
             }
             Install-SwsdTools -SourceRoot $sourceRoot
-        }).AddArgument($PSScriptRoot).AddArgument($script:SwsdHome).AddArgument($script:SwsdCredentialTarget).AddArgument($mockBody).AddArgument($mockFails).AddArgument($mockCalls)
+        }).AddArgument($PSScriptRoot).AddArgument($script:SwsdHome).AddArgument($script:SwsdCredentialTarget).AddArgument($mockBody).AddArgument($mockFails).AddArgument($mockCalls).AddArgument($Operation).AddArgument($operationFunction).AddArgument($mockResult)
         $handle = $powershell.BeginInvoke()
         # Script scope keeps the worker alive after the Click callback returns.
-        $script:SwsdInstallWorker = @{ PowerShell = $powershell; Runspace = $runspace; Handle = $handle }
+        $script:SwsdInstallWorker = @{ PowerShell = $powershell; Runspace = $runspace; Handle = $handle; Operation = $Operation }
         $script:SwsdInstallTimer.Start()
     } catch {
         if ($null -ne $powershell) { $powershell.Dispose() }
         if ($null -ne $runspace) { $runspace.Dispose() }
         $script:SwsdInstallWorker = $null
         Set-SwsdBusy $false
-        Show-SwsdError $_.Exception
+        if ($Operation -eq 'CheckUpdates') { Show-SwsdUpdateUnavailable }
+        else { Show-SwsdError $_.Exception }
         Update-SwsdDashboard
     }
     if ($form.Visible) { Update-SwsdFormSize }
@@ -1225,11 +1309,34 @@ function Complete-SwsdInstall {
     if ($null -eq $worker -or -not $worker.Handle.IsCompleted) { return }
     $script:SwsdInstallTimer.Stop()
     try {
-        $null = $worker.PowerShell.EndInvoke($worker.Handle)
+        $result = @($worker.PowerShell.EndInvoke($worker.Handle))
         if ($worker.PowerShell.HadErrors) { throw $worker.PowerShell.Streams.Error[0].Exception }
-        Set-SwsdStatus -Kind success -Text 'Tools installed. Test and save your token next. This window is also available from the Windows Start menu.'
-        $ctaChip.Visible = $true
-    } catch { Show-SwsdError $_.Exception } finally {
+        switch ($worker.Operation) {
+            'CheckUpdates' {
+                $script:SwsdLatestVersion = if ($result.Count -gt 0) { [string]$result[-1] } else { $null }
+                if (-not $script:SwsdLatestVersion) {
+                    Show-SwsdUpdateUnavailable
+                } else {
+                    $script:SwsdUpdateState = 'checked'
+                    $installedVersion = Get-SwsdInstalledVersion
+                    switch (Compare-SwsdVersion -Installed $installedVersion -Latest $script:SwsdLatestVersion) {
+                        'current' { Set-SwsdStatus -Kind success -Text "swsd-mcp $installedVersion is up to date." }
+                        'update' { Set-SwsdStatus -Kind warn -Text "swsd-mcp $($script:SwsdLatestVersion) is available (installed: $installedVersion). Ask IT to sync the reviewed plugin, then select Install / repair tools." }
+                        'newer' { Set-SwsdStatus -Kind info -Text "Installed swsd-mcp $installedVersion is newer than the published version $($script:SwsdLatestVersion)." }
+                        default { Set-SwsdStatus -Kind info -Text "Latest published swsd-mcp: $($script:SwsdLatestVersion). Install / repair tools to set up the reviewed version." }
+                    }
+                }
+            }
+            'Node' { Set-SwsdStatus -Kind success -Text 'Node.js installed. Reopen this window to continue setup.' }
+            default {
+                Set-SwsdStatus -Kind success -Text 'Tools installed. Test and save your token next. This window is also available from the Windows Start menu.'
+                $ctaChip.Visible = $true
+            }
+        }
+    } catch {
+        if ($worker.Operation -eq 'CheckUpdates') { Show-SwsdUpdateUnavailable }
+        else { Show-SwsdError $_.Exception }
+    } finally {
         $worker.PowerShell.Dispose()
         $worker.Runspace.Dispose()
         $script:SwsdInstallWorker = $null
@@ -1247,11 +1354,24 @@ $form.Add_FormClosing({ param($sender, $e) Invoke-SwsdSafe -Source 'FormClosing'
     # npm has its own bounded timeout. Keep ownership until it exits, avoiding an orphaned repair.
     if ($null -ne $script:SwsdInstallWorker) {
         $e.Cancel = $true
-        Set-SwsdStatus -Kind info -Text 'Installation is still running. Please wait for it to finish before closing this window.'
+        Set-SwsdStatus -Kind info -Text 'The background action is still running. Please wait for it to finish before closing this window.'
     }
 } })
 $form.Add_FormClosed({ param($sender, $e) Invoke-SwsdSafe -Source 'FormClosed' { $script:SwsdInstallTimer.Dispose() } })
 $install.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'InstallClick' { Start-SwsdInstall } })
+$checkUpdates.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'UpdateClick' { Start-SwsdInstall -Operation CheckUpdates } })
+$nodeInstallButton.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'NodeInstallClick' {
+    if ($null -ne $script:SwsdInstallWorker) { return }
+    if ((Get-SwsdStatus).nodeSupported) {
+        Set-SwsdStatus -Kind info -Text 'A supported Node.js 24 version is already installed.'
+        return
+    }
+    if ((Confirm-SwsdNodeInstall) -ne 'Yes') {
+        Set-SwsdStatus -Kind info -Text 'Node.js installation cancelled.'
+        return
+    }
+    Start-SwsdInstall -Operation Node
+} })
 $save.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'Click' { Invoke-SetupAction {
     $secret = $tokenBox.Text.Trim()
     $tokenBox.Clear()
@@ -1298,7 +1418,7 @@ Update-SwsdDashboard
 
 if ($ValidateWindow) {
     # Visible lifecycle probe: no token entry, installation, settings or credential actions.
-    if ($env:SWSD_PREVIEW_ENABLED -ne '1') { foreach ($control in @($install,$region,$tokenBox,$save,$test,$remove,$profile,$saveProfile)) { $control.Enabled = $false } }
+    if ($env:SWSD_PREVIEW_ENABLED -ne '1') { foreach ($control in @($install,$checkUpdates,$nodeInstallButton,$region,$tokenBox,$save,$test,$remove,$profile,$saveProfile)) { $control.Enabled = $false } }
     $script:SwsdWindowResult = $null
     $probe = New-Object Windows.Forms.Timer
     $probe.Interval = 200
@@ -1310,7 +1430,7 @@ if ($ValidateWindow) {
 
         # Button rows must be pixel-identical: same Top and Height for every button (tolerance 0),
         # and equal widths inside a row of action buttons.
-        foreach ($row in @($buttonRow2, $profileButtonRow)) {
+        foreach ($row in @($installButtonRow, $buttonRow2, $profileButtonRow)) {
             $rowButtons = @($row.Controls | Where-Object { $_ -is [Windows.Forms.Button] -and $_.Visible })
             if ($rowButtons.Count -lt 1) { continue }
             $tops = @($rowButtons | ForEach-Object { $_.Top } | Sort-Object -Unique)
@@ -1320,7 +1440,7 @@ if ($ValidateWindow) {
             if ($heights.Count -ne 1) { $script:SwsdLayoutFailures += "Button row heights differ: $($heights -join ',')" }
             if ($widths.Count -ne 1) { $script:SwsdLayoutFailures += "Button row widths differ: $($widths -join ',')" }
         }
-        $allHeights = @(@($install, $save, $test, $remove, $saveProfile, $showDetails) | ForEach-Object { $_.Height } | Sort-Object -Unique)
+        $allHeights = @(@($install, $checkUpdates, $nodeInstallButton, $save, $test, $remove, $saveProfile, $showDetails) | ForEach-Object { $_.Height } | Sort-Object -Unique)
         if ($allHeights.Count -ne 1) { $script:SwsdLayoutFailures += "Button heights differ across cards: $($allHeights -join ',')" }
 
         $formClientScreen = $form.RectangleToScreen($form.ClientRectangle)
@@ -1525,6 +1645,31 @@ if ($ValidateWindow) {
     Set-StrictMode -Version Latest
     $script:SwsdMockCalls = New-Object 'System.Collections.Concurrent.ConcurrentQueue[string]'
     $script:SwsdMockInstallFails = $false
+    $script:SwsdMockNodeFails = $false
+    $script:SwsdMockLatestVersion = $script:SwsdPackageVersion
+    $script:SwsdMockNodeSupported = $false
+    $script:SwsdMockNodeConfirm = 'Yes'
+    $script:SwsdRealGetStatus = (Get-Item Function:Get-SwsdStatus).ScriptBlock
+    function script:Get-SwsdStatus {
+        $s = & $script:SwsdRealGetStatus
+        $s.nodeSupported = $script:SwsdMockNodeSupported
+        return $s
+    }
+    function script:Get-SwsdLatestVersion {
+        $script:SwsdMockCalls.Enqueue('update-check')
+        Start-Sleep -Milliseconds 350
+        if ($script:SwsdMockInstallFails) { throw 'synthetic update worker failure' }
+        return $script:SwsdMockLatestVersion
+    }
+    function script:Install-SwsdNode {
+        $script:SwsdMockCalls.Enqueue('node-install')
+        Start-Sleep -Milliseconds 350
+        if ($script:SwsdMockInstallFails) { throw 'Node.js installation failed.' }
+    }
+    function script:Confirm-SwsdNodeInstall {
+        $script:SwsdMockCalls.Enqueue('node-confirm')
+        return $script:SwsdMockNodeConfirm
+    }
     function script:Install-SwsdTools {
         param($SourceRoot)
         $script:SwsdMockCalls.Enqueue('install')
@@ -1539,17 +1684,18 @@ if ($ValidateWindow) {
     function script:Test-SwsdToken { param($Token, $BaseUrl) $script:SwsdMockCalls.Enqueue('test') }
     function script:Confirm-SwsdRemove { return 'Yes' }
     $onClick = [Windows.Forms.Button].GetMethod('OnClick', [Reflection.BindingFlags]'Instance,NonPublic')
-    $buttons = @($install, $save, $test, $remove, $saveProfile, $showDetails)
+    $buttons = @($install, $checkUpdates, $nodeInstallButton, $save, $test, $remove, $saveProfile, $showDetails)
     function Assert-SwsdClick([Windows.Forms.Button]$Button, [string]$Expect) {
         $script:SwsdHandlerErrors = @()
         $Button.Enabled = $true
         $onClick.Invoke($Button, @([EventArgs]::Empty))
-        if ($Button -eq $install) {
+        if ($Button -eq $install -or $Button -eq $checkUpdates -or ($Button -eq $nodeInstallButton -and $script:SwsdMockNodeConfirm -eq 'Yes' -and -not $script:SwsdMockNodeSupported)) {
             if ($null -eq $script:SwsdInstallWorker) { throw 'Install click did not start a background worker.' }
+            if ($Button -eq $checkUpdates -and $srUpdate.Chip.Text -ne 'Checking') { throw 'Update check did not show progress in the dashboard.' }
             foreach ($b in $buttons) { if ($b.Enabled) { throw 'Action button remained enabled during installation.' } }
             if (-not $script:SwsdInstallTimer.Enabled) { throw 'Install polling timer did not start.' }
             $firstWorker = $script:SwsdInstallWorker
-            $onClick.Invoke($install, @([EventArgs]::Empty))
+            $onClick.Invoke($Button, @([EventArgs]::Empty))
             if ($script:SwsdInstallWorker -ne $firstWorker) { throw 'A second install started while one was running.' }
             $closing = New-Object Windows.Forms.FormClosingEventArgs([Windows.Forms.CloseReason]::UserClosing, $false)
             $form.GetType().GetMethod('OnFormClosing', [Reflection.BindingFlags]'Instance,NonPublic').Invoke($form, @($closing.PSObject.BaseObject))
@@ -1570,8 +1716,42 @@ if ($ValidateWindow) {
         if ($form.UseWaitCursor) { throw "Wait cursor stuck after '$($Button.Text)'." }
     }
     try {
+        Assert-SwsdClick $checkUpdates 'Latest published swsd-mcp'
+        if ($srUpdate.Chip.Text -ne 'Install first') { throw 'Fresh install update result was incorrect.' }
         Assert-SwsdClick $install 'Tools installed'
         if ($srTools.Chip.Text -ne 'OK' -or $srTools.Value.Text -ne ('swsd-mcp ' + $script:SwsdPackageVersion)) { throw 'Dashboard did not refresh the installed version.' }
+        if ($srUpdate.Chip.Text -ne 'Current') { throw 'Update result did not refresh after installation.' }
+        Assert-SwsdClick $checkUpdates 'is up to date'
+        if ($srUpdate.Chip.Text -ne 'Current') { throw 'Current update result missing from dashboard.' }
+        $script:SwsdMockLatestVersion = '99.0.0'
+        Assert-SwsdClick $checkUpdates 'is available'
+        if ($srUpdate.Chip.Text -ne 'Available' -or $srUpdate.Value.Text -ne 'v99.0.0') { throw 'Available update result missing from dashboard.' }
+        $script:SwsdMockLatestVersion = '0.0.1'
+        Assert-SwsdClick $checkUpdates 'is newer than'
+        if ($srUpdate.Chip.Text -ne 'Ahead') { throw 'Newer installed version missing from dashboard.' }
+        $script:SwsdMockLatestVersion = $null
+        Assert-SwsdClick $checkUpdates 'Could not check for updates'
+        if ($srUpdate.Chip.Text -ne 'Offline' -or $script:SwsdLatestVersion) { throw 'Offline check retained a stale successful result.' }
+        $script:SwsdMockInstallFails = $true
+        Assert-SwsdClick $checkUpdates 'Could not check for updates'
+        if ($srUpdate.Chip.Text -ne 'Offline') { throw 'Worker failure left the update dashboard checking.' }
+        $script:SwsdMockInstallFails = $false
+        $script:SwsdMockLatestVersion = $script:SwsdPackageVersion
+        Assert-SwsdClick $checkUpdates 'is up to date'
+        $nodeCallsBefore = @($script:SwsdMockCalls.ToArray() | Where-Object { $_ -eq 'node-install' }).Count
+        $script:SwsdMockNodeConfirm = 'No'
+        Assert-SwsdClick $nodeInstallButton 'cancelled'
+        if (@($script:SwsdMockCalls.ToArray() | Where-Object { $_ -eq 'node-install' }).Count -ne $nodeCallsBefore) { throw 'Cancelled Node installation still ran.' }
+        $script:SwsdMockNodeConfirm = 'Yes'
+        Assert-SwsdClick $nodeInstallButton 'Node.js installed'
+        $script:SwsdMockNodeFails = $true
+        Assert-SwsdClick $nodeInstallButton 'Node.js installation failed'
+        $script:SwsdMockNodeFails = $false
+        Assert-SwsdClick $nodeInstallButton 'Node.js installed'
+        $script:SwsdMockNodeSupported = $true
+        $nodeCallsBefore = $script:SwsdMockCalls.Count
+        Assert-SwsdClick $nodeInstallButton 'already installed'
+        if ($script:SwsdMockCalls.Count -ne $nodeCallsBefore) { throw 'Supported Node should not prompt or install.' }
         $tokenBox.Text = 'synthetic-demo-token'
         Assert-SwsdClick $save 'token saved'
         if ($tokenBox.Text) { throw 'Token field was not cleared after save.' }
@@ -1599,7 +1779,10 @@ if ($ValidateWindow) {
         if ($status.Text -notlike '*Something went wrong: synthetic handler crash*') { throw 'Safe wrapper did not show a friendly error.' }
         foreach ($b in $buttons) { if (-not $b.Enabled) { throw 'Safe wrapper did not re-enable controls.' } }
         if ($script:SwsdMockCalls.ToArray() -notcontains 'install' -or $script:SwsdMockCalls.ToArray() -notcontains 'test') { throw 'Mocks were not used.' }
-        Write-Output 'PASS: every button clicked under StrictMode; background install awaited via responsive timer; failure/retry, duplicate install and close guards, dashboard refresh, friendly errors, controls re-enabled, no unhandled exceptions.'
+        foreach ($call in @('update-check', 'node-confirm', 'node-install')) {
+            if ($script:SwsdMockCalls.ToArray() -notcontains $call) { throw "Mock '$call' was not used." }
+        }
+        Write-Output 'PASS: update current/available/newer/offline/retry and confirmed/cancelled/failed Node helper; every button clicked under StrictMode; background install awaited via responsive timer; failure/retry, duplicate install and close guards, dashboard refresh, friendly errors, controls re-enabled, no unhandled exceptions.'
     } finally {
         $script:SwsdInstallTimer.Stop()
         $script:SwsdInstallTimer.Dispose()
@@ -1625,7 +1808,7 @@ if ($ValidateWindow) {
         if (-not $tokenBox.UseSystemPasswordChar) { throw 'Token field must be masked.' }
         if ($profile.Items.Count -ne 5) { throw 'Five profile choices are required.' }
         if ($profile.SelectedItem -ne 'Agent') { throw 'New installations must default to Agent.' }
-        foreach ($expectedName in @('Status Node.js','Status Tools installed','Status Token saved','Status Region','Status Profile')) {
+        foreach ($expectedName in @('Status Node.js','Status Tools installed','Status Token saved','Status Region','Status Profile','Status Updates')) {
             if (@($statusRows | Where-Object { $_.Panel.AccessibleName -eq $expectedName }).Count -ne 1) { throw "Status row '$expectedName' is missing." }
         }
         if ($progressBar.AccessibleName -ne 'Progress') { throw 'Progress bar AccessibleName must be Progress.' }
