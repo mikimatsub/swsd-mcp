@@ -18,6 +18,7 @@ const BUNDLES: Array<{ name: string; sentinel: string }> = [
   { name: 'audit-timeline', sentinel: 'SWSD Audit Timeline' },
   { name: 'catalog-item-form', sentinel: 'SWSD Catalog Item Form' },
   { name: 'sla-risk', sentinel: 'SWSD SLA Risk' },
+  { name: 'ticket-stats', sentinel: 'SWSD Ticket Stats' },
   { name: 'change-calendar', sentinel: 'SWSD Change Calendar' },
 ];
 
