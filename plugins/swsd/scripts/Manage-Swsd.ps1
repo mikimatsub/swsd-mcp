@@ -266,7 +266,7 @@ if ($script:SwsdDarkMode) {
         StatusSuccessBg = [Drawing.Color]::FromArgb(220, 245, 228)
         StatusSuccessFg = [Drawing.Color]::FromArgb(16, 100, 40)
         StatusWarnBg    = [Drawing.Color]::FromArgb(255, 245, 210)
-        StatusWarnFg    = [Drawing.Color]::FromArgb(140, 110, 0)
+        StatusWarnFg    = [Drawing.Color]::FromArgb(132, 100, 0)
         StatusErrorBg   = [Drawing.Color]::FromArgb(253, 225, 225)
         StatusErrorFg   = [Drawing.Color]::FromArgb(180, 30, 30)
         StatusInfoBg    = [Drawing.Color]::FromArgb(220, 235, 252)
@@ -287,8 +287,10 @@ foreach ($candidate in @('Segoe Fluent Icons', 'Segoe MDL2 Assets')) {
 function Get-SwsdIconGlyph([string]$Name) {
     if (-not $script:SwsdIconFont) { return '' }
     switch ($Name) {
-        'Tools'     { return [char]0xE774 }
-        'Key'       { return [char]0xE72E }
+        'Node'      { return [char]0xE756 } # CommandPrompt
+        'Tools'     { return [char]0xE90F } # Repair
+        'Key'       { return [char]0xE8D7 } # Permissions
+        'Region'    { return [char]0xE774 } # Globe
         'Profile'   { return [char]0xE77B }
         'Check'     { return [char]0xE73E }
         'Warning'   { return [char]0xE7BA }
@@ -317,10 +319,10 @@ function ScaleFont([double]$PointSize) {
 
 # Layout constants (logical px at scale 1.0)
 $script:SwsdCardPaddingH = 16
-$script:SwsdCardPaddingV = 12
-$script:SwsdCardGap = 12
+$script:SwsdCardPaddingV = 8
+$script:SwsdCardGap = 8
 $script:SwsdRowGap = 8
-$script:SwsdRootPaddingH = 20
+$script:SwsdRootPaddingH = 16
 $script:SwsdRootPaddingV = 16
 $script:SwsdButtonMinHeight = 32
 $script:SwsdButtonPaddingH = 14
@@ -624,76 +626,108 @@ $rootPanel.Controls.Add($headerPanel, 0, 0)
 
 # Status dashboard: only credential presence is queried, never the saved token value.
 $statusCard = New-SwsdCard 'Status' 'Info'
+# Measure once, then lock every item to the same four columns on the 8px grid.
+# Absolute TableLayoutPanel columns keep state text from moving neighboring fields.
+$dashboardFont = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
+$dashboardChipFont = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$dashboardChipTexts = @('OK', 'Unsupported', 'Missing', 'Repair needed', 'Check access', 'Saved', 'Needed')
+function Measure-SwsdGridText([string[]]$Texts, [Drawing.Font]$Font, [int]$PaddingPx) {
+    $width = 0
+    foreach ($text in $Texts) {
+        $width = [Math]::Max($width, [Windows.Forms.TextRenderer]::MeasureText($text, $Font).Width)
+    }
+    return ScalePx ([int](8 * [Math]::Ceiling(($width / $script:SwsdUiScale + $PaddingPx) / 8)))
+}
+$dashboardIconWidth = ScalePx 32
+$dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'Tools', 'Token', 'Region', 'Profile') $dashboardFont 8
+$dashboardValueWidth = [Math]::Max((ScalePx 144), (Measure-SwsdGridText (@('Not installed', 'Unavailable', ('swsd-mcp ' + $script:SwsdPackageVersion)) + @($script:SwsdProfiles | ForEach-Object { $_.name })) $dashboardFont 8))
+$dashboardChipWidth = Measure-SwsdGridText $dashboardChipTexts $dashboardChipFont 16
+$dashboardTextHeight = [Windows.Forms.TextRenderer]::MeasureText('Ag', $dashboardFont).Height
+$dashboardItemHeight = ScalePx ([int](8 * [Math]::Ceiling(($dashboardTextHeight / $script:SwsdUiScale + 8) / 8)))
+$dashboardRowHeight = $dashboardItemHeight + (ScalePx 8)
+$dashboardItemWidth = $dashboardIconWidth + $dashboardLabelWidth + $dashboardValueWidth + $dashboardChipWidth
+$dashboardColumnWidth = $dashboardItemWidth + (ScalePx 8)
 $statusRowTable = New-Object Windows.Forms.TableLayoutPanel
-$statusRowTable.Dock = 'Fill'
-$statusRowTable.AutoSize = $true
+$statusRowTable.AutoSize = $false
 $statusRowTable.ColumnCount = 2
-[void]$statusRowTable.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 50)))
-[void]$statusRowTable.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 50)))
 $statusRowTable.RowCount = 3
-for ($ri = 0; $ri -lt 3; $ri++) { [void]$statusRowTable.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize'))) }
+$statusRowTable.GrowStyle = 'FixedSize'
+$statusRowTable.Padding = New-Object Windows.Forms.Padding(0)
+$statusRowTable.Size = New-Object Drawing.Size((2 * $dashboardColumnWidth), (3 * $dashboardRowHeight))
+for ($ci = 0; $ci -lt 2; $ci++) { [void]$statusRowTable.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Absolute', $dashboardColumnWidth))) }
+for ($ri = 0; $ri -lt 3; $ri++) { [void]$statusRowTable.RowStyles.Add((New-Object Windows.Forms.RowStyle('Absolute', $dashboardRowHeight))) }
 
 function New-StatusRow([string]$AccessibleName, [string]$IconGlyph, [string]$Label) {
     $rowPanel = New-Object Windows.Forms.TableLayoutPanel
-    $rowPanel.AutoSize = $true
-    $rowPanel.Dock = 'Fill'
+    $rowPanel.AutoSize = $false
+    $rowPanel.Anchor = 'Top,Left'
+    $rowPanel.Size = New-Object Drawing.Size($dashboardItemWidth, $dashboardItemHeight)
     $rowPanel.ColumnCount = 4
-    [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
-    [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
-    [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
-    [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize')))
+    foreach ($width in @($dashboardIconWidth, $dashboardLabelWidth, $dashboardValueWidth, $dashboardChipWidth)) {
+        [void]$rowPanel.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Absolute', $width)))
+    }
     $rowPanel.RowCount = 1
-    [void]$rowPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('AutoSize')))
-    $rowPanel.Margin = New-Object Windows.Forms.Padding(0, (ScalePx 2), 0, (ScalePx 2))
+    $rowPanel.GrowStyle = 'FixedSize'
+    [void]$rowPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle('Absolute', $dashboardItemHeight)))
+    $rowPanel.Padding = New-Object Windows.Forms.Padding(0)
     $rowPanel.AccessibleName = "Status $AccessibleName"
 
     $icon = New-Object Windows.Forms.Label
-    $icon.AutoSize = $true
     $iconFont = if ($script:SwsdIconFont) { $script:SwsdIconFont } else { 'Segoe UI' }
     $icon.Font = New-Object Drawing.Font($iconFont, (ScaleFont 10))
     $icon.Text = $IconGlyph
     $icon.ForeColor = $script:SwsdPalette.TextSecondary
-    $icon.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx 6), 0)
-    $icon.Anchor = 'Left'
+    $icon.Padding = New-Object Windows.Forms.Padding(0, 0, (ScalePx 8), 0)
     $rowPanel.Controls.Add($icon, 0, 0)
 
     $lbl = New-Object Windows.Forms.Label
-    $lbl.AutoSize = $true
     $lbl.Text = $Label
-    $lbl.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
+    $lbl.Font = $dashboardFont
     $lbl.ForeColor = $script:SwsdPalette.TextPrimary
-    $lbl.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx 8), 0)
-    $lbl.Anchor = 'Left'
+    $lbl.Padding = New-Object Windows.Forms.Padding(0, 0, (ScalePx 8), 0)
     $rowPanel.Controls.Add($lbl, 1, 0)
 
     $value = New-Object Windows.Forms.Label
-    $value.AutoSize = $true
     $value.Text = '-'
-    $value.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
+    $value.Font = $dashboardFont
     $value.ForeColor = $script:SwsdPalette.TextSecondary
-    $value.Anchor = 'Left'
+    $value.Padding = New-Object Windows.Forms.Padding(0, 0, (ScalePx 8), 0)
+    $value.AutoEllipsis = $true
     $rowPanel.Controls.Add($value, 2, 0)
 
     $chip = New-Object Windows.Forms.Label
-    $chip.AutoSize = $true
-    $chip.Text = ''
-    $chip.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 8.5))
-    $chip.Padding = New-Object Windows.Forms.Padding((ScalePx 8), (ScalePx 2), (ScalePx 8), (ScalePx 2))
-    $chip.Anchor = 'Right'
+    $chip.Font = $dashboardChipFont
+    $chip.Padding = New-Object Windows.Forms.Padding((ScalePx 8), 0, (ScalePx 8), 0)
     $chip.Visible = $false
     $rowPanel.Controls.Add($chip, 3, 0)
+    foreach ($control in @($icon, $lbl, $value, $chip)) {
+        $control.AutoSize = $false
+        $control.Dock = 'Fill'
+        $control.Margin = New-Object Windows.Forms.Padding(0)
+        $control.TextAlign = 'MiddleLeft'
+    }
+    $chip.TextAlign = 'MiddleCenter'
 
-    return @{ Panel = $rowPanel; Icon = $icon; Value = $value; Chip = $chip }
+    return @{ Panel = $rowPanel; Icon = $icon; Label = $lbl; Value = $value; Chip = $chip }
 }
 
-$srNode = New-StatusRow 'Node.js' (Get-SwsdIconGlyph 'Tools') 'Node.js'
-$srTools = New-StatusRow 'Tools installed' (Get-SwsdIconGlyph 'Check') 'Tools installed'
-$srToken = New-StatusRow 'Token saved' (Get-SwsdIconGlyph 'Key') 'Token saved'
-$srRegion = New-StatusRow 'Region' (Get-SwsdIconGlyph 'Info') 'Region'
+$srNode = New-StatusRow 'Node.js' (Get-SwsdIconGlyph 'Node') 'Node.js'
+$srTools = New-StatusRow 'Tools installed' (Get-SwsdIconGlyph 'Tools') 'Tools'
+$srToken = New-StatusRow 'Token saved' (Get-SwsdIconGlyph 'Key') 'Token'
+$srRegion = New-StatusRow 'Region' (Get-SwsdIconGlyph 'Region') 'Region'
 $srProfile = New-StatusRow 'Profile' (Get-SwsdIconGlyph 'Profile') 'Profile'
 $statusRows = @($srNode, $srTools, $srToken, $srRegion, $srProfile)
-for ($si = 0; $si -lt $statusRows.Count; $si++) { $statusRowTable.Controls.Add($statusRows[$si].Panel, ($si % 2), [int][Math]::Floor($si / 2)) }
+for ($si = 0; $si -lt $statusRows.Count; $si++) {
+    $column = $si % 2
+    # Split the 16px gutter evenly; both cells retain identical widths.
+    $leftGap = if ($column -eq 0) { 0 } else { ScalePx 8 }
+    $rightGap = if ($column -eq 0) { ScalePx 8 } else { 0 }
+    $statusRows[$si].Panel.Margin = New-Object Windows.Forms.Padding($leftGap, 0, $rightGap, (ScalePx 8))
+    $statusRowTable.Controls.Add($statusRows[$si].Panel, $column, [int][Math]::Floor($si / 2))
+}
 Add-CardRow $statusCard $statusRowTable
+$statusRowTable.Anchor = 'Top,Left'
+$statusRowTable.Margin = New-Object Windows.Forms.Padding(0)
 
 $ctaChip = New-Object Windows.Forms.Label
 $ctaChip.AutoSize = $true
@@ -750,7 +784,6 @@ function Set-SwsdDashboardRow($Row, [string]$Value, [string]$Chip, [string]$Kind
     $Row.Chip.Text = $Chip
     $Row.Chip.BackColor = $script:SwsdPalette[('Status' + $Kind + 'Bg')]
     $Row.Chip.ForeColor = $script:SwsdPalette[('Status' + $Kind + 'Fg')]
-    $Row.Icon.ForeColor = $Row.Chip.ForeColor
     $Row.Chip.Visible = $true
 }
 function Update-SwsdDashboard {
@@ -1293,6 +1326,51 @@ if ($ValidateWindow) {
         $formClientScreen = $form.RectangleToScreen($form.ClientRectangle)
         $workingArea = [Windows.Forms.Screen]::FromControl($form).WorkingArea
 
+        # Dashboard geometry is exact at every scale (zero pixel tolerance).
+        $chipWidths = @($statusRows | ForEach-Object { $_.Chip.Width } | Sort-Object -Unique)
+        $chipHeights = @($statusRows | ForEach-Object { $_.Chip.Height } | Sort-Object -Unique)
+        $itemHeights = @($statusRows | ForEach-Object { $_.Panel.Height } | Sort-Object -Unique)
+        if ($chipWidths.Count -ne 1) { $script:SwsdLayoutFailures += "Dashboard chip widths differ: $($chipWidths -join ',')" }
+        if ($chipHeights.Count -ne 1) { $script:SwsdLayoutFailures += "Dashboard chip heights differ: $($chipHeights -join ',')" }
+        if ($itemHeights.Count -ne 1) { $script:SwsdLayoutFailures += "Dashboard item heights differ: $($itemHeights -join ',')" }
+        $columnWidths = @($statusRowTable.GetColumnWidths() | Sort-Object -Unique)
+        $rowHeights = @($statusRowTable.GetRowHeights() | Sort-Object -Unique)
+        if ($columnWidths.Count -ne 1) { $script:SwsdLayoutFailures += 'Dashboard grid columns differ in width.' }
+        if ($rowHeights.Count -ne 1) { $script:SwsdLayoutFailures += 'Dashboard grid rows differ in height.' }
+        for ($ci = 0; $ci -lt 2; $ci++) {
+            $items = @($statusRows | Where-Object { $statusRowTable.GetColumn($_.Panel) -eq $ci })
+            foreach ($field in @('Icon', 'Label', 'Value', 'Chip')) {
+                # Compare in a shared coordinate space, not relative to separate item panels.
+                $lefts = @($items | ForEach-Object { $_[$field].RectangleToScreen($_[$field].ClientRectangle).Left } | Sort-Object -Unique)
+                if ($lefts.Count -ne 1) { $script:SwsdLayoutFailures += "Dashboard column $ci $field lefts differ: $($lefts -join ',')" }
+            }
+        }
+        for ($ri = 0; $ri -lt 3; $ri++) {
+            $items = @($statusRows | Where-Object { $statusRowTable.GetRow($_.Panel) -eq $ri })
+            foreach ($field in @('Panel', 'Icon', 'Label', 'Value', 'Chip')) {
+                $tops = @($items | ForEach-Object { $_[$field].RectangleToScreen($_[$field].ClientRectangle).Top } | Sort-Object -Unique)
+                if ($tops.Count -ne 1) { $script:SwsdLayoutFailures += "Dashboard row $ri $field tops differ: $($tops -join ',')" }
+            }
+        }
+        foreach ($item in $statusRows) {
+            if ($item.Chip.Right -ne $item.Panel.ClientSize.Width) { $script:SwsdLayoutFailures += "$($item.Panel.AccessibleName) chip is not at the cell's right edge." }
+            if ($item.Chip.TextAlign -ne [Drawing.ContentAlignment]::MiddleCenter) { $script:SwsdLayoutFailures += "$($item.Panel.AccessibleName) chip text is not centered." }
+            foreach ($text in $dashboardChipTexts) {
+                $textSize = [Windows.Forms.TextRenderer]::MeasureText($text, $item.Chip.Font)
+                if ($textSize.Width + $item.Chip.Padding.Horizontal -gt $item.Chip.Width -or
+                    $textSize.Height + $item.Chip.Padding.Vertical -gt $item.Chip.Height) {
+                    $script:SwsdLayoutFailures += "$($item.Panel.AccessibleName) chip cannot fit '$text'."
+                }
+            }
+        }
+        if ($script:SwsdUiScale -eq 1) {
+            if ($form.Height -gt 1032) { $script:SwsdLayoutFailures += "Scale 1 form height ($($form.Height)) exceeds 1032px." }
+            # A clamped window must not conceal excess content behind scrolling at 1080p.
+            if ($workingArea.Height -ge 1032 -and ($rootPanel.AutoScroll -or $rootPanel.VerticalScroll.Visible -or $rootPanel.HorizontalScroll.Visible)) {
+                $script:SwsdLayoutFailures += 'Scale 1 requires scrolling on a 1080p working area.'
+            }
+        }
+
         # Determine if scrolling is acceptable (working area too small for content)
         $scaledContentWidth = ScalePx $script:SwsdContentWidth
         $constraintSize = New-Object Drawing.Size($scaledContentWidth, 0)
@@ -1411,6 +1489,10 @@ if ($ValidateWindow) {
             presentationCount = $script:SwsdPresentationCount
             consoleVisible = [SwsdDesktop.Windows]::IsWindowVisible([SwsdDesktop.Windows]::GetConsoleWindow())
             tokenEntryEnabled = $tokenBox.Enabled
+            formHeight = $form.Height
+            clientHeight = $form.ClientSize.Height
+            dashboardChipWidth = $srNode.Chip.Width
+            dashboardChipHeight = $srNode.Chip.Height
             layoutFailures = $script:SwsdLayoutFailures
             layoutNotes = $script:SwsdLayoutNotes
         }
