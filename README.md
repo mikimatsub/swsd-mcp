@@ -133,23 +133,24 @@ Each tool's input schema, description, and output shape is auto-discovered by yo
 
 ## MCP Apps widgets (rich UI)
 
-Nine interactive UI bundles ship with read tools using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25). On capable hosts (Claude Desktop, Claude Web, VS Code Copilot Chat, ChatGPT, Goose, Postman), the tool returns a rendered widget alongside the structured response. On text-only hosts (Claude Code, LM Studio), the same tools return their normal structured payload.
+Ten interactive UI bundles ship with read tools using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25). On capable hosts (Claude Desktop, Claude Web, VS Code Copilot Chat, ChatGPT, Goose, Postman), the tool returns a rendered widget alongside the structured response. On text-only hosts (Claude Code, LM Studio), the same tools return their normal structured payload.
 
 ![incident-list widget rendering a sortable table of synthetic Acme Corp tickets](docs-site/public/widgets/incident-list-dark.png)
 
-*Example: `swsd_list_incidents` rendering the `incident-list` widget. Synthetic data; no real tenant info. See the [full gallery](https://mcp-swsd.pages.dev/widgets/) for screenshots of all nine widgets.*
+*Example: `swsd_list_incidents` rendering the `incident-list` widget. Synthetic data; no real tenant info. See the [full gallery](https://mcp-swsd.pages.dev/widgets/) for screenshots of all ten widgets.*
 
 | Tool | Widget | What it renders |
 |---|---|---|
 | `swsd_get_incident` | `incident-detail` | Single-record card (description, due date, SLA, resolution, custom fields) |
 | `swsd_get_solution` | `solution-detail` | Knowledge-base article with sanitized HTML body |
-| `swsd_list_incidents`, `swsd_list_my_incidents` | `incident-list` | Filterable, sortable table |
+| `swsd_list_incidents`, `swsd_list_my_incidents`, `swsd_my_queue` | `incident-list` | Filterable, sortable table |
 | `swsd_sla_risk` | `sla-risk` | Risk-count chips + color-coded table with due countdowns |
 | `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips, public/private badges |
 | `swsd_get_record_audits` | `audit-timeline` | Timeline grouped by day with action chips and field diffs |
 | `swsd_get_catalog_item` | `catalog-item-form` | Form that submits via `swsd_create_service_request` |
 | `swsd_describe_custom_fields` | `custom-fields` | Searchable explorer with scope/module filters |
 | `swsd_change_calendar` | `change-calendar` | Local-time day sections for changes/releases with shared-CI/group conflict badges |
+| `swsd_ticket_stats` | `ticket-stats` | Summary tiles, median resolution time, and state/priority/assignee/category breakdowns |
 
 `swsd_change_calendar` is read-only and available in Agent, Operations and Full.
 It defaults to the next 30 days from UTC midnight today and scans up to three

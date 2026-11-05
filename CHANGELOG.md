@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.2.0`.
 
+### Fixed
+
+- Documentation: the README widgets section now lists all ten widgets,
+  including `ticket-stats` and `swsd_my_queue`; the widgets reference describes
+  the incident-list title total (`matched_total`/`total_scope`) instead of a
+  footer chip; the 3.2.0 entry now states that the Windows settings app is
+  system-DPI-aware rather than PerMonitorV2.
+
 ## [3.2.0] - 2026-11-04
 
 ### Added
@@ -77,14 +85,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shared status collection for the dashboard and `-CheckOnly`, with Node.js
   version and region added to the existing JSON fields.
 - Restyled the Windows settings app to a Windows 11 look using WinForms only:
-  card-based layout with TableLayoutPanel/FlowLayoutPanel, DPI-aware resizable
-  window with PerMonitorV2 support, dark/light theme from system personalization
+  card-based layout with TableLayoutPanel/FlowLayoutPanel, system-DPI-aware resizable
+  window, dark/light theme from system personalization
   settings, DWM immersive dark mode and Mica backdrop on supported builds,
   colored status chips with icon glyphs, and a subtle fade-in animation. All
   existing behaviors, switches, and accessible names are preserved. The window
   now auto-sizes to show all options without scrolling or resizing on load,
-  clamped to the current monitor's working area, and re-layouts on per-monitor
-  DPI changes. An SWSD_UI_SCALE environment variable allows simulating higher
+  clamped to the current monitor's working area. An SWSD_UI_SCALE environment variable allows simulating higher
   DPI scaling for testing.
 - Polished the `sla-risk` widget: it now sizes to its content instead of
   scrolling, truncates long incident names with full text on hover, drops the
