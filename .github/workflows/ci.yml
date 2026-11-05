@@ -36,6 +36,9 @@ jobs:
       - name: Audit pinned plugin runtime
         run: npm audit --audit-level=low --prefix plugins/swsd/runtime
 
+      - name: Diff WPF tool catalog against the registered server tools
+        run: node tests/windows-plugin/check-tool-catalog.mjs plugins/swsd/runtime/node_modules/swsd-mcp/dist
+
       - name: Verify isolated Windows install and repair
         run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-install.ps1
 
@@ -89,7 +92,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Build and verify legacy HTTP and STDIO clients
-        run: npm run build && node scripts/smoke-protocols.mjs
+        run: npm run build && node tests/windows-plugin/check-tool-catalog.mjs dist && node scripts/smoke-protocols.mjs
 
   docs:
     name: Build docs site

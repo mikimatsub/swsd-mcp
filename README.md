@@ -85,6 +85,14 @@ Replace `your-jwt-here` with your token. EU tenants use `https://apieu.samanage.
 
 Create the file if it doesn't exist. Then restart your client.
 
+**Windows plugin setup:** the WPF settings window has Home and Tools tabs.
+Appearance offers **Match Windows**, **Light**, and **Dark**, saved on this PC.
+Browse tools by area, search with **Ctrl+F**, inspect Read/Edit/Delete badges and
+example prompts, and select a profile to change the available tool set. The **?**
+beside **JSON Web Token** shows the SWSD User detail screen and **Actions →
+Generate JSON Web Token**, used only when no token is shown. Test verifies the
+connection and stores the JSON Web Token in Windows Credential Manager.
+
 **Claude Code shortcut**: skip editing the file by hand. This single line pastes verbatim into any shell (bash, zsh, PowerShell, cmd):
 
 ```bash

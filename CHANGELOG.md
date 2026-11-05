@@ -9,12 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Rebuilt Windows setup in WPF/XAML for PowerShell 5.1 with the A3 Home shell,
+  top Home/Tools navigation, a searchable 145-tool browser with profile locks and
+  Read/Edit/Delete badges, and live, saved Match Windows / Light / Dark Appearance.
+  JSON Web Token help now embeds the User detail and Generate-only figures.
+  Credential isolation, background maintenance, diagnostics redaction, and
+  PerMonitorV2 monitor/DPI round-trip validation are retained.
+- Windows profiles are data-driven for the picker: Operations covers all tools,
+  Full remains a hidden alias for older installs that still store profile=full,
+  and lock pills show Operations instead of Full. A Custom profile builder is
+  planned as a follow-up.
 - Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.2.0`.
 - Release tag pushes now publish the container image with `X.Y.Z` and `X.Y`
   tags and a matching `org.opencontainers.image.version` label.
 
 ### Fixed
 
+- Windows update lookup now uses the PowerShell 5.1 Framework process API when
+  cleaning up its own timed-out lookup, fixing the unsupported overload fallback.
 - Documentation: the README widgets section now lists all ten widgets,
   including `ticket-stats` and `swsd_my_queue`; the widgets reference describes
   the incident-list title total (`matched_total`/`total_scope`) instead of a
