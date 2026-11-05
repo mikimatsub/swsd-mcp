@@ -290,6 +290,8 @@ describe('safe delete schema, profiles, and HTTP boundary', () => {
 
   it('registers delete tools only in operations and full profiles', () => {
     const deleteNames = [
+      'swsd_delete_hardware_warranty',
+      'swsd_delete_contract_item',
       'swsd_delete_contract',
       'swsd_delete_purchase_order',
       'swsd_delete_vendor',
