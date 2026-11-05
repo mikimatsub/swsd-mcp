@@ -48,6 +48,8 @@ const OPERATIONS_RECORD_TOOLS = [
   'swsd_get_configuration_item',
   'swsd_list_contracts',
   'swsd_get_contract',
+  'swsd_list_change_catalogs',
+  'swsd_get_change_catalog',
   'swsd_list_purchase_orders',
   'swsd_get_purchase_order',
   'swsd_list_vendors',
@@ -83,7 +85,25 @@ const ASSET_WRITE_TOOLS = [
   'swsd_update_printer',
 ] as const;
 
+const PROCUREMENT_WRITE_TOOLS = [
+  'swsd_create_contract',
+  'swsd_update_contract',
+  'swsd_create_purchase_order',
+  'swsd_update_purchase_order',
+  'swsd_create_vendor',
+  'swsd_update_vendor',
+  'swsd_create_catalog_item',
+  'swsd_update_catalog_item',
+  'swsd_create_change_catalog',
+  'swsd_update_change_catalog',
+] as const;
+
 const DELETE_TOOLS = [
+  'swsd_delete_contract',
+  'swsd_delete_purchase_order',
+  'swsd_delete_vendor',
+  'swsd_delete_catalog_item',
+  'swsd_delete_change_catalog',
   'swsd_delete_hardware_asset',
   'swsd_delete_mobile_device',
   'swsd_delete_other_asset',
@@ -155,7 +175,7 @@ export const PROFILE_TOOLS = {
     'swsd_list_problems',
   ],
   agent: AGENT_TOOLS,
-  operations: [...new Set([...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DIRECTORY_WRITE_TOOLS, ...ASSET_WRITE_TOOLS, ...DELETE_TOOLS])],
+  operations: [...new Set([...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DIRECTORY_WRITE_TOOLS, ...ASSET_WRITE_TOOLS, ...PROCUREMENT_WRITE_TOOLS, ...DELETE_TOOLS])],
   knowledge: [
     'swsd_get_server_info',
     'swsd_health_check',
@@ -226,6 +246,7 @@ export const PROFILE_TOOLS = {
     ...OPERATIONS_RECORD_TOOLS,
     ...DIRECTORY_WRITE_TOOLS,
     ...ASSET_WRITE_TOOLS,
+    ...PROCUREMENT_WRITE_TOOLS,
     ...DELETE_TOOLS,
   ])],
 } as const satisfies Record<ProfileName, readonly string[]>;
