@@ -9,8 +9,9 @@ import { SlaRiskInput } from '../../schemas/slaRisk.js';
 import { PaginationWithScopeOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
+import { withTotalScope, type PaginationMeta } from '../../swsd/pagination.js';
 import { toIncidentDetail, toIncidentSummary } from '../../swsd/mappers/incident.js';
-import type { IncidentSlaViolation } from '../../swsd/types.js';
 import { computeSlaRisk, sortByRisk } from '../../swsd/mappers/slaRisk.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
 import { applyDateAlias } from '../../utils/dateAliases.js';
@@ -65,6 +66,8 @@ export function registerSlaRisk(server: McpServer, ctx: ToolContext): void {
           matches_in_page: z.number().int(),
           unscanned_candidates_remain: z.boolean(),
           client_filter_applied: z.boolean(),
+          pages_scanned: z.number().int(),
+          truncated: z.boolean().describe('True when candidate pages remain or max_results omitted scanned matches.'),
         }),
       }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true, idempotentHint: true },
@@ -81,49 +84,40 @@ export function registerSlaRisk(server: McpServer, ctx: ToolContext): void {
           sort_by: 'due_at',
           sort_order: 'ASC',
         };
-        if (input.states) params.state = input.states;
-        if (input.priorities) params.priority = input.priorities;
+        if (input.states?.length) params.state = input.states;
+        if (input.priorities?.length) params.priority = input.priorities;
         if (input.assigned_to_group !== undefined) params.assigned_to = input.assigned_to_group;
-        if (input.state_is_not) params.state_is_not = input.state_is_not;
+        if (input.state_is_not?.length) params.state_is_not = input.state_is_not;
         if (input.updated_from) params.updated_at = ['greater_than', input.updated_from];
 
-        const { body, pagination } = await ctx.client.get<unknown>('/incidents.json', params);
-        const raw = Array.isArray(body) ? body : [];
-        const candidates = raw
-          .map(toIncidentSummary)
-          .filter((x): x is NonNullable<typeof x> => x !== null);
-
-        const violationsById = new Map<number, IncidentSlaViolation[]>();
-        for (const row of raw) {
-          const detail = toIncidentDetail(row);
-          if (detail?.sla_violations && detail.sla_violations.length > 0) {
-            violationsById.set(detail.id, detail.sla_violations);
-          }
-        }
-
         const assigneeLower = input.assignee_email?.toLowerCase();
-        const clientFilterApplied = assigneeLower !== undefined;
-        const filtered = clientFilterApplied
-          ? candidates.filter(
-              (c) =>
-                c.assignee_email !== undefined &&
-                c.assignee_email.toLowerCase() === assigneeLower,
-            )
-          : candidates;
-
         const atRiskHours = input.at_risk_within_hours ?? 24;
         const includeNoDue = input.include_no_due_date ?? false;
-
-        const withRisk = filtered.map((inc) => {
-          // sla_violations[] is only present when SWSD includes it on the row
-          // (long layout); reuse the detail mapper's normalization when it is.
-          const risk = computeSlaRisk(inc.due_at, violationsById.get(inc.id) ?? [], atRiskHours, now);
-          return { ...inc, ...risk };
-        });
-
-        const kept = includeNoDue
-          ? withRisk
-          : withRisk.filter((r) => r.risk !== 'no_due_date');
+        const clientFilterApplied = assigneeLower !== undefined || !includeNoDue;
+        const kept: Array<NonNullable<ReturnType<typeof toIncidentSummary>> & ReturnType<typeof computeSlaRisk>> = [];
+        const seen = new Set<number>();
+        let pagination: PaginationMeta;
+        let page = input.page;
+        let pagesScanned = 0;
+        let candidatesScanned = 0;
+        do {
+          const response = await ctx.client.get<unknown>('/incidents.json', { ...params, page });
+          pagination = response.pagination;
+          const raw = requireListArray(response.body);
+          pagesScanned++;
+          candidatesScanned += raw.length;
+          for (const row of raw) {
+            const inc = toIncidentSummary(row);
+            if (!inc || seen.has(inc.id)) continue;
+            seen.add(inc.id);
+            if (assigneeLower !== undefined && inc.assignee_email?.toLowerCase() !== assigneeLower) continue;
+            const detail = toIncidentDetail(row);
+            const risk = computeSlaRisk(inc.due_at, detail?.sla_violations ?? [], atRiskHours, now);
+            if (includeNoDue || risk.risk !== 'no_due_date') kept.push({ ...inc, ...risk });
+          }
+          page++;
+        } while (input.max_results !== undefined && kept.length < input.max_results
+          && pagination.has_more && pagesScanned < 10 && page <= 10_000);
 
         const sorted = sortByRisk(kept);
 
@@ -138,22 +132,15 @@ export function registerSlaRisk(server: McpServer, ctx: ToolContext): void {
         }
 
         const applied_filters: Record<string, unknown> = {};
-        if (input.states) applied_filters.states = input.states;
-        if (input.state_is_not) applied_filters.state_is_not = input.state_is_not;
-        if (input.priorities) applied_filters.priorities = input.priorities;
+        if (input.states?.length) applied_filters.states = input.states;
+        if (input.state_is_not?.length) applied_filters.state_is_not = input.state_is_not;
+        if (input.priorities?.length) applied_filters.priorities = input.priorities;
         if (input.assigned_to_group !== undefined) applied_filters.assigned_to_group = input.assigned_to_group;
         if (input.assignee_email) applied_filters.assignee_email = input.assignee_email;
         if (input.updated_from) applied_filters.updated_from = input.updated_from;
-        if (input.at_risk_within_hours !== undefined) applied_filters.at_risk_within_hours = input.at_risk_within_hours;
-        if (input.include_no_due_date) applied_filters.include_no_due_date = input.include_no_due_date;
 
         const hasAnyFilter = Object.keys(applied_filters).length > 0;
-        const total_scope: 'filtered' | 'tenant' | 'unknown' =
-          pagination.total === undefined
-            ? 'unknown'
-            : hasAnyFilter
-              ? 'filtered'
-              : 'tenant';
+        const truncated = pagination.has_more || capped.length < kept.length;
 
         const breachedCount = String(counts['breached'] ?? 0);
         const totalCount = String(capped.length);
@@ -161,7 +148,8 @@ export function registerSlaRisk(server: McpServer, ctx: ToolContext): void {
           `SLA risk scan: ${totalCount} incidents (${breachedCount} breached, ` +
           `${String(counts['critical'] ?? 0)} critical, ${String(counts['warning'] ?? 0)} warning, ` +
           `${String(counts['ok'] ?? 0)} ok, ${String(counts['no_due_date'] ?? 0)} no due date) ` +
-          `from ${String(candidates.length)} candidates on page ${String(pagination.page)}.`;
+          `from ${String(candidatesScanned)} candidates across ${String(pagesScanned)} page(s)` +
+          `${truncated ? ' (truncated)' : ''}.`;
 
         return structuredResult(
           {
@@ -181,13 +169,16 @@ export function registerSlaRisk(server: McpServer, ctx: ToolContext): void {
             })),
             counts,
             now: now.toISOString(),
-            pagination: { ...pagination, total_scope },
+            pagination: withTotalScope(pagination, clientFilterApplied, hasAnyFilter, kept.length,
+              input.page === 1 && !pagination.has_more),
             applied_filters,
             scan: {
-              candidates_scanned: candidates.length,
+              candidates_scanned: candidatesScanned,
               matches_in_page: capped.length,
               unscanned_candidates_remain: pagination.has_more,
               client_filter_applied: clientFilterApplied,
+              pages_scanned: pagesScanned,
+              truncated,
             },
           },
           summary,

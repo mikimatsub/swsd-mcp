@@ -51,7 +51,7 @@ describe('directory get-by-id lookups', () => {
       id: 5100001,
       name: 'Network Team',
       memberships: [
-        { id: 4100001, name: 'Avery Example', email: 'avery@example.com', is_user: true },
+        { id: 4100001, name: 'Avery Example', email: 'avery@example.test', is_user: true },
         { id: 5100009, name: 'Nested group', is_user: false },
         { name: 'no id' },
         'junk',
@@ -59,9 +59,28 @@ describe('directory get-by-id lookups', () => {
     });
     const r = await call({ id: 5100001 });
     const group = (r.structuredContent as { group: { members: unknown[]; member_count: number } }).group;
-    expect(group.members).toEqual([{ id: 4100001, name: 'Avery Example', email: 'avery@example.com' }]);
+    expect(group.members).toEqual([{ membership_id: 4100001, name: 'Avery Example', email: 'avery@example.test' }]);
     expect(group.member_count).toBe(1);
     expect(r.content[0]).toMatchObject({ text: 'Group 5100001: Network Team' });
+  });
+
+  it('swsd_get_group accepts documented membership labels and validates output without a user id', async () => {
+    const { client, tool, call } = setup(registerGetGroup, 'swsd_get_group');
+    client.setLookupBody({ group: {
+      id: 1234567,
+      name: 'Synthetic team',
+      memberships: [{ id: '1234568', user: 'Synthetic member' }],
+    } });
+    const result = await call({ id: 1234567 });
+    expect(result.isError).toBeUndefined();
+    expect(result.structuredContent).toMatchObject({ group: {
+      member_count: 1,
+      members: [{ membership_id: 1234568, name: 'Synthetic member' }],
+    } });
+    const outputSchema = (tool as unknown as {
+      outputSchema: { parse: (input: unknown) => unknown };
+    }).outputSchema;
+    expect(outputSchema.parse(result.structuredContent)).toEqual(result.structuredContent);
   });
 
   it.each([

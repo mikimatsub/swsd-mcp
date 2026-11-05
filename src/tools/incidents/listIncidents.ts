@@ -9,6 +9,8 @@ import { ListIncidentsInput } from '../../schemas/incident.js';
 import { PaginationWithScopeOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
+import { withTotalScope } from '../../swsd/pagination.js';
 import { toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
 import { applyDateAlias } from '../../utils/dateAliases.js';
@@ -96,23 +98,23 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
           page: input.page,
           per_page: input.per_page,
         };
-        if (input.states) params.state = input.states;
-        if (input.priorities) params.priority = input.priorities;
-        if (input.categories) params.category = input.categories;
+        if (input.states?.length) params.state = input.states;
+        if (input.priorities?.length) params.priority = input.priorities;
+        if (input.categories?.length) params.category = input.categories;
         if (input.updated_from) params.updated_at = ['greater_than', input.updated_from];
         if (input.updated_to) params.updated_to = input.updated_to;
         if (input.created_from) params.created_from = input.created_from;
         if (input.created_to) params.created_to = input.created_to;
-        if (input.sites) params.site = input.sites;
-        if (input.departments) params.department = input.departments;
+        if (input.sites?.length) params.site = input.sites;
+        if (input.departments?.length) params.department = input.departments;
         if (input.assigned_to_group !== undefined) params.assigned_to = input.assigned_to_group;
-        if (input.state_is_not) params.state_is_not = input.state_is_not;
+        if (input.state_is_not?.length) params.state_is_not = input.state_is_not;
         if (input.sort_by) params.sort_by = input.sort_by;
         if (input.sort_order) params.sort_order = input.sort_order;
         if (input.query) params.query = input.query;
 
         const { body, pagination } = await ctx.client.get<unknown>('/incidents.json', params);
-        const raw = Array.isArray(body) ? body : [];
+        const raw = requireListArray(body);
         const candidates = raw
           .map(toIncidentSummary)
           .filter((x): x is NonNullable<typeof x> => x !== null);
@@ -148,35 +150,22 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         // them identically (both narrowed the result), but the client_filter
         // section makes the SOURCE of the narrowing inspectable.
         const applied_filters: Record<string, unknown> = {};
-        if (input.states) applied_filters.states = input.states;
-        if (input.priorities) applied_filters.priorities = input.priorities;
-        if (input.categories) applied_filters.categories = input.categories;
+        if (input.states?.length) applied_filters.states = input.states;
+        if (input.priorities?.length) applied_filters.priorities = input.priorities;
+        if (input.categories?.length) applied_filters.categories = input.categories;
         if (input.assignee_email) applied_filters.assignee_email = input.assignee_email;
         if (input.requester_email) applied_filters.requester_email = input.requester_email;
         if (input.updated_from) applied_filters.updated_from = input.updated_from;
         if (input.updated_to) applied_filters.updated_to = input.updated_to;
         if (input.created_from) applied_filters.created_from = input.created_from;
         if (input.created_to) applied_filters.created_to = input.created_to;
-        if (input.sites) applied_filters.sites = input.sites;
-        if (input.departments) applied_filters.departments = input.departments;
+        if (input.sites?.length) applied_filters.sites = input.sites;
+        if (input.departments?.length) applied_filters.departments = input.departments;
         if (input.assigned_to_group !== undefined) applied_filters.assigned_to_group = input.assigned_to_group;
-        if (input.state_is_not) applied_filters.state_is_not = input.state_is_not;
-        if (input.sort_by) applied_filters.sort_by = input.sort_by;
-        if (input.sort_order) applied_filters.sort_order = input.sort_order;
+        if (input.state_is_not?.length) applied_filters.state_is_not = input.state_is_not;
         if (input.query) applied_filters.query = input.query;
 
         const hasAnyFilter = Object.keys(applied_filters).length > 0;
-        // total_scope: the server-side X-Total-Count reflects pre-client-filter
-        // candidates, not the final match count. So when a client filter was
-        // applied, total is the candidate pool, not the actual matches —
-        // marked 'filtered' in either case because some narrowing happened
-        // somewhere; consumers should use scan.matches_in_page for actual count.
-        const total_scope: 'filtered' | 'tenant' | 'unknown' =
-          pagination.total === undefined
-            ? 'unknown'
-            : hasAnyFilter
-              ? 'filtered'
-              : 'tenant';
 
         const filterDescription = hasAnyFilter
           ? `matching your filters (${Object.entries(applied_filters)
@@ -199,7 +188,7 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         return structuredResult(
           {
             incidents,
-            pagination: { ...pagination, total_scope },
+            pagination: withTotalScope(pagination, clientFilterApplied, hasAnyFilter, incidents.length),
             applied_filters,
             scan: {
               candidates_scanned: candidates.length,

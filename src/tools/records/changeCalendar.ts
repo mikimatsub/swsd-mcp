@@ -6,6 +6,7 @@ import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
 import { buildCalendar, calendarWindow, isUnscheduled, matchesCalendarFilters, toCalendarItem } from '../../swsd/mappers/changeCalendar.js';
 
 const UI_RESOURCE_URI = 'ui://swsd/change-calendar.html';
@@ -19,6 +20,7 @@ export function registerChangeCalendar(server: McpServer, ctx: ToolContext): voi
       'Defaults to today at UTC midnight through 30 days later. Windows use overlap, with an exclusive end; ' +
       'missing, invalid or non-positive planned ends use start + 1 hour. Rows without a valid planned start ' +
       'are excluded and counted as unscheduled. Conflicts cover only returned items, not the whole tenant. ' +
+      'At most 200 conflict details are returned; conflict_count counts all pairs and conflicts_truncated flags omitted details. ' +
       'scan reports pages_fetched per kind, rows_scanned, unscheduled and truncated; when truncated is true, ' +
       'unscanned records may contain more matches or conflicts. No server-side search or date ordering is assumed.',
     inputSchema: ChangeCalendarInput,
@@ -40,7 +42,7 @@ export function registerChangeCalendar(server: McpServer, ctx: ToolContext): voi
         for (let page = 1; page <= input.max_pages; page++) {
           const { body, pagination } = await ctx.client.get<unknown>(PATHS[kind], { page, per_page: input.per_page });
           scan.pages_fetched[kind]++;
-          const rows = Array.isArray(body) ? body : [];
+          const rows = requireListArray(body);
           scan.rows_scanned += rows.length;
           for (const row of rows) {
             if (isUnscheduled(row, kind)) scan.unscheduled++;
@@ -55,8 +57,9 @@ export function registerChangeCalendar(server: McpServer, ctx: ToolContext): voi
       const { max_pages: _maxPages, per_page: _perPage, ...filters } = input;
       return structuredResult({
         ...calendar, window, scan, applied_filters: { ...filters, kinds, ...window },
-      }, `Change calendar: ${String(calendar.items.length)} scheduled items, ${String(calendar.conflicts.length)} conflicts ` +
+      }, `Change calendar: ${String(calendar.items.length)} scheduled items, ${String(calendar.conflict_count)} conflicts ` +
         `from ${String(scan.rows_scanned)} rows scanned; ${String(scan.unscheduled)} unscheduled.` +
+        (calendar.conflicts_truncated ? ` ${String(calendar.conflicts.length)} conflict details shown; remaining details omitted.` : '') +
         (scan.truncated ? ' Scan truncated: more records and conflicts may exist.' : ' All available pages scanned.'));
     } catch (err) {
       return mapSwsdError(err);

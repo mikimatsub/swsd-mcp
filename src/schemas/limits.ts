@@ -11,6 +11,11 @@ export const MAX_REQUEST_VARIABLES = 100;
 export const MAX_TIME_ENTRY_NAME_CHARS = 2_000;
 export const MAX_EMAIL_CHARS = 320;
 
+export const RELATIVE_TIME_DESCRIPTION =
+  'Convenience alias for updated_from: "Nh" is an exact hours-ago ISO timestamp; ' +
+  '"Nd" and "Nw" use the UTC calendar date N days or N weeks ago. ' +
+  'N must be 1-365. Ignored if updated_from is explicitly set.';
+
 export const EmailInput = z.string().max(MAX_EMAIL_CHARS).email();
 
 export const IsoDateOrDateTimeInput = z

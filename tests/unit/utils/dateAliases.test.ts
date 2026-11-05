@@ -28,10 +28,10 @@ describe('parseDateAlias', () => {
     expect(parseDateAlias('30d')).toBe('2026-04-07');
   });
 
-  it('parses 24h as 1 day ago', () => {
+  it('preserves the time of day for hour aliases', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-07T15:00:00Z'));
-    expect(parseDateAlias('24h')).toBe('2026-05-06');
+    expect(parseDateAlias('24h')).toBe('2026-05-06T15:00:00.000Z');
   });
 
   it('rejects unsupported aliases (returns null)', () => {

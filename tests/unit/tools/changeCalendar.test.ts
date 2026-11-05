@@ -34,6 +34,28 @@ describe('change calendar schema', () => {
 });
 
 describe('swsd_change_calendar', () => {
+  it('reports total conflicts separately from capped details and scan truncation', async () => {
+    const { client, call } = setup();
+    client.setLookupBody(Array.from({ length: 22 }, (_, index) => ({
+      id: 1234567 + index, name: 'Synthetic scheduled change', state: 'Scheduled',
+      planned_start_at: '2026-11-10T09:00:00Z', planned_end_at: '2026-11-10T11:00:00Z',
+      group_assignee: { id: 1234567, name: 'Synthetic group' },
+    })));
+    const result = await call({ ...window, kinds: ['change'] });
+    const data = ChangeCalendarOutput.parse(result.structuredContent);
+    expect(data.conflicts).toHaveLength(200);
+    expect(data).toMatchObject({ conflict_count: 231, conflicts_truncated: true, scan: { truncated: false } });
+    expect(data.items.map(i => i.conflict_count)).toEqual(Array<number>(22).fill(21));
+    expect(result.content[0]).toMatchObject({ text: expect.stringContaining('231 conflicts') });
+    expect(result.content[0]).toMatchObject({ text: expect.stringContaining('200 conflict details shown') });
+  });
+  it('rejects malformed list payloads rather than reporting an empty calendar', async () => {
+    const { client, call } = setup();
+    client.setLookupBody({ unexpected: [] });
+    const result = await call({ ...window, kinds: ['change'] });
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toBeUndefined();
+  });
   it('scans both kinds with pagination only, stopping independently at has_more false', async () => {
     const { client, call } = setup();
     client.setBodyForPath(p => p === '/changes.json', [row]);
@@ -114,7 +136,7 @@ describe('swsd_change_calendar', () => {
   it('uses a fixed UTC default window and handles empty list payloads', async () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date('2026-11-04T23:00:00-05:00'));
     const { client, call } = setup();
-    client.setLookupBody(null);
+    client.setLookupBody([]);
     const data = ChangeCalendarOutput.parse((await call()).structuredContent);
     expect(data.window).toEqual({ from: '2026-11-05T00:00:00.000Z', to: '2026-12-05T00:00:00.000Z' });
     expect(data.items).toEqual([]);

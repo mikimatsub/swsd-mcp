@@ -69,9 +69,9 @@ const CASES = [
   {
     stem: 'configuration_item', root: 'configuration_item', collection: 'configuration_items', create: true,
     minimal: { name: NAME },
-    fields: { ...COMMON_INPUT, name: NAME, user_email: 'user@example.com' },
-    payload: { ...COMMON_PAYLOAD, name: NAME, user: { email: 'user@example.com' } },
-    labels: [...COMMON_LABELS, 'name'], emails: ['user_email'],
+    fields: { name: NAME, description: DESCRIPTION, state: 'Active', site_id: 1234567, department_id: 1234568, user_email: 'user@example.test' },
+    payload: { name: NAME, description: DESCRIPTION, state: 'Active', site_id: 1234567, department_id: 1234568, user: { email: 'user@example.test' } },
+    labels: ['state', 'name'], emails: ['user_email'],
   },
   {
     stem: 'printer', root: 'printer', collection: 'printers', create: false,
@@ -156,7 +156,10 @@ describe.each(CASES)('$stem asset writes', (spec) => {
       client.setPostResponse({ id: ID });
       client.setPutResponse({ id: ID });
       const minimal = update ? { id: ID, description: '' } : spec.minimal;
-      const result = await invoke({ ...minimal, unknown_field: 'ignored', state: 'ignored' });
+      const unsupported = spec.stem === 'configuration_item'
+        ? { status_name: 'ignored', site_name: 'ignored', department_name: 'ignored' }
+        : { state: 'ignored' };
+      const result = await invoke({ ...minimal, unknown_field: 'ignored', ...unsupported });
       expect(client.calls).toEqual([{
         type: update ? 'put' : 'post', path,
         body: { [spec.root]: update ? { description: '' } : spec.minimal },
@@ -165,6 +168,18 @@ describe.each(CASES)('$stem asset writes', (spec) => {
         [spec.stem]: { id: ID }, ...(update ? { changed_fields: ['description'] } : {}),
       });
     });
+
+    if (spec.stem === 'configuration_item') {
+      it('accepts CI state and positive location ids and rejects invalid location ids', () => {
+        const { schema } = setup(name);
+        expect(schema.parse(input)).toEqual(input);
+        for (const field of ['site_id', 'department_id']) {
+          for (const value of [0, -1, 1.5, '1234567']) {
+            expect(schema.safeParse({ ...input, [field]: value }).success, field).toBe(false);
+          }
+        }
+      });
+    }
 
     it.each([null, [], 'invalid', { name: NAME }].map((response) => ({ response })))(
       'rejects an unparseable write response: $response', async ({ response }) => {
@@ -271,7 +286,7 @@ describe('asset field mapping details', () => {
 
   it.each([
     { tool: 'swsd_update_mobile_device', input: { id: ID, name: NAME } },
-    { tool: 'swsd_update_configuration_item', input: { id: ID, state: 'Operational' } },
+    { tool: 'swsd_update_configuration_item', input: { id: ID, status_name: 'Operational' } },
   ])('rejects unsupported identity or state fields as an empty update: $tool', async ({ tool, input }) => {
     const { client, invoke } = setup(tool);
     const result = await invoke(input);

@@ -8,6 +8,7 @@ import {
   MAX_LONG_TEXT_CHARS,
   MAX_QUERY_CHARS,
   RelativeTimeAliasInput,
+  RELATIVE_TIME_DESCRIPTION,
 } from './limits.js';
 
 export const ListIncidentsInput = z.object({
@@ -51,10 +52,7 @@ export const ListIncidentsInput = z.object({
     .describe('Filter to incidents updated on or after this ISO date or datetime (YYYY-MM-DD or RFC 3339).'),
   updated_within: RelativeTimeAliasInput
     .optional()
-    .describe(
-      'Convenience alias for updated_from. Accepts "Nh" (hours), "Nd" (days), or "Nw" (weeks). ' +
-        'Examples: "24h", "7d", "1w", "30d". Ignored if updated_from is explicitly set.',
-    ),
+    .describe(RELATIVE_TIME_DESCRIPTION),
   updated_to: IsoDateOrDateTimeInput
     .optional()
     .describe('Filter to incidents updated on or before this ISO date or datetime. Pair with updated_from for an explicit range.'),

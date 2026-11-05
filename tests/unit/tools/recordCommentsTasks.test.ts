@@ -201,13 +201,13 @@ describe('record comment/task defaults and errors', () => {
       expect(get).toHaveBeenCalledTimes(1);
     });
 
-    it(name + ' returns an empty list for a non-array response', async () => {
+    it(name + ' rejects a non-array response as a decode error', async () => {
       const { client, invoke } = setup(name);
       client.setLookupBody(null);
       const result = await invoke(ref);
-      expect(result.structuredContent).toMatchObject(
-        name === 'swsd_list_record_comments' ? { comments: [] } : { tasks: [], count: 0 },
-      );
+      expect(result.isError).toBe(true);
+      expect(result.structuredContent).toBeUndefined();
+      expect(JSON.stringify(result.content)).toMatch(/decode/i);
     });
   }
 

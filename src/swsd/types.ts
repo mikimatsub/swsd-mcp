@@ -64,9 +64,9 @@ export interface TaskSummary {
   description?: string;
   /** Plain-text projection when SWSD returns one alongside `description`. */
   description_no_html?: string;
-  /** State name as returned by SWSD. Common values: "New", "In Progress", "Completed". */
+  /** State name normalized to agree with boolean is_complete when supplied. */
   state: string;
-  /** Convenience boolean — true when state === "Completed". */
+  /** Boolean is_complete when supplied; otherwise state === "Completed". */
   completed: boolean;
   /** Position / ordering within the incident's task list. */
   position?: number;

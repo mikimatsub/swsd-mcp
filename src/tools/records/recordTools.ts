@@ -15,6 +15,7 @@ import { PaginationOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
 import {
   buildLifecycleWritePayload,
   toGenericRecordDetail,
@@ -121,8 +122,11 @@ const CreateOtherAssetInput = z.object({
   user_email: EmailInput.optional(),
 });
 const CreateConfigurationItemInput = z.object({
-  ...AssetFields,
   name: RecordLabelInput,
+  description: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
+  state: RecordLabelInput.optional().describe('Configuration item state name, such as Active.'),
+  site_id: RecordIdInput.optional().describe('Site ID from swsd_list_sites.'),
+  department_id: RecordIdInput.optional().describe('Department ID from swsd_list_departments.'),
   user_email: EmailInput.optional(),
 });
 const UpdatePrinterInput = z.object({
@@ -197,7 +201,7 @@ const CreateChangeCatalogInput = z.object({
   description: RecordTextInput.optional(),
   change_type: RecordLabelInput.optional(),
   priority: RecordLabelInput.optional(),
-  state: RecordLabelInput.optional(),
+  state_id: RecordIdInput.optional().describe('Internal change-catalog state ID.'),
   change_plan: RecordTextInput.optional(),
   rollback_plan: RecordTextInput.optional(),
   test_plan: RecordTextInput.optional(),
@@ -463,7 +467,7 @@ function registerListTool(server: McpServer, ctx: ToolContext, cfg: RecordConfig
           pathJson(cfg.collectionPath),
           params,
         );
-        const rows = Array.isArray(body) ? body : [];
+        const rows = requireListArray(body);
         const records = rows
           .map((row) => toGenericRecordSummary(readRecord(row, cfg.readRoot)))
           .filter((x): x is NonNullable<typeof x> => x !== null);

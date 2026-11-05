@@ -13,13 +13,13 @@
 const ALIAS_RE = /^(\d+)(d|h|w)$/;
 
 /**
- * Parse a relative-date alias into an ISO date string (YYYY-MM-DD) relative
- * to `Date.now()`.
+ * Parse hours into a full ISO timestamp. Days/weeks retain date-only UTC
+ * boundaries: subtract N days/weeks, then use that UTC calendar date.
  *
  * Accepted forms (case-sensitive, optional surrounding whitespace):
- *   - `Nh` - N hours ago (clamped to 1..365)
- *   - `Nd` - N days ago (clamped to 1..365)
- *   - `Nw` - N weeks ago (clamped to 1..365 - N*7 days)
+ *   - `Nh` - N hours ago (N must be 1..365)
+ *   - `Nd` - UTC calendar date N days ago (N must be 1..365)
+ *   - `Nw` - UTC calendar date N*7 days ago (N must be 1..365)
  *
  * Returns `null` for any input that doesn't match (caller should treat the
  * original value as a literal date or pass it through unchanged).
@@ -36,7 +36,7 @@ export function parseDateAlias(input: string): string | null {
   const msPerDay = 24 * msPerHour;
   const ms = unit === 'h' ? msPerHour : unit === 'd' ? msPerDay : 7 * msPerDay;
   const target = new Date(now.getTime() - value * ms);
-  return target.toISOString().slice(0, 10);
+  return unit === 'h' ? target.toISOString() : target.toISOString().slice(0, 10);
 }
 
 /**

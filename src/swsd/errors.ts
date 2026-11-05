@@ -23,8 +23,21 @@ export class SwsdNetworkError extends Error {
   }
 }
 
+export class SwsdDecodeError extends Error {
+  constructor(public readonly status?: number) {
+    super(`Could not decode the SWSD response${status === undefined ? '' : ` (HTTP ${String(status)})`}.`);
+    this.name = 'SwsdDecodeError';
+  }
+}
+
 export function mapSwsdError(err: unknown): CallToolResult {
   if (err instanceof SwsdHttpError) return mapHttpError(err);
+  if (err instanceof SwsdDecodeError) {
+    return toolError(
+      err.message,
+      'SWSD may already have completed the request. Check the record before retrying a write.',
+    );
+  }
   if (err instanceof SwsdNetworkError) {
     return toolError(
       `Network error contacting SWSD: ${err.cause instanceof Error ? err.cause.message : 'unknown'}.`,
