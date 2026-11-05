@@ -5,7 +5,7 @@ import globals from 'globals';
 
 export default tseslint.config(
   // docs-site is a separate sub-package (Astro Starlight) with its own tooling; not linted from the root.
-  { ignores: ['dist/', 'node_modules/', 'coverage/', 'docs-site/', '.claude/', '.research/'] },
+  { ignores: ['dist/', 'node_modules/', 'coverage/', 'docs-site/', '.claude/', '.research/', '.codex-jobs/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

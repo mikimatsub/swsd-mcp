@@ -30,37 +30,14 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Install pinned plugin runtime without lifecycle scripts
-        run: npm ci --ignore-scripts --strict-peer-deps --prefix plugins/swsd/runtime
+      - name: Install candidate build dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --strict-peer-deps
 
-      - name: Audit pinned plugin runtime
-        run: npm audit --audit-level=low --prefix plugins/swsd/runtime
+      - name: Build release candidate
+        run: npm run build
 
-      - name: Diff WPF tool catalog against the registered server tools
-        run: node tests/windows-plugin/check-tool-catalog.mjs plugins/swsd/runtime/node_modules/swsd-mcp/dist
-
-      - name: Verify isolated Windows install and repair
-        run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-install.ps1
-
-      - name: Validate profile persistence without credential writes
-        run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-profiles.ps1
-
-      - name: Click every setup button with mocked actions
-        run: powershell.exe -NoProfile -NonInteractive -File tests/windows-plugin/check-ui-handlers.ps1
-
-      - name: Validate update check and version logic
-        run: powershell.exe -NoProfile -NonInteractive -STA -File tests/windows-plugin/check-update.ps1
-
-      - name: Validate diagnostics redaction and isolated credential presence
-        run: powershell.exe -NoProfile -NonInteractive -STA -File tests/windows-plugin/check-diagnostics.ps1
-      - name: Windows plugin DPI
-        run: powershell.exe -NoProfile -NonInteractive -STA -File tests/windows-plugin/check-dpi.ps1
-
-      - name: Validate setup controls without opening a window
-        run: powershell.exe -NoProfile -NonInteractive -STA -File plugins/swsd/scripts/Manage-Swsd.ps1 -ValidateUi
-
-      - name: Check real launcher and all five STDIO profiles
-        run: node tests/windows-plugin/check-stdio.mjs plugins/swsd/runtime/node_modules/swsd-mcp/dist
+      - name: Verify packed candidate with all isolated Windows plugin checks
+        run: node tests/windows-plugin/check-candidate.mjs
 
   test:
     name: Lint, typecheck, test
@@ -182,8 +159,9 @@ jobs:
     timeout-minutes: 10
     needs: [test, docker]
     # Publish from main branch pushes (latest + sha) and release tag pushes
-    # (semver tags + version label); never from PRs.
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    # (semver tags + version label); never from PRs. Release-prep merges can
+    # explicitly defer publication while retaining all build/smoke checks.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && !contains(github.event.head_commit.message, '[skip ghcr]')
     permissions:
       contents: read
       packages: write

@@ -311,7 +311,7 @@ $updateXaml = New-SwsdRowXaml 'updates' 'upd' 'Updates' 'Check for a newer versi
 $diagnosticsXaml = New-SwsdRowXaml 'diagnostics' 'diag' 'Diagnostics' 'Copy a redacted report for support. Tokens are never included.' '<Button Name="copyDiagnostics" Content="Copy report" Width="110" AutomationProperties.Name="Copy diagnostics"/>'
 $repairXaml = New-SwsdRowXaml 'repair' 'wrench' 'Repair tools' 'Fix a damaged or incomplete installation.' '<Button Name="install" Content="Repair" Width="110"/>'
 $appearanceItems = foreach ($entry in $script:SwsdThemes.GetEnumerator()) {
-    if ($entry.Key -eq 'dracula') {'<Separator Focusable="False" IsEnabled="False" Margin="8,5" Background="{DynamicResource Divider}"/>'}
+    if ($entry.Key -eq 'dracula') {'<ComboBoxItem Tag="__separator" IsEnabled="False" Focusable="False" IsHitTestVisible="False"><ComboBoxItem.Template><ControlTemplate TargetType="ComboBoxItem"><Border Height="1" Background="{DynamicResource Divider}" Margin="8,6"/></ControlTemplate></ComboBoxItem.Template></ComboBoxItem>'}
     '<ComboBoxItem Content="'+(ConvertTo-SwsdXml $entry.Value.name)+'" Tag="'+$entry.Key+'"/>'
 }
 $appearanceXaml = New-SwsdRowXaml 'appearance' 'theme' 'Appearance' 'Follows Windows' ('<ComboBox Name="appearance" Width="230" AutomationProperties.Name="Appearance">'+($appearanceItems -join '')+'</ComboBox>')
@@ -353,7 +353,6 @@ $xaml = @"
  <Style TargetType="TextBox"><Setter Property="Padding" Value="12,7"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Background" Value="{DynamicResource Control}"/><Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/><Setter Property="CaretBrush" Value="{DynamicResource Text}"/><Setter Property="SelectionBrush" Value="{DynamicResource Accent}"/><Setter Property="SelectionTextBrush" Value="{DynamicResource AccentText}"/><Setter Property="SelectionOpacity" Value="1"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox"><Border Name="TextFrame" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"><ScrollViewer Name="PART_ContentHost" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/></Border><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="TextFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="TextFrame" Property="BorderThickness" Value="1,1,1,2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
  <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="CheckBox"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="16"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Name="CheckFrame" Width="15" Height="15" CornerRadius="3" Background="{DynamicResource Control}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" VerticalAlignment="Center"/><Path Name="CheckMark" Data="M0,4 L3,7 L9,0" Stroke="{DynamicResource AccentText}" StrokeThickness="1.6" Width="9" Height="7" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed"/><ContentPresenter Grid.Column="2" VerticalAlignment="Center"/></Grid><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="CheckFrame" Property="Background" Value="{DynamicResource Accent}"/><Setter TargetName="CheckFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="CheckFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="CheckFrame" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
 
- <Style TargetType="Separator"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Separator"><Border Height="1" Background="{DynamicResource Divider}" Margin="{TemplateBinding Margin}"/></ControlTemplate></Setter.Value></Setter></Style>
  <Style TargetType="ToolTip"><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToolTip"><Border Background="{DynamicResource Flyout}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="5" Padding="10,7"><ContentPresenter/></Border></ControlTemplate></Setter.Value></Setter></Style>
  <Style x:Key="ScrollPage" TargetType="RepeatButton"><Setter Property="Focusable" Value="False"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></Setter.Value></Setter></Style>
  <Style x:Key="ScrollThumb" TargetType="Thumb"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Thumb"><Border Name="ThumbFrame" Background="{DynamicResource Muted}" CornerRadius="3" Margin="3"/><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ThumbFrame" Property="Background" Value="{DynamicResource AccentForeground}"/></Trigger><Trigger Property="IsDragging" Value="True"><Setter TargetName="ThumbFrame" Property="Background" Value="{DynamicResource AccentForeground}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
@@ -1192,8 +1191,8 @@ function Remove-SwsdUiFixture {
 }
 function Test-SwsdAppearanceControls {
     $profile.SelectedIndex=1
-    Assert-Swsd ($appearance.Items.Count -eq 26 -and $appearance.Items[3] -is [Windows.Controls.Separator] -and -not $appearance.Items[3].IsEnabled) 'Appearance needs three Windows choices, a nonselectable separator and 22 named themes.'
-    $ids=@($appearance.Items | Where-Object {$_ -is [Windows.Controls.ComboBoxItem]} | ForEach-Object {[string]$_.Tag})
+    Assert-Swsd ($appearance.Items.Count -eq 26 -and $appearance.Items[3] -is [Windows.Controls.ComboBoxItem] -and $appearance.Items[3].Tag -ceq '__separator' -and -not $appearance.Items[3].IsEnabled -and -not $appearance.Items[3].Focusable -and -not $appearance.Items[3].IsHitTestVisible) 'Appearance needs three Windows choices, a nonselectable divider and 22 named themes.'
+    $ids=@($appearance.Items | Where-Object {$_ -is [Windows.Controls.ComboBoxItem] -and $_.Tag -cne '__separator'} | ForEach-Object {[string]$_.Tag})
     Assert-Swsd (($ids -join ',') -ceq ($script:SwsdThemes.Keys -join ',')) 'Appearance order or stable IDs changed.'
     Set-SwsdStatus -Kind error -Text 'Appearance contrast check'
     foreach ($id in $ids) {
@@ -1663,7 +1662,22 @@ if ($ValidateUi) {
             $popup=$appearance.Template.FindName('PART_Popup',$appearance)
             Assert-Swsd ($appearance.IsDropDownOpen -and $popup.IsOpen -and $popup.Child.IsVisible) 'Appearance preview must show the actual dropdown.'
             $popupChild=$popup.Child
+            $visuals=New-Object 'Collections.Generic.Queue[Windows.DependencyObject]'
+            $visuals.Enqueue($popupChild); $popupScroll=$null
+            while ($visuals.Count -gt 0 -and -not $popupScroll) {
+                $visual=$visuals.Dequeue()
+                if ($visual -is [Windows.Controls.ScrollViewer]) {$popupScroll=$visual; break}
+                for ($i=0; $i -lt [Windows.Media.VisualTreeHelper]::GetChildrenCount($visual); $i++) {
+                    $visuals.Enqueue([Windows.Media.VisualTreeHelper]::GetChild($visual,$i))
+                }
+            }
+            Assert-Swsd ($null -ne $popupScroll) 'Appearance popup needs its scroll viewer.'
+            $popupScroll.ScrollToHome()
+            Wait-SwsdDispatcher 150; $form.UpdateLayout(); $popupChild.UpdateLayout()
+            Assert-Swsd ($popupScroll.VerticalOffset -eq 0) 'Appearance preview must start with the Windows choices.'
             Assert-Swsd ($popupChild.ActualWidth -gt 0 -and $popupChild.ActualHeight -gt 0) 'Appearance popup must be laid out before capture.'
+            $result.appearanceFirstItems=@($appearance.Items | Select-Object -First 3 | ForEach-Object {[string]$_.Content})
+            $result.appearanceVerticalOffset=$popupScroll.VerticalOffset
             $result.appearanceDropDownOpen=$appearance.IsDropDownOpen; $result.appearancePopupOpen=$popup.IsOpen
             $result.appearancePopupWidth=$popupChild.ActualWidth; $result.appearancePopupHeight=$popupChild.ActualHeight
         }

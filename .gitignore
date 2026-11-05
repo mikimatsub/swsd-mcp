@@ -62,6 +62,7 @@ docs-site/public/d2/
 # Claude Code session metadata (worktrees, transient research artifacts)
 .claude/
 .research/
+.codex-jobs/
 
 # Temporary release-note staging (do not commit; one-off content for gh release create)
 .release-notes-temp/

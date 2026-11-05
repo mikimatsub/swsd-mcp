@@ -84,7 +84,12 @@ namespace SwsdDesktop {
   const listing = await request(2, 'tools/list', {});
   assert.ok(listing.result.tools.some(t => t.name === 'swsd_health_check'));
   assert.ok(listing.result.tools.some(t => t.name === 'swsd_get_me'));
-  assert.deepEqual(listing.result.tools.map(t => t.name).sort(), [...PROFILE_TOOLS[profile]].sort());
+  const canonical = profile === 'full' ? 'operations' : profile;
+  const counts = {triage:21, agent:51, knowledge:17, operations:145};
+  assert.equal(listing.result.tools.length, counts[canonical]);
+  assert.deepEqual(listing.result.tools.map(t => t.name).sort(), [...PROFILE_TOOLS[canonical]].sort());
+  await request(3, 'tools/list', {});
+  assert.equal((errors.match(/SWSD_PROFILE=full is deprecated/g) ?? []).length, profile === 'full' ? 1 : 0);
   assert.ok(!JSON.stringify([...messages.values()]).includes(fakeToken));
   assert.ok(!errors.includes(fakeToken));
   console.log(`PASS: saved ${profile} profile starts with exactly ${listing.result.tools.length} expected tools; no credential in protocol output.`);

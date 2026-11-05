@@ -4,6 +4,18 @@ Run these checks from the repository root on Windows with the supported Node 24
 installation. They require no elevation, desktop configuration changes, token
 entry, or Windows Credential Manager writes:
 
+CI builds and packs the current checkout, then runs `node
+tests/windows-plugin/check-candidate.mjs`. The runner temporarily resolves only
+the server archive to that local tarball with npm's reported integrity, runs
+the isolated install/repair and UI suites, and restores the runtime lockfile
+byte for byte in `finally`. This verifies an unpublished release candidate
+without publishing it or inventing registry integrity. It also checks custom
+profiles through real STDIO using a file, `SWSD_TOOLS`, and their union.
+After publication, refresh the recipe with the registry archive's integrity
+before distributing the Windows plugin.
+
+For an already published recipe, the individual checks can also be run directly:
+
 ```powershell
 $env:PSModulePath = $null
 npm ci --ignore-scripts --strict-peer-deps --prefix plugins/swsd/runtime
