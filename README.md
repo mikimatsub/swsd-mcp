@@ -107,19 +107,19 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 
 ---
 
-## Tools (132 across 15 categories)
+## Tools (136 across 15 categories)
 
 | Category | Tools |
 |---|---|
 | **Utility** | `swsd_get_server_info`, `swsd_health_check`, `swsd_get_me` |
 | **Incidents** | `swsd_list_incidents`, `swsd_list_my_incidents`, `swsd_sla_risk`, `swsd_ticket_stats`, `swsd_my_queue`, `swsd_get_incident`, `swsd_create_incident`, `swsd_update_incident`, `swsd_assign_incident`, `swsd_update_incident_state`, `swsd_link_solution_to_incident`, `swsd_delete_incident` |
-| **Comments** | `swsd_list_incident_comments`, `swsd_add_incident_comment`, `swsd_update_comment` |
-| **Tasks** | `swsd_list_incident_tasks`, `swsd_create_incident_task`, `swsd_update_task_state` |
+| **Comments** | `swsd_list_incident_comments`, `swsd_add_incident_comment`, `swsd_update_comment`, `swsd_delete_comment` |
+| **Tasks** | `swsd_list_incident_tasks`, `swsd_create_incident_task`, `swsd_update_task_state`, `swsd_update_task`, `swsd_delete_task` |
 | **Problems** | `swsd_list_problems`, `swsd_get_problem`, `swsd_create_problem`, `swsd_update_problem`, `swsd_delete_problem` |
 | **Change & Release** | `swsd_change_calendar`, `swsd_list_changes`, `swsd_get_change`, `swsd_create_change`, `swsd_update_change`, `swsd_delete_change`, `swsd_list_releases`, `swsd_get_release`, `swsd_create_release`, `swsd_update_release`, `swsd_delete_release` |
 | **Assets & CMDB** | `swsd_list_hardware_assets`, `swsd_get_hardware_asset`, `swsd_create_hardware_asset`, `swsd_update_hardware_asset`, `swsd_delete_hardware_asset`, `swsd_list_mobile_devices`, `swsd_get_mobile_device`, `swsd_create_mobile_device`, `swsd_update_mobile_device`, `swsd_delete_mobile_device`, `swsd_list_printers`, `swsd_get_printer`, `swsd_update_printer`, `swsd_list_software_assets`, `swsd_get_software_asset`, `swsd_list_other_assets`, `swsd_get_other_asset`, `swsd_create_other_asset`, `swsd_update_other_asset`, `swsd_delete_other_asset`, `swsd_list_configuration_items`, `swsd_get_configuration_item`, `swsd_create_configuration_item`, `swsd_update_configuration_item`, `swsd_delete_configuration_item` |
 | **Procurement & Risk** | `swsd_list_contracts`, `swsd_get_contract`, `swsd_create_contract`, `swsd_update_contract`, `swsd_delete_contract`, `swsd_list_purchase_orders`, `swsd_get_purchase_order`, `swsd_create_purchase_order`, `swsd_update_purchase_order`, `swsd_delete_purchase_order`, `swsd_list_vendors`, `swsd_get_vendor`, `swsd_create_vendor`, `swsd_update_vendor`, `swsd_delete_vendor`, `swsd_list_change_catalogs`, `swsd_get_change_catalog`, `swsd_create_change_catalog`, `swsd_update_change_catalog`, `swsd_delete_change_catalog`, `swsd_list_risks` |
-| **Time tracking** | `swsd_list_time_tracks`, `swsd_log_time`, `swsd_update_time_track` |
+| **Time tracking** | `swsd_list_time_tracks`, `swsd_log_time`, `swsd_update_time_track`, `swsd_delete_time_track` |
 | **Attachments** | `swsd_upload_attachment` |
 | **Solutions / KB** | `swsd_search_solutions`, `swsd_get_solution`, `swsd_create_solution`, `swsd_update_solution`, `swsd_delete_solution` |
 | **Service Catalog** | `swsd_list_catalog_items`, `swsd_get_catalog_item`, `swsd_create_catalog_item`, `swsd_update_catalog_item`, `swsd_delete_catalog_item`, `swsd_create_service_request` |
@@ -188,10 +188,10 @@ Profiles control which tools are registered at startup. Cannot be changed mid-se
 | Profile | Intent | Tool count |
 |---|---|---|
 | `triage` | Read-heavy first-line support + commenting | 19 |
-| `agent` | Full ticket-handler workflow (default) | 48 |
+| `agent` | Full ticket-handler workflow (default) | 49 |
 | `knowledge` | KB-author workflow + incident reads | 17 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 130 |
-| `full` | Every tool | 132 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 134 |
+| `full` | Every tool | 136 |
 
 Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a profile.
 

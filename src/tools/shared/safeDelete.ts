@@ -155,8 +155,8 @@ export function registerSafeSubresourceDelete(
         const parentPath = `/incidents/${String(incidentId)}/${collection}`;
         const request = { method: 'DELETE' as const, path: `${parentPath}/${String(id)}.json` };
         let record: ({ id: number; incident_id: number } & Record<string, unknown>) | undefined;
-        // Match the list tools' page bounds and continue until the record or the end is found.
-        for (let page = 1; page <= 10_000; page++) {
+        // Bounded scan: at most 20 pages of 100 (2,000 sub-records) before giving up without deleting.
+        for (let page = 1; page <= 20; page++) {
           const { body, pagination } = await ctx.client.get<unknown>(`${parentPath}.json`, { page, per_page: 100 });
           if (!Array.isArray(body)) {
             return toolError(`Could not verify ${kind} ${String(id)} from SWSD. No DELETE request was sent.`);
