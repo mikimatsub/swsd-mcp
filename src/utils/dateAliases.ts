@@ -66,3 +66,33 @@ export function applyDateAlias<
   void _omit;
   return { ...rest, updated_from: parsed } as T;
 }
+
+/** Upstream date and local cutoff derived from an `updated_from` value. */
+export interface UpdatedFromPlan {
+  /** Date-only value sent to SWSD's `updated_at` filter. */
+  upstream?: string;
+  /** Epoch ms for the exact cutoff, applied locally when a time was supplied. */
+  cutoffMs?: number;
+}
+
+/**
+ * SWSD documents only date values for the `updated_at` filter, so a value
+ * with a time of day is widened to the previous UTC date upstream and the
+ * exact cutoff is applied locally with `passesUpdatedCutoff`.
+ */
+export function planUpdatedFrom(value: string | undefined): UpdatedFromPlan {
+  if (!value) return {};
+  if (value.length <= 10) return { upstream: value };
+  const ms = Date.parse(value);
+  if (!Number.isFinite(ms)) return { upstream: value };
+  const dayBefore = new Date(ms - 24 * 3600 * 1000).toISOString().slice(0, 10);
+  return { upstream: dayBefore, cutoffMs: ms };
+}
+
+/** True when the row has no local cutoff or was updated at or after it. */
+export function passesUpdatedCutoff(updatedAt: string | undefined, cutoffMs: number | undefined): boolean {
+  if (cutoffMs === undefined) return true;
+  if (!updatedAt) return false;
+  const ms = Date.parse(updatedAt);
+  return Number.isFinite(ms) && ms >= cutoffMs;
+}
