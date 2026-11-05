@@ -14,11 +14,11 @@ Re-run after any profile change.
 
 | File | Profile | Tools | When to use |
 |---|---|---|---|
-| `triage.swagger.yaml` | `triage` | 18 | First-line support agents who read tickets and post comments but don't reassign or close. |
-| `agent.swagger.yaml` | `agent` | 47 | Full ticket-handler workflow (default). |
+| `triage.swagger.yaml` | `triage` | 19 | First-line support agents who read tickets and post comments but don't reassign or close. |
+| `agent.swagger.yaml` | `agent` | 48 | Full ticket-handler workflow (default). |
 | `knowledge.swagger.yaml` | `knowledge` | 17 | KB authors browsing incident context plus full solution CRUD. |
-| `operations.swagger.yaml` | `operations` | 112 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context. |
-| `full.swagger.yaml` | `full` | 114 | Every tool. |
+| `operations.swagger.yaml` | `operations` | 130 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context. |
+| `full.swagger.yaml` | `full` | 132 | Every tool. |
 
 Agent, Operations and Full include the read-only `swsd_change_calendar` tool.
 Its calendar (shown in the viewer's local time) scans bounded pages and applies all filters client-side;
@@ -103,7 +103,7 @@ In Copilot Studio's connector test pane:
 ```
 
 A successful test returns a JSON-RPC response with the tools array
-containing the entries for your selected profile (e.g. 47 for `agent`).
+containing the entries for your selected profile (e.g. 48 for `agent`).
 
 ---
 

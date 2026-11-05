@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 114 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 132 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **114 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **132 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
@@ -17,9 +17,13 @@ Nine interactive UI bundles ship with read tools using the [MCP Apps capability]
 | `swsd_get_solution` | `solution-detail` | Single-record detail view with sanitized HTML body |
 | `swsd_list_incidents`, `swsd_list_my_incidents` | `incident-list` | Filterable, sortable table with overflow scroll |
 | `swsd_sla_risk` | `sla-risk` | Risk-count chips + color-coded table with due countdowns |
+| `swsd_ticket_stats` | R, UI | ✓ | ✓ |   | ✓ | ✓ |
 | `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips, timestamps, public/private badges, sanitized HTML bodies |
 | `swsd_get_record_audits` | `audit-timeline` | Vertical timeline grouped by day with action chips and field-level diffs |
 | `swsd_get_catalog_item` | `catalog-item-form` | Renders catalog variables as a form; submits via `swsd_create_service_request` (calls back into the server through `app.callServerTool`) |
+| `swsd_create_catalog_item` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_catalog_item` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_catalog_item` | W |   |   |   | ✓ | ✓ |
 | `swsd_describe_custom_fields` | `custom-fields` | Searchable explorer with scope/module filters |
 
 HTML content (solution bodies, incident descriptions, comment bodies, catalog helptext) is sanitized client-side via DOMPurify before insertion: no external network access, no third-party scripts. Tools with a UI bundle are marked **UI** in the Type column below.
@@ -81,6 +85,7 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 - **`swsd_list_incidents`**: paginated list with structured filters using SWSD repeated-key array semantics (multiple values within a filter are OR-ed). Filters: `states`, `priorities`, `categories`, `assignee_email`, `requester_email`, `sites`, `departments`, `assigned_to_group` (group ID, not user ID), `created_from`/`created_to`, `updated_from`/`updated_to`, `updated_within` (date-natural-language alias, such as `"24h"`, `"7d"`, `"1w"`, or `"30d"`), `state_is_not` (negative state filter, such as `["Resolved", "Closed"]` to see only open work), `sort_by` (`created_at`, `updated_at`, `priority`, `name`, `due_at`), `sort_order` (`ASC`/`DESC`), and `query` (free-text across title and description). Returns compact summaries (id, name, state, priority, assignee_email, requester_email, category, updated_at); call `swsd_get_incident` for full detail of any one row.
 - **`swsd_list_my_incidents`**: thin wrapper over `swsd_list_incidents` that auto-resolves the authenticated user's email (via JWT decode + `/users/{user_ic}.json`) and applies it as `assignee_email`. One round-trip instead of two for first-person queries ("my tickets", "tickets assigned to me"). Same input shape as `swsd_list_incidents` minus `assignee_email`. Renders the same `incident-list` widget as `swsd_list_incidents` in MCP Apps-capable hosts. For tenant-wide queries use `swsd_list_incidents` with explicit filters.
 - **`swsd_sla_risk`**: lists open incidents ranked by SLA breach risk. Computes a risk level for each incident based on `due_at` and `sla_violations`: "breached" (overdue or has violations), "critical" (due within 4 hours), "warning" (due within `at_risk_within_hours`, default 24h), "ok", or "no_due_date". Results are sorted breached-first (most overdue first), then by time-to-breach ascending, no_due_date last. Defaults to excluding Resolved and Closed states. Supports `assignee_email` (client-side filter), `assigned_to_group` (server-side), `include_no_due_date`, and `max_results`. Renders the `sla-risk` widget in MCP Apps-capable hosts (risk-count chips + color-coded table with due countdowns). Limitation: list rows normally only include `due_at`; `sla_violations[]` is only present on SWSD's long incident layout, so rows are ranked primarily by `due_at` and violations are counted only when SWSD includes them on the row. Use `swsd_get_incident` with `detail_level: "long"` for full per-incident SLA detail.
+- **`swsd_ticket_stats`**: summary of incidents created or updated in a window (`from`/`to`, default the last 7 days). Returns totals (open, created, resolved, breached, unassigned), breakdowns by state, priority, top-10 assignee and top-10 category, and the median resolution time. Scans up to `max_pages` pages and reports `scan.truncated` when more tickets may exist. Optional `assigned_to_group`. Renders the `ticket-stats` widget in MCP Apps-capable hosts (KPI tiles and breakdown tables, viewer-local times).
 - **`swsd_my_queue`**: work-queue view for the authenticated user (or a given assignee/group). Defaults to open incidents assigned to you, sorted by `due_at` ascending. Each row includes a computed SLA risk level for at-a-glance triage. Supports `assignee_email` override (client-side filter), `assigned_to_group` (server-side), `states`/`priorities` filters, and `sort_by` options (`due_at`, `updated_at`, `priority`, `created_at`). Reuses the `incident-list` widget.
 - **`swsd_get_incident`**: full incident detail as returned by SWSD (passthrough), including custom-field values. Accepts the incident's `id` or human-facing `number`. Pass `detail_level: "long"` to include comments, attachments, audits, SLA data, tags, statistics, satisfaction, and resolution detail in one call. Default `"short"` is faster and cheaper; recommend `"long"` when the user asks "show me everything about ticket X" or wants comments/attachments/audits. Renders the `incident-detail` widget in MCP Apps-capable hosts (description, due date with Overdue badge, SLA violations, resolution body, custom fields).
 - **`swsd_create_incident`**: minimum required: `name`. Strongly recommended: `description`, `requester`, `category`, `site`. Returns the created incident's full payload. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`: call `swsd_describe_custom_fields` first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.
@@ -265,16 +270,30 @@ These read tools expose asset and CMDB context without adding asset mutation ris
 
 ---
 
-## Procurement & Risk (7)
+## Procurement & Risk (21)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_contracts` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_contract` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_contract` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_contract` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_contract` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_purchase_orders` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_purchase_order` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_purchase_order` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_purchase_order` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_purchase_order` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_vendors` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_vendor` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_vendor` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_vendor` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_vendor` | W |   |   |   | ✓ | ✓ |
+| `swsd_list_change_catalogs` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_change_catalog` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_change_catalog` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_change_catalog` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_change_catalog` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_risks` | R |   |   |   | ✓ | ✓ |
 
 Procurement context helps agents answer warranty, vendor, and purchase-history questions without opening a separate system.
