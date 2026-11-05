@@ -131,9 +131,9 @@ The Windows `swsd` plugin includes a setup app. After installing the plugin, sta
 
 On **Home**, install or repair the tools, choose **United States** or **Europe**, paste your **JSON Web Token**, and select **Test** to verify the connection and save the token in Windows Credential Manager. The **?** beside the token field shows the User detail page and the Generate action; generate only when no token is shown.
 
-The profile picker offers **Triage** (21 tools), **Agent** (51), **Knowledge** (17), and **Operations** (145). The **Tools** tab browses all 145 tools by area, with search (**Ctrl+F**), Read/Edit/Delete badges, example prompts, and locks for tools outside the selected profile. Changing the profile updates the saved selection; restart the desktop app and start a new chat to apply it. [Custom profiles](/configuration/#custom-profiles) use server configuration; the Windows picker has no custom builder.
+The profile picker offers **Triage** (21 tools), **Agent** (51), **Knowledge** (17), **Operations** (145), and any custom profiles you save. The **Tools** tab browses all 145 tools by area, with search (**Ctrl+F**), Read/Edit/Delete badges, example prompts, and locks for tools outside the selected profile. Changing the profile updates the saved selection; restart the desktop app and start a new chat to apply it. On Tools, build a custom profile, then save, rename, delete, import, or export it; saved customs appear in the Home and Tools pickers. Other MCP clients still use [server configuration](/configuration/#custom-profiles) (`SWSD_PROFILE=custom` with `SWSD_TOOLS` and/or `SWSD_PROFILE_FILE`).
 
-**Appearance** offers **Match Windows**, **Light**, and **Dark**, saved on this PC. Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`; the token stays in Windows Credential Manager rather than the settings file.
+**Appearance** offers **Match Windows**, **Light**, **Dark**, and named themes such as Dracula, Catppuccin, Nord, Gruvbox, and Tokyo Night, saved on this PC. Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`; the token stays in Windows Credential Manager rather than the settings file.
 
 ## Other MCP clients
 
