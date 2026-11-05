@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Windows A3 setup now offers a primary Update action for newer tools, displays
+  plain Read/Edit/Delete pills, and uses friendlier catalog summaries. Profile
+  labels consistently use Operations, and Agent's 94 excluded tools remain
+  available to browse regardless of the selected area.
 - Windows update lookup now uses the PowerShell 5.1 Framework process API when
   cleaning up its own timed-out lookup, fixing the unsupported overload fallback.
 - Documentation: the README widgets section now lists all ten widgets,

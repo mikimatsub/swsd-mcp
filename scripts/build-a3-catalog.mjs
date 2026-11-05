@@ -40,10 +40,27 @@ const examples = {
   swsd_sla_risk: 'Which tickets are about to breach SLA today?',
   swsd_delete_incident: 'Preview deleting test incident 48213',
 };
+const shortOverrides = {
+  swsd_list_my_incidents: 'Incidents assigned to you',
+  swsd_get_incident: 'Open one incident by ID',
+  swsd_list_incidents: 'Search and browse incidents',
+  swsd_list_problems: 'Search and browse problems',
+  swsd_ticket_stats: 'Counts for tickets created or updated in a date range',
+  swsd_my_queue: 'Your work queue (or another assignee or group)',
+  swsd_remove_group_member: 'Remove someone from a group after preview',
+};
 const catalog = tools.map(t => {
   const words = t.name.slice(5).split('_').map(w => special[w] ?? w).join(' ');
   const friendly = words[0].toUpperCase() + words.slice(1);
-  const sentence = t.description.trim().split(/(?<=[.!?])\s/)[0].replace(/\.$/, '');
+  const humanized = t.description.trim()
+    .replace(/^DESTRUCTIVE\s*—\s*/i, '')
+    .replace(/the authenticated user/gi, 'you')
+    .replace(/numeric ID/gi, 'ID')
+    .replace(/List (.+?) with structured filters and pagination/gi, 'Search and browse $1')
+    .replace(/structured filters and pagination/gi, 'search and browse');
+  const sentence = shortOverrides[t.name] ?? (t.name.startsWith('swsd_delete_')
+    ? `Permanently delete this ${friendly.slice('Delete '.length).toLowerCase()} after preview`
+    : humanized.split(/(?<=[.!?])\s/)[0].replace(/\.$/, ''));
   const short = sentence.length <= 90 ? sentence : sentence.slice(0, 87).replace(/\s\S*$/, '') + '…';
   // destructiveHint also marks edits. Only deletion/membership removal has the D badge.
   const kind = t.annotations.readOnlyHint ? 'read' : t.annotations.destructiveHint && /^swsd_(delete_|remove_group_member$)/.test(t.name) ? 'delete' : 'edit';

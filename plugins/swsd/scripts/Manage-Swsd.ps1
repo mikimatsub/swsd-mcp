@@ -351,10 +351,10 @@ $xaml = @"
   <StackPanel Name="toolsPage" Visibility="Collapsed">
    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Grid><TextBox Name="search" Height="36" Padding="36,7,60,7" AutomationProperties.Name="Search tools"/><TextBlock Text="⌕" FontSize="20" Foreground="{DynamicResource Muted}" Margin="12,0,0,2" VerticalAlignment="Center" IsHitTestVisible="False"/><TextBlock Name="searchPlaceholder" Text="Search tools" Foreground="{DynamicResource Muted}" Margin="36,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/><TextBlock Text="Ctrl+F" FontSize="11" Margin="0,0,12,0" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" IsHitTestVisible="False"/></Grid><ComboBox Name="toolsProfile" Grid.Column="2" Height="36" AutomationProperties.Name="Tools profile"/></Grid>
    <WrapPanel Name="areaFilters" Margin="0,12,0,0"/>
-   <TextBlock Text="R  Read · looks up     E  Edit · creates or changes     D  Delete · previews and confirms" FontSize="11.5" Foreground="{DynamicResource Muted}" Margin="0,12,0,0"/>
+   <WrapPanel Name="toolLegend" Margin="0,12,0,0"/>
    <StackPanel Name="toolGroups"/>
-   <Border Name="toolDetail" Style="{StaticResource CardStyle}" Margin="0,10,0,0" Padding="16"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="320"/></Grid.ColumnDefinitions><StackPanel><TextBlock Name="detailTitle" FontSize="16" FontWeight="SemiBold"/><TextBlock Name="detailId" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,6,0,8"/><TextBlock Name="detailProfiles" Style="{StaticResource Description}" TextWrapping="Wrap"/><TextBlock Name="detailDescription" Style="{StaticResource Description}" TextWrapping="Wrap" Margin="0,12,0,0"/><Border Name="deleteNotice" Background="{DynamicResource ErrorBackground}" CornerRadius="6" Padding="12,10" Margin="0,12,0,0" Visibility="Collapsed"><TextBlock Text="Destructive. Available in Operations. Preview the record first, then confirm its ID before deleting." Foreground="{DynamicResource Error}" FontSize="12.5" TextWrapping="Wrap"/></Border></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Example prompt" FontWeight="SemiBold" FontSize="12"/><Border Background="{DynamicResource IconBackground}" CornerRadius="6" Padding="12,10" Margin="0,6,0,10"><TextBlock Name="examplePrompt" FontSize="12.5" TextWrapping="Wrap"/></Border><Button Name="copyPrompt" Content="Copy prompt" Style="{StaticResource PrimaryButton}"/><Button Name="switchProfile" Content="Switch to Operations" Margin="0,8,0,0" Visibility="Collapsed"/></StackPanel></Grid></Border>
-   <Expander Name="otherTools" Foreground="{DynamicResource Muted}" Margin="0,14,0,0" Padding="12"><StackPanel Name="lockedTools"/></Expander>
+   <Border Name="toolDetail" Style="{StaticResource CardStyle}" Margin="0,10,0,0" Padding="16"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="320"/></Grid.ColumnDefinitions><StackPanel><TextBlock Name="detailTitle" FontSize="16" FontWeight="SemiBold"/><TextBlock Name="detailId" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,6,0,8"/><StackPanel Orientation="Horizontal"><ContentControl Name="detailBadge" Margin="0,0,8,0"/><TextBlock Name="detailProfiles" Style="{StaticResource Description}" TextWrapping="Wrap"/></StackPanel><TextBlock Name="detailDescription" Style="{StaticResource Description}" TextWrapping="Wrap" Margin="0,12,0,0"/><Border Name="deleteNotice" Background="{DynamicResource ErrorBackground}" CornerRadius="6" Padding="12,10" Margin="0,12,0,0" Visibility="Collapsed"><TextBlock Text="Destructive. Available in Operations. Preview the record first, then confirm its ID before deleting." Foreground="{DynamicResource Error}" FontSize="12.5" TextWrapping="Wrap"/></Border></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Example prompt" FontWeight="SemiBold" FontSize="12"/><Border Background="{DynamicResource IconBackground}" CornerRadius="6" Padding="12,10" Margin="0,6,0,10"><TextBlock Name="examplePrompt" FontSize="12.5" TextWrapping="Wrap"/></Border><Button Name="copyPrompt" Content="Copy prompt" Style="{StaticResource PrimaryButton}"/><Button Name="switchProfile" Content="Switch to Operations" Margin="0,8,0,0" Visibility="Collapsed"/></StackPanel></Grid></Border>
+   <Expander Name="otherTools" IsExpanded="False" Foreground="{DynamicResource Muted}" Margin="0,14,0,0" Padding="12"><StackPanel Name="lockedTools"/></Expander>
   </StackPanel>
  </StackPanel>
  <Border Name="jwtFlyout" Style="{StaticResource CardStyle}" Background="{DynamicResource Flyout}" Padding="16,14" Margin="20,218,78,0" VerticalAlignment="Top" Visibility="Collapsed" Panel.ZIndex="10" AutomationProperties.Name="Get your JSON Web Token in SWSD"><StackPanel>
@@ -479,7 +479,16 @@ function Invoke-SwsdSafe {
 }
 function Confirm-SwsdRemove { return [Windows.MessageBox]::Show($form, 'Remove this computer''s saved SWSD JSON Web Token? Fully quit your AI app afterwards to end running connections. This does not revoke the token in SWSD.', 'Remove saved JSON Web Token', 'YesNo', 'Question') }
 function Confirm-SwsdNodeInstall { return [Windows.MessageBox]::Show($form, 'Install the supported Node.js version using Windows Package Manager? Windows may ask for administrator approval. Reopen setup after installation.', 'Install Node.js', 'YesNo', 'Question') }
-function Get-SwsdProfileTools([string]$Id) { $resolved = Resolve-SwsdProfileId $Id; return @($script:SwsdCatalog | Where-Object { $_.profiles -contains $resolved -or ($resolved -eq 'operations' -and $_.profiles -contains 'full') }) }
+function Test-SwsdToolInProfile($Item, [string]$Id) {
+    $resolved = Resolve-SwsdProfileId $Id
+    return $Item.profiles -contains $resolved -or ($resolved -eq 'operations' -and $Item.profiles -contains 'full')
+}
+function Get-SwsdProfileTools([string]$Id) { return @($script:SwsdCatalog | Where-Object { Test-SwsdToolInProfile $_ $Id }) }
+function Get-SwsdCatalogNotInProfile([string]$Id) { return @($script:SwsdCatalog | Where-Object { -not (Test-SwsdToolInProfile $_ $Id) }) }
+function Test-SwsdUpdateAvailable {
+    param([string]$Installed = (Get-SwsdStatus).installedVersion)
+    return $script:SwsdUpdateState -eq 'checked' -and (Compare-SwsdVersion -Installed $Installed -Latest $script:SwsdLatestVersion) -eq 'update'
+}
 function Set-SwsdCell([string]$Id, [string]$Value, [string]$Chip, [string]$Kind) {
     (Get-Variable "${Id}Value" -ValueOnly -Scope Script).Text = $Value
     $label = Get-Variable "${Id}ChipText" -ValueOnly -Scope Script
@@ -511,7 +520,10 @@ function Update-SwsdDashboard {
         }
     }
     Set-SwsdCell 'Update' $updateValue $updateChip $updateKind
-    $updatesDescription.Text = switch ($script:SwsdUpdateState) { 'checking' {'Checking for updates…'} 'offline' {'Could not check · try again'} 'checked' { if ($updateKind -eq 'Warning') { 'Version ' + $script:SwsdLatestVersion + ' is available · ask IT to sync the reviewed plugin' } else { $updateValue } } default {'Check for a newer version of SWSD tools'} }
+    $updateAvailable = Test-SwsdUpdateAvailable -Installed $s.installedVersion
+    $checkUpdates.Content = if ($updateAvailable) {'Update'} else {'Check now'}
+    if ($updateAvailable) { $checkUpdates.Style=$form.Resources['PrimaryButton'] } else { $checkUpdates.ClearValue([Windows.FrameworkElement]::StyleProperty) }
+    $updatesDescription.Text = switch ($script:SwsdUpdateState) { 'checking' {'Checking for updates…'} 'offline' {'Could not check · try again'} 'checked' { if ($updateAvailable) { 'Version ' + $script:SwsdLatestVersion + ' is available' } else { $updateValue } } default {'Check for a newer version of SWSD tools'} }
     $profileDescription.Text = $selection.name + ' · ' + $selection.description + ' · ' + $count + ' tools'
     $profileDescription.ToolTip = $selection.description
     $tokenDescription.Text = if ($script:SwsdTokenError) {'Couldn''t verify · check the token and try again'} elseif ($verified) {'Stored securely on this PC · verified just now'} elseif ($s.credentialSaved) {'Stored securely on this PC · select Test to verify'} else {'Stored securely on this PC'}
@@ -550,38 +562,48 @@ function New-SwsdFragment([string]$Markup) {
     $Markup = [regex]::Replace($Markup, '^<(\w+)', '<$1 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"', 1)
     return [Windows.Markup.XamlReader]::Parse($Markup)
 }
+function New-SwsdBadgeXaml([string]$Kind) {
+    $label = switch ($Kind) { read {'Read'} edit {'Edit'} delete {'Delete'} }
+    $color = switch ($Kind) { read {'Muted'} edit {'Accent'} delete {'Error'} }
+    $background = switch ($Kind) { read {'Control'} edit {'IconBackground'} delete {'ErrorBackground'} }
+    $glyph = if ($Kind -eq 'delete') {'<TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" Margin="0,0,4,0"/>'} else {''}
+    return "<Border Background=`"{DynamicResource $background}`" BorderBrush=`"{DynamicResource Border}`" BorderThickness=`"1`" CornerRadius=`"4`" Padding=`"6,2`" HorizontalAlignment=`"Right`" VerticalAlignment=`"Center`"><StackPanel Orientation=`"Horizontal`" TextElement.Foreground=`"{DynamicResource $color}`" TextElement.FontSize=`"11`">$glyph<TextBlock Text=`"$label`"/></StackPanel></Border>"
+}
+foreach ($kind in @('read','edit','delete')) {
+    [void]$toolLegend.Children.Add((New-SwsdFragment (New-SwsdBadgeXaml $kind)))
+    $explanation = switch ($kind) { read {'looks up'} edit {'creates or changes'} delete {'always previewed'} }
+    [void]$toolLegend.Children.Add((New-SwsdFragment "<TextBlock Text=`"$explanation`" FontSize=`"11.5`" Foreground=`"{DynamicResource Muted}`" VerticalAlignment=`"Center`" Margin=`"8,0,18,0`"/>"))
+}
 function Set-SwsdToolDetail([string]$Name) {
     $item = $script:SwsdCatalog | Where-Object { $_.name -eq $Name } | Select-Object -First 1
     if (-not $item) { $toolDetail.Visibility='Collapsed'; return }
     $script:SwsdSelectedTool = $item.name
     $detailTitle.Text=$item.friendly; $detailId.Text=$item.name
-    $badge = switch ($item.kind) { read {'R · Read'} edit {'E · Edit'} delete {'D · Delete'} }
-    $names = @($item.profiles | ForEach-Object { Get-SwsdProfileDisplayName $_ } | Select-Object -Unique); $detailProfiles.Text=$badge + ' · in ' + ($names -join ', ')
+    $detailBadge.Content = New-SwsdFragment (New-SwsdBadgeXaml $item.kind)
+    $names = @($item.profiles | ForEach-Object { Get-SwsdProfileDisplayName $_ } | Select-Object -Unique); $detailProfiles.Text='in ' + ($names -join ', ')
     $detailDescription.Text=$item.short
     $examplePrompt.Text='“' + $item.example + '”'
     $deleteNotice.Visibility=if ($item.kind -eq 'delete') {'Visible'} else {'Collapsed'}
     $currentId = $script:SwsdPickerProfiles[$profile.SelectedIndex].id
-    $locked = $item.profiles -notcontains $currentId -and -not ($currentId -eq 'operations' -and $item.profiles -contains 'full')
+    $locked = -not (Test-SwsdToolInProfile $item $currentId)
     $switchProfile.Visibility=if ($locked) {'Visible'} else {'Collapsed'}
-    $target = @((Get-SwsdPickerProfiles).id) | Where-Object { $item.profiles -contains $_ -or ($_ -eq 'operations' -and $item.profiles -contains 'full') } | Select-Object -First 1
+    $target = @((Get-SwsdPickerProfiles).id) | Where-Object { Test-SwsdToolInProfile $item $_ } | Select-Object -First 1
     $switchProfile.Tag=$target; $switchProfile.Content='Switch to ' + (Get-SwsdProfileDisplayName $target)
     $toolDetail.Visibility='Visible'
 }
 function New-SwsdToolRow($Item, [bool]$Locked) {
     $name=ConvertTo-SwsdXml $Item.friendly; $id=ConvertTo-SwsdXml $Item.name; $description=ConvertTo-SwsdXml $Item.short
-    $badge = switch ($Item.kind) { read {'R · Read'} edit {'E · Edit'} delete {'D · Delete'} }
-    $color = switch ($Item.kind) { read {'Muted'} edit {'Accent'} delete {'Error'} }
-    $background = switch ($Item.kind) { read {'Control'} edit {'IconBackground'} delete {'ErrorBackground'} }
+    $badge = New-SwsdBadgeXaml $Item.kind
     $lock=''
     if ($Locked) {
-        $target = @((Get-SwsdPickerProfiles).id) | Where-Object { $Item.profiles -contains $_ -or ($_ -eq 'operations' -and $Item.profiles -contains 'full') } | Select-Object -First 1
+        $target = @((Get-SwsdPickerProfiles).id) | Where-Object { Test-SwsdToolInProfile $Item $_ } | Select-Object -First 1
         $targetName=Get-SwsdProfileDisplayName $target
-        $lock="<Border CornerRadius=`"10`" BorderBrush=`"{DynamicResource Border}`" BorderThickness=`"1`" Padding=`"6,1`" Margin=`"8,0,0,0`"><TextBlock Text=`"⌑ $targetName`" FontSize=`"10.5`" Foreground=`"{DynamicResource Muted}`"/></Border>"
+        $lock="<Border CornerRadius=`"10`" BorderBrush=`"{DynamicResource Border}`" BorderThickness=`"1`" Padding=`"6,1`" Margin=`"8,0,0,0`"><StackPanel Orientation=`"Horizontal`" TextElement.Foreground=`"{DynamicResource Muted}`" TextElement.FontSize=`"10.5`"><TextBlock Text=`"&#xE72E;`" FontFamily=`"Segoe MDL2 Assets`" Margin=`"0,0,4,0`"/><TextBlock Text=`"$targetName`"/></StackPanel></Border>"
     }
     $selected = if ($Item.name -eq $script:SwsdSelectedTool) {'IconBackground'} else {'Card'}
     $button = New-SwsdFragment @"
 <Button Height="58" HorizontalContentAlignment="Stretch" Padding="18,0" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Divider}" Background="{DynamicResource $selected}" AutomationProperties.Name="$name">
-<Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="86"/></Grid.ColumnDefinitions><StackPanel VerticalAlignment="Center"><StackPanel Orientation="Horizontal"><TextBlock Text="$name" FontSize="13.5" FontWeight="Medium"/><TextBlock Text="$id" FontFamily="Consolas" FontSize="10.5" Foreground="{DynamicResource Muted}" Margin="8,2,0,0"/>$lock</StackPanel><TextBlock Text="$description" FontSize="12.5" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/></StackPanel><Border Grid.Column="1" Background="{DynamicResource $background}" BorderBrush="{DynamicResource Border}" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Right" VerticalAlignment="Center"><TextBlock Text="$badge" Foreground="{DynamicResource $color}" FontSize="11"/></Border></Grid>
+<Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="86"/></Grid.ColumnDefinitions><StackPanel VerticalAlignment="Center"><StackPanel Orientation="Horizontal"><TextBlock Text="$name" FontSize="13.5" FontWeight="Medium"/><TextBlock Text="$id" FontFamily="Consolas" FontSize="10.5" Foreground="{DynamicResource Muted}" Margin="8,2,0,0"/>$lock</StackPanel><TextBlock Text="$description" FontSize="12.5" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/></StackPanel><ContentControl Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">$badge</ContentControl></Grid>
 </Button>
 "@
     $button.Tag=$Item.name
@@ -613,8 +635,8 @@ function Update-SwsdTools {
         (-not $script:SwsdArea -or $_.area -eq $script:SwsdArea) -and
         (-not $query -or ($_.friendly + ' ' + $_.name + ' ' + $_.description).IndexOf($query,[StringComparison]::OrdinalIgnoreCase) -ge 0)
     })
-    $enabled=@($matches | Where-Object {$_.profiles -contains $id})
-    $locked=@($matches | Where-Object {$_.profiles -notcontains $id})
+    $enabled=@($matches | Where-Object {Test-SwsdToolInProfile $_ $id})
+    $notInProfile=@(Get-SwsdCatalogNotInProfile $id)
     $parent=[Windows.Controls.Panel]$toolDetail.Parent
     if ($parent) { $parent.Children.Remove($toolDetail) }
     $toolGroups.Children.Clear(); $lockedTools.Children.Clear()
@@ -641,7 +663,7 @@ function Update-SwsdTools {
         [void]$toolGroups.Children.Add($heading)
         $card=New-Object Windows.Controls.Border; $card.Style=$form.Resources['CardStyle']
         $rows=New-Object Windows.Controls.StackPanel
-        foreach ($item in $matches) { [void]$rows.Children.Add((New-SwsdToolRow $item ($item.profiles -notcontains $id))) }
+        foreach ($item in $matches) { [void]$rows.Children.Add((New-SwsdToolRow $item (-not (Test-SwsdToolInProfile $item $id)))) }
         if ($matches.Count -eq 0) { $empty=New-SwsdFragment '<TextBlock Text="No tools found. Try a friendly name, tool ID, or area." Margin="18" Foreground="{DynamicResource Muted}"/>'; [void]$rows.Children.Add($empty) }
         $card.Child=$rows
         if ($matches.Count -gt 0 -and @($matches.name) -notcontains $script:SwsdSelectedTool) { $script:SwsdSelectedTool=$matches[0].name }
@@ -678,11 +700,11 @@ function Update-SwsdTools {
             $card.Child=$rows; [void]$toolGroups.Children.Add($card)
             if ($selected -and $selected.area -eq $group.Name) { Set-SwsdToolDetail $selected.name; [void]$toolGroups.Children.Add($toolDetail) }
         }
-        foreach ($item in @($locked | Sort-Object friendly)) { [void]$lockedTools.Children.Add((New-SwsdToolRow $item $true)) }
+        foreach ($item in @($notInProfile | Sort-Object friendly)) { [void]$lockedTools.Children.Add((New-SwsdToolRow $item $true)) }
     }
-    $noun=if ($locked.Count -eq 1) {'tool'} else {'tools'}
-    $otherTools.Header="⌑  Not in $name · $($locked.Count) $noun · change profile to use these"
-    $otherTools.Visibility=if (-not $query -and $locked.Count -gt 0) {'Visible'} else {'Collapsed'}
+    $noun=if ($notInProfile.Count -eq 1) {'tool'} else {'tools'}
+    $otherTools.Header="Not in $name · $($notInProfile.Count) $noun · change profile to use these"
+    $otherTools.Visibility=if (-not $query -and $notInProfile.Count -gt 0) {'Visible'} else {'Collapsed'}
 }
 function Set-SwsdPage {
     Set-SwsdJwtHelp $false
@@ -774,10 +796,10 @@ function Complete-SwsdInstall {
             CheckUpdates {
                 $script:SwsdLatestVersion=if ($result.Count -gt 0) {[string]$result[-1]} else {$null}
                 if (-not $script:SwsdLatestVersion) {Show-SwsdUpdateUnavailable} else {
-                    $script:SwsdUpdateState='checked'; $installedVersion=Get-SwsdInstalledVersion
+                    $script:SwsdUpdateState='checked'; $installedVersion=(Get-SwsdStatus).installedVersion
                     switch (Compare-SwsdVersion -Installed $installedVersion -Latest $script:SwsdLatestVersion) {
                         current {Set-SwsdStatus -Kind success -Text "swsd-mcp $installedVersion is up to date."}
-                        update {Set-SwsdStatus -Kind warn -Text "swsd-mcp $($script:SwsdLatestVersion) is available. Ask IT to sync the reviewed plugin, then select Repair."}
+                        update {Set-SwsdStatus -Kind warn -Text "Version $($script:SwsdLatestVersion) is available. Select Update to install it."}
                         newer {Set-SwsdStatus -Text "Installed swsd-mcp $installedVersion is newer than the published version $($script:SwsdLatestVersion)."}
                         default {Set-SwsdStatus -Text "Latest published swsd-mcp: $($script:SwsdLatestVersion). Install tools to set up the reviewed version."}
                     }
@@ -862,7 +884,7 @@ $form.Add_PreviewMouseDown({param($sender,$e) Invoke-SwsdSafe -Source 'DismissHe
 }})
 $install.Add_Click({param($sender,$e) Invoke-SwsdSafe -Source 'InstallClick' {Start-SwsdInstall}})
 $setupInstall.Add_Click({param($sender,$e) Invoke-SwsdSafe -Source 'SetupClick' {if (-not (Get-SwsdStatus).nodeSupported) {Invoke-SwsdNodeInstall} elseif (-not (Get-SwsdStatus).toolsInstalled) {Start-SwsdInstall}}})
-$checkUpdates.Add_Click({param($sender,$e) Invoke-SwsdSafe -Source 'UpdateClick' {Start-SwsdInstall -Operation CheckUpdates}})
+$checkUpdates.Add_Click({param($sender,$e) Invoke-SwsdSafe -Source 'UpdateClick' {if (Test-SwsdUpdateAvailable) {Start-SwsdInstall -Operation Install} else {Start-SwsdInstall -Operation CheckUpdates}}})
 $nodeInstallButton.Add_Click({param($sender,$e) Invoke-SwsdSafe -Source 'NodeClick' {Invoke-SwsdNodeInstall}})
 $test.Add_Click({param($sender,$e) Invoke-SwsdSafe -Source 'TestClick' {Invoke-SwsdTokenTest}})
 $remove.Add_Click({param($sender,$e) Invoke-SwsdSafe -Source 'RemoveClick' {
@@ -934,6 +956,18 @@ function Wait-SwsdDispatcher([int]$Milliseconds=30) {
     try {[Windows.Threading.Dispatcher]::PushFrame($frame)} finally {$timer.Stop(); $timer.Remove_Tick($endFrame)}
 }
 function Assert-Swsd([bool]$Condition,[string]$Message) { if (-not $Condition) {throw $Message} }
+function Get-SwsdControlText($Root) {
+    if ($Root -is [Windows.Controls.TextBlock]) { $Root.Text }
+    if ($Root -is [Windows.Controls.ContentControl] -and $Root.Content -is [string]) { $Root.Content }
+    if ($Root -is [Windows.Controls.HeaderedContentControl] -and $Root.Header -is [string]) { $Root.Header }
+    if ($Root -is [Windows.DependencyObject]) {
+        foreach ($child in [Windows.LogicalTreeHelper]::GetChildren($Root)) { Get-SwsdControlText $child }
+    }
+}
+function Assert-SwsdProfileLabels {
+    $texts = @(Get-SwsdControlText $form)
+    Assert-Swsd (@($texts | Where-Object {$_ -match '\bFull\b' -or $_ -match '^[RED]\s*·'}).Count -eq 0) 'Control text must use visible profile names and plain Read/Edit/Delete badges.'
+}
 function Remove-SwsdUiFixture {
     if (-not ($ValidateUi -or $ValidateWindow -or $ValidateHandlers)) {return}
     $resolved=[IO.Path]::GetFullPath($script:SwsdHome)
@@ -947,6 +981,8 @@ function Test-SwsdUiControls {
     Assert-Swsd ($profile.Items.Count -eq $script:SwsdPickerProfiles.Count -and $profile.Items.Count -ge 4 -and $profile.SelectedItem -eq 'Agent' -and -not ($profile.Items -contains 'Full')) 'Visible profiles (no Full) and Agent default are required.'
     Assert-Swsd ($script:SwsdCatalog.Count -eq 145) 'The reviewed catalog must contain 145 tools.'
     Assert-Swsd (@(Get-SwsdProfileTools 'agent').Count -eq 51) 'Agent must expose 51 tools.'
+    Assert-Swsd (@(Get-SwsdCatalogNotInProfile 'agent').Count -eq 94) 'Agent must have 94 tools outside the profile.'
+    Assert-Swsd (-not $otherTools.IsExpanded) 'Not-in-profile tools must be collapsed by default.'
     Assert-Swsd ($appearance.SelectedIndex -eq 0) 'Appearance must default to Match Windows.'
     Assert-Swsd ([SwsdDesktop.Credentials]::ReadCount -eq 0) 'Loading the dashboard must not read a saved credential.'
     foreach ($id in $rowNames) {Assert-Swsd ($form.FindName($id+'Cell') -is [Windows.Controls.Border]) "Dashboard is missing $id."}
@@ -958,6 +994,14 @@ function Test-SwsdUiControls {
         Assert-Swsd ($toolsProfile.SelectedIndex -eq $index) 'Home and Tools profile pickers diverged.'
         Assert-Swsd ($profileDescription.ToolTip -eq $script:SwsdPickerProfiles[$index].description) 'Profile description did not refresh.'
         Assert-Swsd ($ProfileValue.Text.StartsWith($script:SwsdPickerProfiles[$index].name)) 'Dashboard profile did not refresh.'
+        $id=$script:SwsdPickerProfiles[$index].id
+        $expected=@(Get-SwsdProfileTools $id)
+        Assert-Swsd ($areaFilters.Children[0].Content -eq ("In " + $script:SwsdPickerProfiles[$index].name + '  ' + $expected.Count)) 'In-profile chip count must match visible membership.'
+        Assert-Swsd ($lockedTools.Children.Count -eq @(Get-SwsdCatalogNotInProfile $id).Count) 'Locked rows must cover the full catalog.'
+        if ($id -eq 'operations') {
+            Assert-Swsd ($expected.Count -eq 145 -and $otherTools.Visibility -eq 'Collapsed') 'Operations must include its hidden alias tools.'
+        }
+        Assert-SwsdProfileLabels
     }
     foreach ($index in 0..2) {
         $appearance.SelectedIndex=$index
@@ -975,11 +1019,54 @@ function Test-SwsdUiControls {
     Assert-Swsd ($jwtFlyout.Visibility -eq 'Collapsed') 'JWT help did not close.'
     $toolsNav.IsChecked=$true
     Assert-Swsd ($toolsPage.Visibility -eq 'Visible' -and $homePage.Visibility -eq 'Collapsed') 'Tools navigation failed.'
+    Assert-Swsd ($areaFilters.Children[0].Content -eq 'In Agent  51') 'Agent chip must show 51 tools.'
+    Assert-Swsd ($otherTools.Header -eq 'Not in Agent · 94 tools · change profile to use these' -and $lockedTools.Children.Count -eq 94) 'Agent locked section must show all 94 tools.'
+    $incidentChip=$areaFilters.Children | Where-Object {$_.Tag -eq 'Incidents'} | Select-Object -First 1
+    Assert-Swsd ($incidentChip.Content -eq 'Incidents  15') 'Agent Incidents chip must show 15 tools.'
+    Invoke-SwsdTestClick $incidentChip
+    Assert-Swsd ($toolGroups.Children[0].Text -eq 'Incidents  ·  15 tools in Agent') 'Incident heading must match the chip membership.'
+    Assert-Swsd ($otherTools.Header -eq 'Not in Agent · 94 tools · change profile to use these' -and $lockedTools.Children.Count -eq 94) 'Area selection must not shrink the locked catalog.'
+    $incidentRows=$toolGroups.Children[1].Child
+    $more=$incidentRows.Children | Where-Object {$_ -is [Windows.Controls.Button] -and $_.Content -is [string]} | Select-Object -First 1
+    Invoke-SwsdTestClick $more
+    Assert-Swsd ($toolGroups.Children[1].Child.Children.Count -eq 15) 'Expanded incident rows must match the chip count.'
+    Assert-SwsdProfileLabels
     $search.Text='delete incident'
     Assert-Swsd ($detailId.Text -eq 'swsd_delete_incident' -and $deleteNotice.Visibility -eq 'Visible' -and $switchProfile.Visibility -eq 'Visible') 'Locked delete search must show its details, safety note, and profile action.'
+    Assert-Swsd ($detailProfiles.Text -eq 'in Operations') 'Delete profile label must show Operations once.'
+    Assert-Swsd ($otherTools.Visibility -eq 'Collapsed') 'Searching must hide the not-in-profile expander.'
+    $deleteBadgeTexts=@(Get-SwsdControlText $detailBadge)
+    Assert-Swsd ($deleteBadgeTexts -contains 'Delete' -and $deleteBadgeTexts -contains ([string][char]0xE74D)) 'Delete detail badge must show its trash glyph.'
+    Assert-SwsdProfileLabels
     $search.Text='[no literal match*'
     Assert-Swsd ($toolGroups.Children.Count -eq 2) 'Search wildcard characters must remain literal.'
-    $search.Clear(); $homeNav.IsChecked=$true
+    $search.Clear(); $script:SwsdArea=''; $script:SwsdExpandedAreas.Clear(); $homeNav.IsChecked=$true
+    # Check all update presentations using a version probe; never invoke an installer.
+    $script:SwsdStatusProbe=(Get-Item Function:Get-SwsdStatus).ScriptBlock
+    $installProbe=(Get-Item Function:Start-SwsdInstall).ScriptBlock
+    $oldUpdateState=$script:SwsdUpdateState; $oldLatest=$script:SwsdLatestVersion
+    try {
+        function script:Get-SwsdStatus {$s=& $script:SwsdStatusProbe; $s.installedVersion=$script:SwsdPackageVersion; return $s}
+        function script:Start-SwsdInstall {param($Operation) $script:SwsdOperationProbe=$Operation}
+        $v=[version]$script:SwsdPackageVersion
+        $script:SwsdLatestVersion="$($v.Major).$($v.Minor).$($v.Build+1)"; $script:SwsdUpdateState='checked'
+        Update-SwsdDashboard
+        Assert-Swsd ($updatesDescription.Text -eq "Version $($script:SwsdLatestVersion) is available") 'Update row description must be clean.'
+        Assert-Swsd ($checkUpdates.Content -eq 'Update' -and $checkUpdates.Style -eq $form.Resources['PrimaryButton'] -and (Test-SwsdUpdateAvailable)) 'A newer version must offer the primary Update action.'
+        Invoke-SwsdTestClick $checkUpdates
+        Assert-Swsd ($script:SwsdOperationProbe -eq 'Install') 'Update must invoke installation directly.'
+        $script:SwsdLatestVersion=$script:SwsdPackageVersion
+        foreach ($state in @('checked','unchecked','offline')) {
+            $script:SwsdUpdateState=$state; Update-SwsdDashboard
+            Assert-Swsd ($checkUpdates.Content -eq 'Check now' -and $checkUpdates.Style -ne $form.Resources['PrimaryButton'] -and -not (Test-SwsdUpdateAvailable)) 'Current, unchecked and offline states must offer the default Check now action.'
+            Invoke-SwsdTestClick $checkUpdates
+            Assert-Swsd ($script:SwsdOperationProbe -eq 'CheckUpdates') 'Check now must invoke the update check.'
+        }
+    } finally {
+        Set-Item Function:Get-SwsdStatus $script:SwsdStatusProbe
+        Set-Item Function:Start-SwsdInstall $installProbe
+        $script:SwsdUpdateState=$oldUpdateState; $script:SwsdLatestVersion=$oldLatest; Update-SwsdDashboard
+    }
     Assert-Swsd ($script:SwsdHandlerErrors.Count -eq 0) ('Unhandled WPF event errors: ' + ($script:SwsdHandlerErrors -join '; '))
     Write-Output 'PASS: WPF PasswordBox; six dashboard cards; visible synchronized profiles (Full hidden alias); persistent live Appearance; JWT figures; Tools navigation, literal search, locks and delete details; no credential reads or clipboard access.'
 }
@@ -1047,6 +1134,11 @@ if ($ValidateUi) {
     $script:SwsdMockLatestVersion='99.0.0'
     Assert-SwsdAction $checkUpdates 'is available' -Worker
     Assert-Swsd ($UpdateChipText.Text -eq '● Update') 'Available update badge missing.'
+    Assert-Swsd ($checkUpdates.Content -eq 'Update' -and $updatesDescription.Text -eq 'Version 99.0.0 is available') 'Newer version must offer Update with a clean description.'
+    $calls=$script:SwsdMockCalls.Count
+    Assert-SwsdAction $checkUpdates 'Tools installed' -Worker
+    Assert-Swsd ($script:SwsdMockCalls.Count -eq $calls+1 -and $script:SwsdMockCalls.ToArray()[-1] -eq 'install') 'Update must install directly without a Repair click or another lookup.'
+    $script:SwsdUpdateState='unchecked'; Update-SwsdDashboard
     $script:SwsdMockLatestVersion='0.0.1'
     Assert-SwsdAction $checkUpdates 'is newer than' -Worker
     $script:SwsdMockLatestVersion=$null
@@ -1138,9 +1230,13 @@ if ($ValidateUi) {
     if ($PreviewState -eq 'error') {
         $script:SwsdVerified=$false; $script:SwsdTokenError=$true
         $tokenBox.Password='synthetic'+[guid]::NewGuid().ToString('N')
-        Set-SwsdStatus -Kind error -Text 'SolarWinds rejected this token. Check that you copied the full JSON Web Token.'
+        Set-SwsdStatus -Kind error -Text 'SolarWinds rejected this token. Check that you copied the complete JSON Web Token.'
     }
     Update-SwsdDashboard
+    if ($PreviewState -eq 'ready') {
+        Assert-Swsd ($checkUpdates.Content -eq 'Update' -and $checkUpdates.Style -eq $form.Resources['PrimaryButton']) 'Ready preview must show the primary Update button.'
+        Assert-Swsd ($updatesDescription.Text -eq "Version $($script:SwsdLatestVersion) is available") 'Ready preview must show the clean update description.'
+    }
     if ($PreviewState -eq 'jwt-help') {Set-SwsdJwtHelp $true}
     if ($PreviewState -in @('tools','tool-detail')) {$toolsNav.IsChecked=$true; $script:SwsdArea='Incidents'; Update-SwsdTools}
     if ($PreviewState -eq 'tool-detail') {$search.Text='delete incident'}
@@ -1187,6 +1283,7 @@ if ($ValidateUi) {
             consoleVisible=[SwsdDesktop.Windows]::IsWindowVisible([SwsdDesktop.Windows]::GetConsoleWindow()); tokenEntryEnabled=$tokenBox.IsEnabled
             workingAreaWidth=$area.Width; workingAreaHeight=$area.Height; formWidth=$form.ActualWidth; clientWidth=$appRoot.ActualWidth; formHeight=$form.ActualHeight; clientHeight=$appRoot.ActualHeight; preferredClientHeight=$homePage.DesiredSize.Height; frameHeight=0
             layoutFailures=@($failures); layoutNotes=@(); previewState=$PreviewState; renderer='WPF'; micaEnabled=$script:SwsdMicaEnabled
+            updateButton=[string]$checkUpdates.Content; updateDescription=$updatesDescription.Text; notInProfileHeader=[string]$otherTools.Header
         }
         $script:SwsdWindowResults.Add($result)
         if ($ScreenshotPath -and $script:SwsdDpiStep -eq 'initial') {

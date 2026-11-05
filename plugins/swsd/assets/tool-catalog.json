@@ -592,7 +592,7 @@
     ],
     "area": "Service catalog",
     "friendly": "Delete catalog item",
-    "short": "DESTRUCTIVE — delete an SWSD catalog item",
+    "short": "Permanently delete this catalog item after preview",
     "kind": "delete",
     "example": "Preview: delete catalog item in SWSD"
   },
@@ -611,7 +611,7 @@
     ],
     "area": "Directory",
     "friendly": "Delete category",
-    "short": "DESTRUCTIVE — delete an SWSD category",
+    "short": "Permanently delete this category after preview",
     "kind": "delete",
     "example": "Preview: delete category in SWSD"
   },
@@ -630,7 +630,7 @@
     ],
     "area": "Changes",
     "friendly": "Delete change",
-    "short": "DESTRUCTIVE — delete an SWSD change",
+    "short": "Permanently delete this change after preview",
     "kind": "delete",
     "example": "Preview: delete change in SWSD"
   },
@@ -649,7 +649,7 @@
     ],
     "area": "Service catalog",
     "friendly": "Delete change catalog",
-    "short": "DESTRUCTIVE — delete an SWSD change catalog",
+    "short": "Permanently delete this change catalog after preview",
     "kind": "delete",
     "example": "Preview: delete change catalog in SWSD"
   },
@@ -668,7 +668,7 @@
     ],
     "area": "Comments & tasks",
     "friendly": "Delete comment",
-    "short": "DESTRUCTIVE — delete an SWSD incident comment",
+    "short": "Permanently delete this comment after preview",
     "kind": "delete",
     "example": "Preview: delete comment in SWSD"
   },
@@ -687,7 +687,7 @@
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete configuration item",
-    "short": "DESTRUCTIVE — delete an SWSD configuration item",
+    "short": "Permanently delete this configuration item after preview",
     "kind": "delete",
     "example": "Preview: delete configuration item in SWSD"
   },
@@ -706,7 +706,7 @@
     ],
     "area": "Contracts & vendors",
     "friendly": "Delete contract",
-    "short": "DESTRUCTIVE — delete an SWSD contract",
+    "short": "Permanently delete this contract after preview",
     "kind": "delete",
     "example": "Preview: delete contract in SWSD"
   },
@@ -725,7 +725,7 @@
     ],
     "area": "Directory",
     "friendly": "Delete department",
-    "short": "DESTRUCTIVE — delete an SWSD department",
+    "short": "Permanently delete this department after preview",
     "kind": "delete",
     "example": "Preview: delete department in SWSD"
   },
@@ -744,7 +744,7 @@
     ],
     "area": "Directory",
     "friendly": "Delete group",
-    "short": "DESTRUCTIVE — delete an SWSD group",
+    "short": "Permanently delete this group after preview",
     "kind": "delete",
     "example": "Preview: delete group in SWSD"
   },
@@ -763,7 +763,7 @@
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete hardware asset",
-    "short": "DESTRUCTIVE — delete an SWSD hardware asset",
+    "short": "Permanently delete this hardware asset after preview",
     "kind": "delete",
     "example": "Preview: delete hardware asset in SWSD"
   },
@@ -782,7 +782,7 @@
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete hardware warranty",
-    "short": "DESTRUCTIVE — delete an SWSD hardware warranty",
+    "short": "Permanently delete this hardware warranty after preview",
     "kind": "delete",
     "example": "Preview: delete hardware warranty in SWSD"
   },
@@ -801,7 +801,7 @@
     ],
     "area": "Incidents",
     "friendly": "Delete incident",
-    "short": "DESTRUCTIVE — delete an SWSD incident",
+    "short": "Permanently delete this incident after preview",
     "kind": "delete",
     "example": "Preview deleting test incident 48213"
   },
@@ -820,7 +820,7 @@
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete mobile device",
-    "short": "DESTRUCTIVE — delete an SWSD mobile device",
+    "short": "Permanently delete this mobile device after preview",
     "kind": "delete",
     "example": "Preview: delete mobile device in SWSD"
   },
@@ -839,7 +839,7 @@
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete other asset",
-    "short": "DESTRUCTIVE — delete an SWSD other asset",
+    "short": "Permanently delete this other asset after preview",
     "kind": "delete",
     "example": "Preview: delete other asset in SWSD"
   },
@@ -858,7 +858,7 @@
     ],
     "area": "Problems",
     "friendly": "Delete problem",
-    "short": "DESTRUCTIVE — delete an SWSD problem",
+    "short": "Permanently delete this problem after preview",
     "kind": "delete",
     "example": "Preview: delete problem in SWSD"
   },
@@ -877,7 +877,7 @@
     ],
     "area": "Contracts & vendors",
     "friendly": "Delete purchase order",
-    "short": "DESTRUCTIVE — delete an SWSD purchase order",
+    "short": "Permanently delete this purchase order after preview",
     "kind": "delete",
     "example": "Preview: delete purchase order in SWSD"
   },
@@ -896,7 +896,7 @@
     ],
     "area": "Releases",
     "friendly": "Delete release",
-    "short": "DESTRUCTIVE — delete an SWSD release",
+    "short": "Permanently delete this release after preview",
     "kind": "delete",
     "example": "Preview: delete release in SWSD"
   },
@@ -915,7 +915,7 @@
     ],
     "area": "Directory",
     "friendly": "Delete role",
-    "short": "DESTRUCTIVE — delete an SWSD role",
+    "short": "Permanently delete this role after preview",
     "kind": "delete",
     "example": "Preview: delete role in SWSD"
   },
@@ -934,7 +934,7 @@
     ],
     "area": "Directory",
     "friendly": "Delete site",
-    "short": "DESTRUCTIVE — delete an SWSD site",
+    "short": "Permanently delete this site after preview",
     "kind": "delete",
     "example": "Preview: delete site in SWSD"
   },
@@ -953,7 +953,7 @@
     ],
     "area": "Knowledge",
     "friendly": "Delete solution",
-    "short": "DESTRUCTIVE — delete an SWSD solution",
+    "short": "Permanently delete this solution after preview",
     "kind": "delete",
     "example": "Preview: delete solution in SWSD"
   },
@@ -972,7 +972,7 @@
     ],
     "area": "Comments & tasks",
     "friendly": "Delete task",
-    "short": "DESTRUCTIVE — delete an SWSD incident task",
+    "short": "Permanently delete this task after preview",
     "kind": "delete",
     "example": "Preview: delete task in SWSD"
   },
@@ -991,7 +991,7 @@
     ],
     "area": "Comments & tasks",
     "friendly": "Delete time track",
-    "short": "DESTRUCTIVE — delete an SWSD incident time track",
+    "short": "Permanently delete this time track after preview",
     "kind": "delete",
     "example": "Preview: delete time track in SWSD"
   },
@@ -1010,7 +1010,7 @@
     ],
     "area": "Directory",
     "friendly": "Delete user",
-    "short": "DESTRUCTIVE — delete an SWSD user",
+    "short": "Permanently delete this user after preview",
     "kind": "delete",
     "example": "Preview: delete user in SWSD"
   },
@@ -1029,7 +1029,7 @@
     ],
     "area": "Contracts & vendors",
     "friendly": "Delete vendor",
-    "short": "DESTRUCTIVE — delete an SWSD vendor",
+    "short": "Permanently delete this vendor after preview",
     "kind": "delete",
     "example": "Preview: delete vendor in SWSD"
   },
@@ -1251,7 +1251,7 @@
     ],
     "area": "Incidents",
     "friendly": "Get incident",
-    "short": "Fetch one SWSD incident by numeric ID",
+    "short": "Open one incident by ID",
     "kind": "read",
     "example": "Get incident in SWSD"
   },
@@ -1855,7 +1855,7 @@
     ],
     "area": "Incidents",
     "friendly": "List incidents",
-    "short": "List SWSD incidents with structured filters and pagination",
+    "short": "Search and browse incidents",
     "kind": "read",
     "example": "List incidents in SWSD"
   },
@@ -1896,7 +1896,7 @@
     ],
     "area": "Incidents",
     "friendly": "List my incidents",
-    "short": "List incidents assigned to the authenticated user",
+    "short": "Incidents assigned to you",
     "kind": "read",
     "example": "Show my open P1 incidents"
   },
@@ -1955,7 +1955,7 @@
     ],
     "area": "Problems",
     "friendly": "List problems",
-    "short": "List SWSD problems (ITIL problem records) with structured filters and pagination",
+    "short": "Search and browse problems",
     "kind": "read",
     "example": "List problems in SWSD"
   },
@@ -2215,7 +2215,7 @@
     ],
     "area": "Incidents",
     "friendly": "My queue",
-    "short": "Work-queue view for the authenticated user (or a given assignee/group)",
+    "short": "Your work queue (or another assignee or group)",
     "kind": "read",
     "example": "My queue in SWSD"
   },
@@ -2234,7 +2234,7 @@
     ],
     "area": "Directory",
     "friendly": "Remove group member",
-    "short": "DESTRUCTIVE — remove an SWSD group membership by membership_id, not user id",
+    "short": "Remove someone from a group after preview",
     "kind": "delete",
     "example": "Preview: remove group member in SWSD"
   },
@@ -2297,7 +2297,7 @@
     ],
     "area": "Incidents",
     "friendly": "Ticket stats",
-    "short": "Summarize scanned tickets created OR last updated in [from, to), defaulting to the…",
+    "short": "Counts for tickets created or updated in a date range",
     "kind": "read",
     "example": "Ticket stats in SWSD"
   },
