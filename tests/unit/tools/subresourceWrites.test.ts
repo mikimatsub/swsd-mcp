@@ -386,7 +386,7 @@ describe('sub-resource identity compatibility and profiles', () => {
   });
 
   it('registers update_task with update_task_state and deletes only through delete profiles', () => {
-    for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full'] as const) {
+    for (const profile of ['triage', 'agent', 'knowledge', 'operations'] as const) {
       const server = new McpServer({ name: 'subresource-profile-test', version: '0.0.0' });
       const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: [] });
       ctx.profile = profile;
@@ -395,7 +395,7 @@ describe('sub-resource identity compatibility and profiles', () => {
       expect(names.includes('swsd_update_task')).toBe(names.includes('swsd_update_task_state'));
       expect(ctx.enabledTools.includes('swsd_update_task')).toBe(names.includes('swsd_update_task_state'));
       for (const { name } of DELETES) {
-        const enabled = profile === 'operations' || profile === 'full';
+        const enabled = profile === 'operations';
         expect(names.includes(name), profile + ':' + name).toBe(enabled);
         expect(ctx.enabledTools.includes(name), profile + ':' + name).toBe(enabled);
         if (enabled) expect(getRegisteredTool(server, name)).toBeDefined();

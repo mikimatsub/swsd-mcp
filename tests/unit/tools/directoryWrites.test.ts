@@ -97,7 +97,7 @@ function setup(name: string, mode: Mode = 'live') {
   const server = new McpServer({ name: 'directory-test', version: '0.0.0' });
   const client = makeFakeClient();
   const ctx = makeCtx(client, { SWSD_WRITE_MODE: mode, SWSD_ENABLE_EXTRAS: [] });
-  ctx.profile = 'full';
+  ctx.profile = 'operations';
   registerTools(server, ctx);
   const tool = getRegisteredTool(server, name);
   const schema = tool.inputSchema as z.ZodType;
@@ -501,10 +501,10 @@ describe('directory profiles and registry', () => {
   const names = CASES.flatMap(({ kind }) => ['create', 'update', 'delete'].map((action) => `swsd_${action}_${kind}`))
     .concat(['swsd_add_group_member', 'swsd_remove_group_member']);
 
-  it.each(['triage', 'agent', 'knowledge', 'operations', 'full'] as const)(
-    'exposes directory writes only to operations/full and role reads wherever roles are listed: %s', (profile) => {
+  it.each(['triage', 'agent', 'knowledge', 'operations'] as const)(
+    'exposes directory writes only to operations and role reads wherever roles are listed: %s', (profile) => {
       const tools: readonly string[] = PROFILE_TOOLS[profile];
-      const allowed = profile === 'operations' || profile === 'full';
+      const allowed = profile === 'operations';
       for (const name of names) expect(tools.includes(name), name).toBe(allowed);
       expect(tools.includes('swsd_get_role')).toBe(tools.includes('swsd_list_roles'));
       expect(new Set(tools).size).toBe(tools.length);
@@ -517,11 +517,12 @@ describe('directory profiles and registry', () => {
     },
   );
 
-  it('registers every directory tool through explicit extras', () => {
+  it('registers non-delete directory tools through explicit extras', () => {
     const server = new McpServer({ name: 'directory-extras-test', version: '0.0.0' });
-    const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: [...names, 'swsd_get_role'] });
+    const extras = [...names, 'swsd_get_role'].filter(name => !name.startsWith('swsd_delete_') && name !== 'swsd_remove_group_member');
+    const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: extras });
     ctx.profile = 'triage';
     registerTools(server, ctx);
-    for (const name of [...names, 'swsd_get_role']) expect(getRegisteredTool(server, name)).toBeDefined();
+    for (const name of extras) expect(getRegisteredTool(server, name)).toBeDefined();
   });
 });

@@ -224,6 +224,7 @@ export function makeCtx(client: SwsdClient, env: Partial<Env> = {}): ToolContext
     client,
     profile: 'agent',
     env: {
+      SWSD_ENABLE_EXTRAS: [],
       SWSD_WRITE_MODE: 'live',
       SWSD_TRANSPORT: 'stdio',
       ...env,

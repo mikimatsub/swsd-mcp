@@ -27,7 +27,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PROFILE_TOOLS } from '../../../src/config/profiles.js';
-import { EnvSchema, KNOWN_PROFILES } from '../../../src/config/env.js';
+import { EnvSchema } from '../../../src/config/env.js';
 
 const README = readFileSync(resolve('README.md'), 'utf-8');
 const CONFIG_DOC = readFileSync(
@@ -40,7 +40,7 @@ const README_ESSENTIALS = new Set(['SWSD_BASE_URL', 'SWSD_PROFILE', 'SWSD_WRITE_
 
 describe('README documentation contract', () => {
   describe('Profiles table', () => {
-    for (const profile of KNOWN_PROFILES) {
+    for (const profile of Object.keys(PROFILE_TOOLS) as (keyof typeof PROFILE_TOOLS)[]) {
       it(`${profile} row shows the correct tool count`, () => {
         const expected = PROFILE_TOOLS[profile].length;
         // Match: | `triage` | description | 8 |
@@ -50,6 +50,16 @@ describe('README documentation contract', () => {
         expect(documented).toBe(expected);
       });
     }
+
+    it('documents custom selection without advertising full as a separate profile', () => {
+      for (const doc of [README, CONFIG_DOC]) {
+        expect(doc).toMatch(/\| `custom` \|[^\n]+\| Varies \|/);
+        expect(doc).not.toMatch(/^\| `full` \|/m);
+        expect(doc).toContain('SWSD_TOOLS');
+        expect(doc).toContain('SWSD_PROFILE_FILE');
+        expect(doc).toContain('schemas/swsd-profile.schema.json');
+      }
+    });
   });
 
   describe('"Tools" header', () => {
@@ -59,9 +69,9 @@ describe('README documentation contract', () => {
       expect(headerMatch, 'Could not find "## Tools (N across M categories)" header').not.toBeNull();
     });
 
-    it('total count matches PROFILE_TOOLS.full.length', () => {
+    it('total count matches PROFILE_TOOLS.operations.length', () => {
       const documented = Number(headerMatch![1]);
-      expect(documented).toBe(PROFILE_TOOLS.full.length);
+      expect(documented).toBe(PROFILE_TOOLS.operations.length);
     });
 
     it('category count matches the number of category rows in the table', () => {
@@ -82,14 +92,14 @@ describe('README documentation contract', () => {
       documentedTools.add(m[1]!);
     }
 
-    const fullProfileTools = new Set<string>(PROFILE_TOOLS.full);
+    const fullProfileTools = new Set<string>(PROFILE_TOOLS.operations);
 
-    it('lists every tool registered in the full profile', () => {
+    it('lists every tool registered in operations', () => {
       const missing = [...fullProfileTools].filter((t) => !documentedTools.has(t));
       expect(missing, `Tools missing from README "Tools" table: ${missing.join(', ')}`).toEqual([]);
     });
 
-    it('does not list any tool that is not in the full profile', () => {
+    it('does not list any tool that is not in operations', () => {
       const extra = [...documentedTools].filter((t) => !fullProfileTools.has(t));
       expect(extra, `README "Tools" table lists tools not registered in any profile: ${extra.join(', ')}`).toEqual([]);
     });
@@ -105,7 +115,7 @@ describe('README documentation contract', () => {
      * - SWSD_ENABLE_EXTRAS / SWSD_ALLOWED_ORIGINS: optional CSV transforms;
      *   schema parses to [] but the docs correctly show em-dash for "unset"
      */
-    const SKIP = new Set(['SWSD_TOKEN', 'SWSD_ENABLE_EXTRAS', 'SWSD_ALLOWED_ORIGINS']);
+    const SKIP = new Set(['SWSD_TOKEN', 'SWSD_ENABLE_EXTRAS', 'SWSD_ALLOWED_ORIGINS', 'SWSD_TOOLS']);
 
     /**
      * Match a Configuration-table row in markdown:

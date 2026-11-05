@@ -30,7 +30,7 @@ const toolCall = (name = 'swsd_get_server_info', args: Record<string, unknown> =
 });
 
 async function start(overrides: Record<string, unknown> = {}): Promise<Server> {
-  await runHttp(config.EnvSchema.parse({ SWSD_PROFILE: 'full', SWSD_RETRY_MAX_ATTEMPTS: 0, ...overrides }));
+  await runHttp(config.EnvSchema.parse({ SWSD_PROFILE: 'operations', SWSD_RETRY_MAX_ATTEMPTS: 0, ...overrides }));
   const server = servers.at(-1)!;
   if (!server.listening) await once(server, 'listening');
   return server;
@@ -101,7 +101,7 @@ describe('HTTP security boundary', () => {
   });
 
   it('CLI-selected HTTP rejects file_path before any filesystem access', async () => {
-    vi.spyOn(config, 'parseEnv').mockReturnValue(config.EnvSchema.parse({ SWSD_PROFILE: 'full' }));
+    vi.spyOn(config, 'parseEnv').mockReturnValue(config.EnvSchema.parse({ SWSD_PROFILE: 'operations' }));
     const argv = process.argv;
     try {
       process.argv = ['node', 'swsd-mcp', '--transport=http'];

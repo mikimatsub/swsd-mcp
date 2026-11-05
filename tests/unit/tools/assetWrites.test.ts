@@ -88,7 +88,7 @@ function setup(name: string, mode: Mode = 'live') {
   const server = new McpServer({ name: 'asset-write-test', version: '0.0.0' });
   const client = makeFakeClient();
   const ctx = makeCtx(client, { SWSD_WRITE_MODE: mode, SWSD_ENABLE_EXTRAS: [] });
-  ctx.profile = 'full';
+  ctx.profile = 'operations';
   registerTools(server, ctx);
   const tool = getRegisteredTool(server, name);
   const schema = tool.inputSchema as z.ZodType;
@@ -387,10 +387,10 @@ describe('asset profiles and registry', () => {
   const names = CASES.flatMap((spec) => (spec.create ? ['create', 'update', 'delete'] : ['update'])
     .map((action) => 'swsd_' + action + '_' + spec.stem));
 
-  it.each(['triage', 'agent', 'knowledge', 'operations', 'full'] as const)(
-    'exposes asset writes only in operations/full: %s', (profile) => {
+  it.each(['triage', 'agent', 'knowledge', 'operations'] as const)(
+    'exposes asset writes only in operations: %s', (profile) => {
       const tools: readonly string[] = PROFILE_TOOLS[profile];
-      const allowed = profile === 'operations' || profile === 'full';
+      const allowed = profile === 'operations';
       const server = new McpServer({ name: 'asset-profile-test', version: '0.0.0' });
       const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: [] });
       ctx.profile = profile;
@@ -405,11 +405,12 @@ describe('asset profiles and registry', () => {
     },
   );
 
-  it('registers every asset write through explicit extras', () => {
+  it('registers non-delete asset writes through explicit extras', () => {
     const server = new McpServer({ name: 'asset-extras-test', version: '0.0.0' });
-    const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: names });
+    const extras = names.filter(name => !name.startsWith('swsd_delete_'));
+    const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: extras });
     ctx.profile = 'triage';
     registerTools(server, ctx);
-    for (const name of names) expect(getRegisteredTool(server, name)).toBeDefined();
+    for (const name of extras) expect(getRegisteredTool(server, name)).toBeDefined();
   });
 });

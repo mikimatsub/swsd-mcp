@@ -17,19 +17,23 @@ Re-run after any profile change.
 | `triage.swagger.yaml` | `triage` | 21 | First-line support agents who read tickets and post comments but don't reassign or close. |
 | `agent.swagger.yaml` | `agent` | 51 | Full ticket-handler workflow (default). |
 | `knowledge.swagger.yaml` | `knowledge` | 17 | KB authors browsing incident context plus full solution CRUD. |
-| `operations.swagger.yaml` | `operations` | 143 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context. |
-| `full.swagger.yaml` | `full` | 145 | Every tool. |
+| `operations.swagger.yaml` | `operations` | 145 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool. |
 
-Agent, Operations and Full include the read-only `swsd_change_calendar` tool.
+Agent and Operations include the read-only `swsd_change_calendar` tool.
 Its calendar (shown in the viewer's local time) scans bounded pages and applies all filters client-side;
 `scan.truncated` warns when more matches or conflicts may exist. App-capable
 hosts can render its change/release calendar widget; other hosts receive the
 same structured calendar output.
 
-The five files differ only in `info.title` and `info.description`. The
+The four files differ only in `info.title` and `info.description`. The
 endpoint, auth, and protocol declarations are identical. Pick the file
 whose label matches the `SWSD_PROFILE` your deployed MCP server is
 configured with.
+
+For `SWSD_PROFILE=custom`, import any of these transport specs and set `SWSD_TOOLS`
+and/or `SWSD_PROFILE_FILE` on the server. MCP discovers the selected tools at
+runtime. See [Custom profiles](https://mcp-swsd.pages.dev/configuration/#custom-profiles).
+Legacy `full` server configurations map to `operations`; use `operations.swagger.yaml`.
 
 ---
 

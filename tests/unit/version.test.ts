@@ -32,7 +32,7 @@ describe('version metadata', () => {
     );
     for (const entry of serverJson.packages) {
       const profile = entry.environmentVariables.find(variable => variable.name === 'SWSD_PROFILE');
-      expect(profile?.choices?.slice().sort()).toEqual(Object.keys(expected).sort());
+      expect(profile?.choices?.slice().sort()).toEqual([...Object.keys(expected), 'custom'].sort());
       const counts = Object.fromEntries(
         [...(profile?.description ?? '').matchAll(/'([a-z]+)' \((\d+)\b/g)]
           .map(([, name, count]) => [name, Number(count)]),

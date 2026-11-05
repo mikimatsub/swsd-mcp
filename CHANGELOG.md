@@ -7,13 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Custom profiles selected with `SWSD_PROFILE=custom`, using the union of trimmed
+  `SWSD_TOOLS` names and a bounded version-1 JSON `SWSD_PROFILE_FILE`. Unknown
+  tools warn and are skipped; an empty valid selection fails startup. Published
+  `schemas/swsd-profile.schema.json` matches runtime file validation.
+
 ### Changed
+
+- `operations` now includes all 145 tools, including KB authoring. `full` remains
+  a backward-compatible alias with a once-per-process stderr deprecation notice;
+  profile tables, Registry metadata, and connector manifests use `operations`.
+- Delete tools require `operations` or explicit inclusion in a custom profile,
+  retaining preview, `confirm`, and matching `confirm_id` safety gates.
+- Removed the README's obsolete `Upgrading to 3.0.0` section.
 
 - Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.2.0`.
 - Release tag pushes now publish the container image with `X.Y.Z` and `X.Y`
   tags and a matching `org.opencontainers.image.version` label.
 
 ### Fixed
+
+- Custom prompts and widgets require all their tools. A catalog lookup without
+  the service-request tool no longer advertises an unusable Submit form.
+  Catalog output validation accepts its documented passthrough fields.
 
 - Documentation: the README widgets section now lists all ten widgets,
   including `ticket-stats` and `swsd_my_queue`; the widgets reference describes

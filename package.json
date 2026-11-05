@@ -13,6 +13,7 @@
   "main": "dist/cli.js",
   "files": [
     "dist",
+    "schemas",
     "README.md",
     "LICENSE",
     "SECURITY.md",

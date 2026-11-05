@@ -72,7 +72,7 @@ and tests are excluded from the published MCP server package.
 
 With an existing SWSD token already in the process environment, run
 `node scripts/smoke-readonly.mjs` from the repository root after building. It
-uses disabled write mode, checks all five profiles, reads a minimal incident
+uses disabled write mode, checks all four built-in profiles, reads a minimal incident
 sample and knowledge metadata, and reads all seven widget resources. It emits
 counts and check names, never token values, JWT claims, or tenant records.
 

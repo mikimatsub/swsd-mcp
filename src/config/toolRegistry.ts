@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 import { registerPrompts } from '../mcp/prompts.js';
 import type { Env, ProfileName } from './env.js';
-import { PROFILE_TOOLS } from './profiles.js';
+import { resolveProfileTools } from './customProfile.js';
 import type { SwsdClient } from '../swsd/client.js';
 
 import { registerGetServerInfo } from '../tools/utility/getServerInfo.js';
@@ -344,7 +344,7 @@ const REGISTRARS: Record<string, Registrar> = {
 
 export function registerTools(server: McpServer, ctx: ToolContext): void {
   for (const t of ctx.env.SWSD_ENABLE_EXTRAS) {
-    if (!(t in REGISTRARS)) {
+    if (!Object.hasOwn(REGISTRARS, t)) {
       const known = Object.keys(REGISTRARS).sort().join(', ');
       throw new Error(
         `Unknown tool in SWSD_ENABLE_EXTRAS: "${t}". Known tools: ${known}`,
@@ -352,7 +352,14 @@ export function registerTools(server: McpServer, ctx: ToolContext): void {
     }
   }
 
-  const profileTools = PROFILE_TOOLS[ctx.profile];
+  const profileTools = resolveProfileTools(ctx.env, ctx.profile);
+  const forbiddenDeletes = ctx.env.SWSD_ENABLE_EXTRAS.filter(t =>
+    (t.startsWith('swsd_delete_') || t === 'swsd_remove_group_member') &&
+    ctx.profile !== 'operations' && !(ctx.profile === 'custom' && profileTools.includes(t)),
+  );
+  if (forbiddenDeletes.length) {
+    throw new Error(`Delete tools require operations or explicit selection in SWSD_TOOLS/SWSD_PROFILE_FILE: ${forbiddenDeletes.join(', ')}`);
+  }
   const all = new Set<string>([...profileTools, ...ctx.env.SWSD_ENABLE_EXTRAS]);
 
   for (const tool of all) {

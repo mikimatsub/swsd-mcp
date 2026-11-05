@@ -12,6 +12,7 @@ import { mapSwsdError } from '../../swsd/errors.js';
 import { toCatalogItemDetail } from '../../swsd/mappers/catalogItem.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
+import { resolveProfileTools } from '../../config/customProfile.js';
 
 const UI_RESOURCE_URI = 'ui://swsd/catalog-item-form.html';
 
@@ -29,6 +30,8 @@ export function registerGetCatalogItem(
   server: McpServer,
   ctx: ToolContext,
 ): void {
+  const tools = new Set([...resolveProfileTools(ctx.env, ctx.profile), ...ctx.env.SWSD_ENABLE_EXTRAS]);
+  const includeForm = tools.has('swsd_get_catalog_item') && tools.has('swsd_create_service_request');
   registerAppTool(
     server,
     'swsd_get_catalog_item',
@@ -44,14 +47,10 @@ export function registerGetCatalogItem(
         'item is passed through for power users (description, category, etc.).',
       inputSchema: GetCatalogItemInput,
       outputSchema: z.object({
-        item: z
-          .record(z.string(), z.unknown())
-          .and(
-            z.object({
-              id: z.number().int(),
-              variables: z.array(CatalogItemVariableOutput).optional(),
-            }),
-          ),
+        item: z.looseObject({
+          id: z.number().int(),
+          variables: z.array(CatalogItemVariableOutput).optional(),
+        }),
       }),
       annotations: {
         readOnlyHint: true,
@@ -59,7 +58,7 @@ export function registerGetCatalogItem(
         openWorldHint: true,
         idempotentHint: true,
       },
-      _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+      _meta: includeForm ? { ui: { resourceUri: UI_RESOURCE_URI } } : {},
     },
     async (input) => {
       try {
@@ -85,7 +84,7 @@ export function registerGetCatalogItem(
     },
   );
 
-  registerAppResource(
+  if (includeForm) registerAppResource(
     server,
     'swsd-catalog-item-form-ui',
     UI_RESOURCE_URI,

@@ -167,12 +167,12 @@ describe('swsd_change_calendar', () => {
     const resource = await internals._registeredResources['ui://swsd/change-calendar.html']!.readCallback();
     expect(resource.contents[0]).toMatchObject({ uri: 'ui://swsd/change-calendar.html', mimeType: 'text/html;profile=mcp-app', text: expect.stringContaining('SWSD Change Calendar') });
   });
-  it.each(['triage', 'agent', 'operations', 'knowledge', 'full'] as const)('registers once only in the intended %s profile', profile => {
+  it.each(['triage', 'agent', 'operations', 'knowledge'] as const)('registers once only in the intended %s profile', profile => {
     const server = new McpServer({ name: 'test', version: '0.0.0' });
     const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: [] });
     ctx.profile = profile;
     registerTools(server, ctx);
-    const expected = ['agent', 'operations', 'full'].includes(profile) ? 1 : 0;
+    const expected = ['agent', 'operations'].includes(profile) ? 1 : 0;
     expect(ctx.enabledTools.filter(t => t === 'swsd_change_calendar')).toHaveLength(expected);
     expect(ctx.enabledTools.length).toBe(PROFILE_TOOLS[profile].length);
     expect(new Set(ctx.enabledTools).size).toBe(ctx.enabledTools.length);

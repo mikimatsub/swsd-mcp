@@ -22,7 +22,7 @@ function text(result: { messages: { content: unknown }[] }): string {
 describe('built-in prompts', () => {
   it('only references tools that exist in the registry', () => {
     for (const p of PROMPTS) {
-      for (const t of p.requires) expect(PROFILE_TOOLS.full).toContain(t);
+      for (const t of p.requires) expect(PROFILE_TOOLS.operations).toContain(t);
     }
   });
 
@@ -40,11 +40,10 @@ describe('built-in prompts', () => {
       'swsd_sla_risk_review',
       'swsd_weekly_change_review',
     ]);
-    expect(byProfile.full).toEqual(byProfile.operations);
   });
 
   it('lists prompts with titles and argument metadata', async () => {
-    const { client } = await connect(PROFILE_TOOLS.full);
+    const { client } = await connect(PROFILE_TOOLS.operations);
     const { prompts } = await client.listPrompts();
     const triage = prompts.find((p) => p.name === 'swsd_morning_triage');
     expect(triage?.title).toBe('Morning triage');
@@ -53,7 +52,7 @@ describe('built-in prompts', () => {
   });
 
   it('builds the morning triage with defaults and a read-only rule', async () => {
-    const { client } = await connect(PROFILE_TOOLS.full);
+    const { client } = await connect(PROFILE_TOOLS.operations);
     const t = text(await client.getPrompt({ name: 'swsd_morning_triage', arguments: {} }));
     expect(t).toContain('swsd_get_me');
     expect(t).toContain('swsd_my_queue');
@@ -62,7 +61,7 @@ describe('built-in prompts', () => {
   });
 
   it('interpolates validated arguments', async () => {
-    const { client } = await connect(PROFILE_TOOLS.full);
+    const { client } = await connect(PROFILE_TOOLS.operations);
     const t = text(
       await client.getPrompt({ name: 'swsd_morning_triage', arguments: { group: 'Synthetic Desk', since_hours: '48' } }),
     );
@@ -73,7 +72,7 @@ describe('built-in prompts', () => {
   });
 
   it('computes an exclusive 7-day change window from week_start', async () => {
-    const { client } = await connect(PROFILE_TOOLS.full);
+    const { client } = await connect(PROFILE_TOOLS.operations);
     const t = text(
       await client.getPrompt({ name: 'swsd_weekly_change_review', arguments: { week_start: '2026-12-28' } }),
     );
@@ -111,7 +110,7 @@ describe('built-in prompts', () => {
     ['swsd_weekly_change_review', { week_start: '2026-02-30T00:00' }],
     ['swsd_weekly_change_review', { week_start: '2026-13-01' }],
   ])('rejects invalid arguments for %s %j', async (name, args) => {
-    const { client } = await connect(PROFILE_TOOLS.full);
+    const { client } = await connect(PROFILE_TOOLS.operations);
     await expect(client.getPrompt({ name, arguments: args })).rejects.toThrow();
   });
 });

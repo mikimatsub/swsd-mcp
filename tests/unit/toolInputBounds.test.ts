@@ -59,7 +59,7 @@ describe('tool input resource bounds', () => {
   it('bounds every non-enum string and every array exposed by every tool', () => {
     const server = new McpServer({ name: 'input-bounds-test', version: '0.0.0' });
     const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: [] });
-    ctx.profile = 'full';
+    ctx.profile = 'operations';
     registerTools(server, ctx);
 
     const internals = server as unknown as McpServerInternals;

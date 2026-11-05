@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { NodeStreamableHTTPServerTransport } from '@modelcontextprotocol/node';
 import type { Env } from '../config/env.js';
+import { resolveProfileTools } from '../config/customProfile.js';
 import { createMcpServer, SERVER_NAME, SERVER_VERSION } from '../mcp/server.js';
 import { createSwsdClient } from '../swsd/client.js';
 import { registerTools } from '../config/toolRegistry.js';
@@ -35,6 +36,7 @@ function isLoopbackOrigin(origin: string): boolean {
 export async function runHttp(config: Env): Promise<void> {
   // HTTP must never inherit stdio's permission to read server-local attachments.
   const env: Env = { ...config, SWSD_TRANSPORT: 'http' };
+  resolveProfileTools(env);
   const app = express();
 
   // Trust upstream proxy hops so req.ip reflects the real client (not the

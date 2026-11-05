@@ -1,6 +1,16 @@
 import { z } from 'zod';
 
-const PROFILES = ['triage', 'agent', 'knowledge', 'operations', 'full'] as const;
+const PROFILES = ['triage', 'agent', 'knowledge', 'operations', 'custom'] as const;
+let warnedFullProfile = false;
+
+function normalizeProfile(profile: ProfileName | 'full'): ProfileName {
+  if (profile !== 'full') return profile;
+  if (!warnedFullProfile) {
+    process.stderr.write('SWSD_PROFILE=full is deprecated; use operations (all tools).\n');
+    warnedFullProfile = true;
+  }
+  return 'operations';
+}
 const TRANSPORTS = ['stdio', 'http'] as const;
 const WRITE_MODES = ['live', 'dry-run', 'disabled'] as const;
 
@@ -56,7 +66,12 @@ export const EnvSchema = z.object({
     .default('https://api.samanage.com'),
   SWSD_API_VERSION: z.string().min(1).max(32).default('v2.1'),
   SWSD_TRANSPORT: z.enum(TRANSPORTS).default('stdio'),
-  SWSD_PROFILE: z.enum(PROFILES).default('agent'),
+  SWSD_PROFILE: z.enum([...PROFILES, 'full']).default('agent').transform(normalizeProfile),
+  SWSD_TOOLS: z.string().max(65_536).optional().transform(csv),
+  SWSD_PROFILE_FILE: z.preprocess(
+    value => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().min(1).max(4_096).optional(),
+  ),
   SWSD_WRITE_MODE: z
     .enum(WRITE_MODES)
     .default('live')

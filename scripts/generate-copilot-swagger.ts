@@ -51,12 +51,8 @@ const DESCRIPTIONS: Record<keyof typeof PROFILE_TOOLS, string> = {
   operations:
     'ITSM operations workflow: the default agent ticket-handler tool set plus ' +
     'change/release management, asset and CMDB lookups, procurement context, ' +
-    'risk lookup, work logs, and attachments.',
-  full:
-    'Every registered tool. Includes incident CRUD + solution-linking, comment CRU (create/' +
-    'read/update), all lookups, solution CRUD, change/release management, ' +
-    'ITAM/CMDB/procurement reads, time tracking, attachments, custom-field ' +
-    'schema introspection, and a read-only change/release calendar.',
+    'risk lookup, work logs, attachments, KB authoring, and guarded deletes.',
+
 };
 
 const PROFILES: Record<string, ProfileMeta> = Object.fromEntries(

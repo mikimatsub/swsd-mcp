@@ -1,3 +1,4 @@
+import { EnvSchema } from '../../../src/config/env.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/server';
 import { registerGetCatalogItem } from '../../../src/tools/catalog/getCatalogItem.js';
@@ -101,7 +102,7 @@ function makeCtx(client: SwsdClient): ToolContext {
   return {
     client,
     profile: 'agent',
-    env: {} as never,
+    env: EnvSchema.parse({}),
     enabledTools: [],
     token: '',
   } satisfies ToolContext;
