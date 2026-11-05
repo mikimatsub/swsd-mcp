@@ -8,7 +8,7 @@ This guide gets swsd-mcp running locally via `npx`. For Microsoft Copilot Studio
 ## What you need
 
 - An MCP client installed with stdio or Streamable HTTP support ([client compatibility matrix](/compatibility/))
-- Node.js 24.x, at least 24.15.0 and below 25 (for `npx`)
+- Node.js 24.15+ or Node.js 26+ (for `npx`). Node 25 is not supported.
 - An SWSD **JSON Web Token**: see below
 
 ## Get an SWSD JSON Web Token

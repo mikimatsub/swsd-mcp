@@ -45,11 +45,12 @@ header allowlist. Adopting the 2026-07-28 HTTP binding requires its own review.
 TypeScript 7.0.2 is incompatible with the current stable `typescript-eslint`
 8.72.1 peer requirement `>=4.8.4 <6.1.0`. Retain TypeScript 6.0.3 until the
 stable parser supports v7; do not force peers or suppress version checks.
-Node 24 remains the supported production runtime. It entered maintenance on
-October 20, 2026 and remains supported upstream through April 30, 2028. Node 26
-entered Active LTS on October 28, 2026; adopting it remains a separate platform
-migration that must cover CI, Docker, runtime types, and the Windows plugin's
-Node validation and clean-user acceptance gates.
+Node.js 24.15+ remains the minimum supported runtime; Node 26 is also supported.
+Node 25 is end of life and is not supported. Primary CI tests Node 24 and 26,
+while Windows plugin and docs CI retain Node 24. Docker uses the digest-pinned
+Node 26 Alpine image. Keep the Node 24 runtime types to preserve compatibility
+with the minimum supported line. Windows setup accepts Node 24.15+ within
+major 24 or Node 26+ and installs the current supported LTS through winget.
 
 ```sh
 npm ci --strict-peer-deps

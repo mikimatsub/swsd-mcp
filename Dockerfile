@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1.27.1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 
 # Base image pinned by digest for supply-chain safety. To update: pull the
-# latest node:24-alpine, copy its sha256 digest from `docker inspect`, and
+# latest node:26-alpine, copy its sha256 digest from `docker inspect`, and
 # replace below. Renovate's docker manager (via the central config in
 # mikimatsub/.github) will also propose digest bumps automatically.
-ARG NODE_IMAGE=node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
+ARG NODE_IMAGE=node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94
 
 # === Builder stage ===
 FROM ${NODE_IMAGE} AS builder
@@ -48,7 +48,7 @@ ENV SWSD_TRANSPORT=http
 EXPOSE 3000
 
 # /healthz returns 200 with {"ok":true,...} when the server is responsive.
-# Uses Node 24's built-in fetch — no curl/wget needed in the image.
+# Uses Node 26's built-in fetch — no curl/wget needed in the image.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/healthz').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
 

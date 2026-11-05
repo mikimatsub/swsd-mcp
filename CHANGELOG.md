@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Node.js: require 24.15 or newer; Node 26 is supported. Node 25 is not. CI tests Node 24 and 26. The Docker image uses `node:26-alpine` (digest-pinned). Windows setup accepts Node 24.15+ or Node 26+, and installs the current Node.js LTS via winget when needed.
+
 ## [3.3.0] - 2026-11-05
 
 ### Added
