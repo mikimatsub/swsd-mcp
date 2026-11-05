@@ -13,6 +13,7 @@ interface RegisteredToolInternals {
   description?: string;
   annotations?: Record<string, unknown>;
   inputSchema?: unknown;
+  outputSchema?: { safeParse: (v: unknown) => { success: boolean } };
   handler: (input: unknown, extra: unknown) => Promise<unknown>;
 }
 
@@ -441,5 +442,19 @@ describe('swsd_create_service_request', () => {
         request_variables: [{ custom_field_id: 2181315, value: 'x' }],
       }).success,
     ).toBe(true);
+  });
+
+  it('returns output that matches its declared outputSchema in live and dry-run modes', async () => {
+    const live = (await tool.handler({ catalog_item_id: 794451, request_variables: [] }, {})) as StructuredCallToolResult;
+    expect(tool.outputSchema?.safeParse(live.structuredContent).success).toBe(true);
+
+    const dryServer = new McpServer({ name: 'test', version: '0.0.0' });
+    const dryClient = makeFakeClient();
+    registerCreateServiceRequest(dryServer, { ...makeCtx(dryClient), env: { SWSD_WRITE_MODE: 'dry-run' } as never });
+    const dryTool = getRegisteredTool(dryServer, 'swsd_create_service_request');
+    const dry = (await dryTool.handler({ catalog_item_id: 794451, request_variables: [] }, {})) as StructuredCallToolResult;
+    expect(dry.structuredContent).toMatchObject({ dry_run: true, request: { method: 'POST' } });
+    expect(dryTool.outputSchema?.safeParse(dry.structuredContent).success).toBe(true);
+    expect(dryClient.calls.some((c) => c.type === 'post')).toBe(false);
   });
 });

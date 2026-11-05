@@ -92,6 +92,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.1.1`;
   the separately gated plugin client and administrator promotion remain 3.1.0.
 
+### Fixed
+
+- `swsd_create_service_request` in dry-run mode failed output validation instead of
+  returning the previewed request.
+
 ## [3.1.1] - 2026-11-02
 
 ### Security
