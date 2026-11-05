@@ -1,0 +1,58 @@
+{
+  "incidents": [
+    {
+      "id": 1234567,
+      "number": 1001,
+      "name": "Synthetic VPN outage",
+      "state": "In Progress",
+      "priority": "Critical",
+      "assignee_email": "alex@example.test",
+      "url": "https://swsd.example.test/incidents/1234567",
+      "due_at": "2026-11-04T10:30:00Z",
+      "minutes_to_breach": -90,
+      "risk": "breached",
+      "sla_violations": [{ "name": "Resolution time", "violation_type": "resolution" }]
+    },
+    {
+      "id": 1234568,
+      "number": 1002,
+      "name": "Synthetic sign-in failure",
+      "state": "Assigned",
+      "priority": "High",
+      "assignee_email": "sam@example.test",
+      "url": "https://swsd.example.test/incidents/1234568",
+      "due_at": "2026-11-04T14:00:00Z",
+      "minutes_to_breach": 120,
+      "risk": "critical",
+      "sla_violations": []
+    },
+    {
+      "id": 1234569,
+      "number": 1003,
+      "name": "Synthetic printer queue stalled",
+      "state": "New",
+      "priority": "Medium",
+      "due_at": "2026-11-05T00:00:00Z",
+      "minutes_to_breach": 720,
+      "risk": "warning",
+      "sla_violations": []
+    },
+    {
+      "id": 1234570,
+      "number": 1004,
+      "name": "Synthetic monitor replacement",
+      "state": "Assigned",
+      "priority": "Low",
+      "assignee_email": "alex@example.test",
+      "due_at": "2026-11-06T12:00:00Z",
+      "minutes_to_breach": 2880,
+      "risk": "ok",
+      "sla_violations": []
+    }
+  ],
+  "counts": { "breached": 1, "critical": 1, "warning": 1, "ok": 1 },
+  "now": "2026-11-04T12:00:00Z",
+  "pagination": { "page": 1, "per_page": 25, "total": 4, "total_scope": "filtered", "has_more": false },
+  "applied_filters": { "state_is_not": ["Resolved", "Closed"], "at_risk_within_hours": 24 },
+  "scan": { "candidates_scanned": 4, "matches_in_page": 4, "unscanned_candidates_remain": false, "client_filter_applied": false }
+}

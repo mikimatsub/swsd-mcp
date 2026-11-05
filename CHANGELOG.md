@@ -94,6 +94,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- MCP Registry profile descriptions now match the tool counts in `PROFILE_TOOLS`,
+  with an offline metadata regression check to prevent drift.
+- Widgets recover from errors when a later successful result arrives in the same
+  iframe, preserving cached render targets and interactive controls.
+- `swsd_sla_risk_review` accepts a numeric group ID directly, so group-scoped
+  reviews work in every supported profile without a group lookup tool.
 - `swsd_list_my_incidents` now applies requester email locally, case-insensitively,
   together with the authenticated assignee filter.
 - Incident lists, My Queue and SLA Risk now distinguish upstream candidate counts
