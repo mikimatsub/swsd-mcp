@@ -11,6 +11,7 @@ import { registerGetMe } from '../tools/utility/getMe.js';
 import { registerListIncidents } from '../tools/incidents/listIncidents.js';
 import { registerListMyIncidents } from '../tools/incidents/listMyIncidents.js';
 import { registerSlaRisk } from '../tools/incidents/slaRisk.js';
+import { registerTicketStats } from '../tools/incidents/ticketStats.js';
 import { registerMyQueue } from '../tools/incidents/myQueue.js';
 import { registerGetIncident } from '../tools/incidents/getIncident.js';
 import { registerCreateIncident } from '../tools/incidents/createIncident.js';
@@ -172,6 +173,7 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_list_incidents: registerListIncidents,
   swsd_list_my_incidents: registerListMyIncidents,
   swsd_sla_risk: registerSlaRisk,
+  swsd_ticket_stats: registerTicketStats,
   swsd_my_queue: registerMyQueue,
   swsd_get_incident: registerGetIncident,
   swsd_create_incident: registerCreateIncident,

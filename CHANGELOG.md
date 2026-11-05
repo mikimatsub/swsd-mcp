@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   them; group, site and department lookups join Agent, Operations and Full.
 - Added directory write tools (Operations/Full): create/update/delete for users, groups, sites, departments, categories and roles, `swsd_get_role`, and `swsd_add_group_member` / `swsd_remove_group_member`. Deletes and membership removal require `confirm: true` with a matching `confirm_id`.
 - Added asset and CMDB write tools (Operations/Full): create/update/delete for hardware assets, mobile devices, other assets and configuration items, plus `swsd_update_printer`. Deletes require `confirm: true` with a matching `confirm_id`.
+- Added `swsd_ticket_stats`, a read-only ticket summary (totals, breakdowns, median
+  resolution time) with a `ticket-stats` MCP Apps widget, in every profile that has
+  `swsd_sla_risk`.
 - Added built-in MCP prompts `swsd_morning_triage`, `swsd_sla_risk_review` and
   `swsd_weekly_change_review`, offered only when the active profile has the tools
   they use.

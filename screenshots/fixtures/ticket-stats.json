@@ -1,0 +1,107 @@
+{
+  "window": {
+    "from": "2026-10-28T12:00:00.000Z",
+    "to": "2026-11-04T12:00:00.000Z"
+  },
+  "totals": {
+    "total": 120,
+    "open": 72,
+    "resolved_in_window": 40,
+    "created_in_window": 85,
+    "breached": 9,
+    "unassigned": 14
+  },
+  "by_state": [
+    {
+      "state": "Assigned",
+      "count": 38
+    },
+    {
+      "state": "Resolved",
+      "count": 36
+    },
+    {
+      "state": "In Progress",
+      "count": 20
+    },
+    {
+      "state": "New",
+      "count": 14
+    },
+    {
+      "state": "Closed",
+      "count": 12
+    }
+  ],
+  "by_priority": [
+    {
+      "priority": "Medium",
+      "count": 60
+    },
+    {
+      "priority": "High",
+      "count": 32
+    },
+    {
+      "priority": "Low",
+      "count": 20
+    },
+    {
+      "priority": "Critical",
+      "count": 8
+    }
+  ],
+  "by_assignee": [
+    {
+      "email": "jane.doe@acme.example",
+      "count": 30
+    },
+    {
+      "email": "alex.kim@acme.example",
+      "count": 24
+    },
+    {
+      "email": "sam.patel@acme.example",
+      "count": 19
+    },
+    {
+      "email": "morgan.lee@acme.example",
+      "count": 15
+    },
+    {
+      "email": "taylor.gomez@acme.example",
+      "count": 10
+    },
+    {
+      "email": "jordan.weiss@acme.example",
+      "count": 8
+    }
+  ],
+  "by_category": [
+    {
+      "category": "Software",
+      "count": 40
+    },
+    {
+      "category": "Hardware",
+      "count": 32
+    },
+    {
+      "category": "Network",
+      "count": 24
+    },
+    {
+      "category": "Acme Corp · Employee onboarding and access requests",
+      "count": 18
+    },
+    {
+      "category": "Uncategorized",
+      "count": 6
+    }
+  ],
+  "median_resolution_hours": 18.5,
+  "scan": {
+    "pages_scanned": 5,
+    "truncated": true
+  }
+}
