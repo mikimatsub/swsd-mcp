@@ -31,8 +31,8 @@ header {
 header h1 {
   margin: 0;
   font-size: 1.1rem;
-  flex: 1;
-  word-break: break-word;
+  flex: 1 1 auto;
+  overflow-wrap: break-word;
 }
 input[type="search"] {
   padding: 0.4rem 0.6rem;
@@ -41,7 +41,9 @@ input[type="search"] {
   background: var(--bg);
   color: var(--fg);
   font-size: 0.9rem;
-  min-width: 280px;
+  flex: 1 1 14rem;
+  min-width: 0;
+  max-width: 100%;
 }
 input[type="search"]:focus {
   outline: 2px solid var(--link);
@@ -83,7 +85,17 @@ th:hover {
   text-align: left;
 }
 td {
-  word-break: break-word;
+  overflow-wrap: break-word;
+}
+/* Narrow hosts: keep numbers and words whole; the wrapper scrolls instead. */
+td:first-child {
+  white-space: nowrap;
+}
+td:nth-child(2) {
+  min-width: 10rem;
+}
+td:nth-child(3) {
+  min-width: 6.5rem;
 }
 td a {
   color: var(--link);

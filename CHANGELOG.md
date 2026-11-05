@@ -94,6 +94,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Widgets now follow the host's light or dark theme. The UI build had been lowering
+  CSS `light-dark()` to the OS color-scheme preference, so eight widgets ignored
+  the host theme. The incident list also keeps numbers and words whole in narrow
+  hosts and scrolls horizontally instead.
 - `swsd_create_service_request` in dry-run mode failed output validation instead of
   returning the previewed request.
 

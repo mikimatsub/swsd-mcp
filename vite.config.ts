@@ -44,6 +44,9 @@ export default defineConfig({
   base: './',
   plugins: [inlineUiAssets(), flattenHtmlOutput()],
   build: {
+    // Keep CSS light-dark() native. Lowering it ties the palette to the OS
+    // prefers-color-scheme and ignores the host's theme (data-theme/color-scheme).
+    cssTarget: ['chrome123', 'edge123', 'firefox120', 'safari17.5'],
     assetsInlineLimit: () => true,
     assetsDir: '',
     cssCodeSplit: false,
