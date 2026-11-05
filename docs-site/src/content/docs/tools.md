@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 140 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 145 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **140 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **145 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
@@ -241,14 +241,18 @@ Use these for ITSM lifecycle work that needs change/release records instead of f
 
 ---
 
-## Assets & CMDB (25)
+## Assets & CMDB (29)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_hardware_assets` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_hardware_asset` | R |   |   |   | ✓ | ✓ |
+| `swsd_list_hardware_warranties` | R |   |   |   | ✓ | ✓ |
 | `swsd_create_hardware_asset` | W |   |   |   | ✓ | ✓ |
 | `swsd_update_hardware_asset` | W |   |   |   | ✓ | ✓ |
+| `swsd_add_hardware_warranty` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_hardware_warranty` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_hardware_warranty` | W |   |   |   | ✓ | ✓ |
 | `swsd_delete_hardware_asset` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_mobile_devices` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_mobile_device` | R |   |   |   | ✓ | ✓ |
@@ -278,7 +282,7 @@ These read tools expose asset and CMDB context without adding asset mutation ris
 
 ---
 
-## Procurement & Risk (21)
+## Procurement & Risk (22)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
@@ -286,6 +290,7 @@ These read tools expose asset and CMDB context without adding asset mutation ris
 | `swsd_get_contract` | R |   |   |   | ✓ | ✓ |
 | `swsd_create_contract` | W |   |   |   | ✓ | ✓ |
 | `swsd_update_contract` | W |   |   |   | ✓ | ✓ |
+| `swsd_add_contract_item` | W |   |   |   | ✓ | ✓ |
 | `swsd_delete_contract` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_purchase_orders` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_purchase_order` | R |   |   |   | ✓ | ✓ |

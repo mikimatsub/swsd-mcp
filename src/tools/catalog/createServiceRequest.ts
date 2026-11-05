@@ -47,7 +47,12 @@ export function registerCreateServiceRequest(
         'field names and (for Dropdowns) allowed values. Validated for Text, ' +
         'Dropdown, Number, Checkbox, and Date types.',
       inputSchema: CreateServiceRequestInput,
-      outputSchema: z.object({ incident: IncidentResponseOutput }),
+      // Dry-run returns { dry_run, request } instead of an incident; both shapes must validate.
+      outputSchema: z.object({
+        incident: IncidentResponseOutput.optional(),
+        dry_run: z.literal(true).optional(),
+        request: z.object({ method: z.string(), path: z.string(), body: z.unknown().optional() }).optional(),
+      }),
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
