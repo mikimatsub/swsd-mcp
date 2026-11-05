@@ -180,7 +180,7 @@ describe('createSwsdClient request boundary', () => {
     await expect(client.rawRequest('/tasks/1234567.json', { method })).resolves.toMatchObject({ body: null, status });
   });
 
-  it.each(['GET', 'POST', 'PUT'])('rejects empty JSON on %s instead of treating it as an empty result', async (method) => {
+  it.each(['GET'])('rejects empty JSON on %s instead of treating it as an empty result', async (method) => {
     vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(new Response(null, {
       status: 200, headers: { 'content-type': 'application/json' },
     })));
@@ -198,5 +198,22 @@ describe('createSwsdClient request boundary', () => {
 
     await client.rawRequest('/raw', { method: 'POST', body: 'already-encoded' });
     expect(fetchMock.mock.calls[1]?.[1]?.body).toBe('already-encoded');
+  });
+});
+
+describe('empty successful bodies after writes', () => {
+  it('treats an empty JSON 200 response to POST as null, not a decode error', async () => {
+    const { createSwsdClient } = await import('../../../src/swsd/client.js');
+    const { EnvSchema } = await import('../../../src/config/env.js');
+    const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const client = createSwsdClient({ env: EnvSchema.parse({}), token: 'SYNTHETIC_TOKEN' });
+      const res = await client.post('/incidents.json', { incident: { name: 'Synthetic' } });
+      expect(res.body).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

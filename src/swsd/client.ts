@@ -117,8 +117,11 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
     let body: unknown;
     try {
       const text = await res.text();
-      const allowsEmpty = method === 'DELETE' || method === 'HEAD' || res.status === 204 || res.status === 205;
-      body = isJson ? text === '' && allowsEmpty ? null : JSON.parse(text) : text;
+      // An empty body on a write is not a decode error: the write may already
+      // have been applied, and failing it would invite a duplicate retry.
+      // Reads must return a document, so an empty GET body still fails.
+      const allowsEmpty = method !== 'GET' || res.status === 204 || res.status === 205;
+      body = isJson ? text.trim() === '' && allowsEmpty ? null : JSON.parse(text) : text;
     } catch {
       // The request has already reached SWSD. Do not retry a decode failure,
       // or retain parse/body-read exceptions that may contain response data.
