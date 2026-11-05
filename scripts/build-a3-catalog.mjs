@@ -55,6 +55,7 @@ const catalog = tools.map(t => {
   const words = t.name.slice(5).split('_').map(w => special[w] ?? w).join(' ');
   const friendly = words[0].toUpperCase() + words.slice(1);
   const humanized = t.description.trim()
+    .replace(/SolarWinds Service Desk/g, 'SWSD')
     .replace(/^DESTRUCTIVE\s*—\s*/i, '')
     .replace(/the authenticated user/gi, 'you')
     .replace(/numeric ID/gi, 'ID')

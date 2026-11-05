@@ -1,3 +1,4 @@
+﻿param([switch]$IncludeProcessTimeouts)
 $ErrorActionPreference = 'Stop'
 # Any credential call is a test failure. No network client or real installer is used.
 Add-Type -TypeDefinition @'
@@ -55,7 +56,7 @@ require('node:fs').writeFileSync(require('node:path').join(__dirname, 'npm-args.
 console.log('3.2.0');
 '@ | Set-Content -LiteralPath $mockNpm -Encoding ASCII
     if ((Get-SwsdLatestVersion) -ne '3.2.0') { throw 'Mock npm lookup failed.' }
-    if ((Get-Content -LiteralPath (Join-Path $mockBin 'npm-args.txt') -Raw).Trim() -ne 'view swsd-mcp version') { throw 'Wrong npm lookup arguments.' }
+    if ((Get-Content -LiteralPath (Join-Path $mockBin 'npm-args.txt') -Raw).Trim() -ne 'view swsd-mcp version --registry=https://registry.npmjs.org') { throw 'Wrong npm lookup arguments.' }
     foreach ($output in @('invalid', '3.2.0-rc.1', '3.2.0 garbage')) {
         "console.log('$output');" | Set-Content -LiteralPath $mockNpm -Encoding ASCII
         if ($null -ne (Get-SwsdLatestVersion)) { throw 'Invalid registry response was accepted.' }
@@ -85,6 +86,9 @@ exit /b 0
     $env:SWSD_WINGET = Join-Path $mockBin 'missing-winget.cmd'
     Assert-Fails { Install-SwsdNode } 'Windows Package Manager is unavailable'
 
+    # Optional timeout coverage terminates owned doubles; leave it opt-in for
+    # constrained runs that prohibit terminating any process.
+    if ($IncludeProcessTimeouts) {
     # Record the real Node child's PID so an immediate launch failure cannot pass as a timeout.
     @'
 require('node:fs').writeFileSync(require('node:path').join(__dirname, 'npm-pid.txt'), String(process.pid));
@@ -109,6 +113,81 @@ public static class SlowTool {
     $stopwatch.Restart()
     Assert-Fails { Install-SwsdNode -TimeoutSeconds 1 } 'Node.js installation timed out'
     if ($stopwatch.ElapsedMilliseconds -gt 5000) { throw 'Node timeout did not bound the wait.' }
+    }
+
+    # Real Node/npm process boundary, entirely local npm double. The lock fixture
+    # starts with the shipped registry lock, then changes just the test package.
+    $env:SWSD_NPM=$mockNpm
+    Copy-Item -LiteralPath (Join-Path $root 'runtime/package-lock.json') -Destination (Join-Path $mockBin 'fixture-lock.json')
+    '99.0.0' | Set-Content -LiteralPath (Join-Path $mockBin 'latest.txt') -Encoding ASCII
+    @'
+const fs = require('node:fs'), path = require('node:path');
+if (process.env.SWSD_TOKEN) throw new Error('Credential reached npm child');
+const latest = fs.readFileSync(path.join(__dirname, 'latest.txt'), 'utf8').trim();
+const modePath = path.join(__dirname, 'mode.txt');
+const mode = fs.existsSync(modePath) ? fs.readFileSync(modePath, 'utf8').trim() : '';
+const args = process.argv.slice(2);
+fs.appendFileSync(path.join(__dirname, 'update-args.txt'), args.join(' ') + '\n');
+if (!args.includes('--registry=https://registry.npmjs.org')) throw new Error('Registry not pinned');
+if (args[0] === 'view' && args[2] === 'version') { console.log(latest); }
+else if (args[0] === 'view' && args[1] === `swsd-mcp@${latest}` && args[2] === 'dist.integrity') {
+  if (mode === 'registry-fail') process.exit(1);
+  console.log('sha512-' + Buffer.alloc(64).toString('base64'));
+} else if (args[0] === 'install' || args[0] === 'ci') {
+  for (const flag of ['--ignore-scripts','--strict-peer-deps','--no-audit','--no-fund']) {
+    if (!args.includes(flag)) throw new Error('Missing hardening flag');
+  }
+  const manifest = JSON.parse(fs.readFileSync('package.json', 'utf8').replace(/^\uFEFF/, ''));
+  if (manifest.dependencies['swsd-mcp'] !== latest || latest === '3.2.0') throw new Error('Installed recipe pin instead of latest');
+  if (mode === 'install-fail') process.exit(1);
+  const pkg = 'node_modules/swsd-mcp';
+  if (args[0] === 'ci') {
+    if (!fs.existsSync('package-lock.json')) throw new Error('Lock not resolved before ci');
+    fs.mkdirSync(`${pkg}/dist`, {recursive: true});
+    fs.writeFileSync(`${pkg}/package.json`, JSON.stringify({version: mode === 'version-fail' ? '0.0.0' : latest}));
+    if (mode !== 'entry-fail') fs.writeFileSync(`${pkg}/dist/cli.js`, '// isolated npm double');
+    process.exit(0);
+  }
+  if (!args.includes('--package-lock-only')) throw new Error('Must validate lock before downloads');
+  const lock = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixture-lock.json'), 'utf8'));
+  lock.packages[''].dependencies['swsd-mcp'] = latest;
+  Object.assign(lock.packages[pkg], {version: latest, resolved: `https://registry.npmjs.org/swsd-mcp/-/swsd-mcp-${latest}.tgz`, integrity: 'sha512-' + Buffer.alloc(64).toString('base64')});
+  if (mode === 'integrity-fail') lock.packages[pkg].integrity = 'sha512-invalid';
+  if (mode === 'source-fail') lock.packages[pkg].resolved = 'https://example.test/untrusted.tgz';
+  fs.writeFileSync('package-lock.json', JSON.stringify(lock));
+} else throw new Error('Unexpected npm arguments');
+'@ | Set-Content -LiteralPath $mockNpm -Encoding ASCII
+    $originalToken=$env:SWSD_TOKEN
+    try {
+        $env:SWSD_TOKEN='synthetic-update-secret'
+        $entryPoint=Get-SwsdEntryPoint
+        New-Item -ItemType Directory -Path (Split-Path $entryPoint) -Force | Out-Null
+        '// previous runtime remains usable' | Set-Content -LiteralPath $entryPoint
+        $oldEntry=Get-Content -LiteralPath $entryPoint -Raw
+        Update-SwsdRuntime
+        if ((Get-SwsdInstalledVersion) -ne '99.0.0' -or -not (Get-SwsdStatus).toolsInstalled) {throw 'Latest active runtime must count as installed.'}
+        $activeEntry=Get-SwsdEntryPoint
+        $activeBefore=Get-Content -LiteralPath $activeEntry -Raw
+        if ($activeEntry -notlike '*runtime\99.0.0\*') {throw 'Active entry point still targets the bundled pin.'}
+        $updatedRecipe=Get-Content (Join-Path $script:SwsdHome 'runtime/99.0.0/package.json') -Raw | ConvertFrom-Json
+        if ($updatedRecipe.dependencies.'swsd-mcp' -ne '99.0.0') {throw 'Update recipe must use exact latest.'}
+        if ((Get-Content -LiteralPath $entryPoint -Raw) -cne $oldEntry) {throw 'Successful update modified the previous runtime.'}
+        '99.0.1' | Set-Content -LiteralPath (Join-Path $mockBin 'latest.txt') -Encoding ASCII
+        foreach ($mode in @('registry-fail','install-fail','version-fail','integrity-fail','entry-fail','source-fail')) {
+            $mode | Set-Content -LiteralPath (Join-Path $mockBin 'mode.txt') -Encoding ASCII
+            Assert-Fails { Update-SwsdRuntime } 'Tool installation failed'
+            if ((Get-SwsdInstalledVersion) -ne '99.0.0' -or (Get-SwsdEntryPoint) -ne $activeEntry -or (Get-Content -LiteralPath $activeEntry -Raw) -cne $activeBefore) {throw 'Failed update damaged the active runtime.'}
+            if ((Get-Content -LiteralPath $entryPoint -Raw) -cne $oldEntry) {throw 'Failed update modified the older runtime.'}
+        }
+        '' | Set-Content -LiteralPath (Join-Path $mockBin 'mode.txt') -Encoding ASCII
+        $activePath=Join-Path $script:SwsdHome 'runtime/active.txt'
+        $activeLock=[IO.File]::Open($activePath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+        try { Assert-Fails {Update-SwsdRuntime} 'could not be activated' } finally {$activeLock.Dispose()}
+        if ((Get-SwsdInstalledVersion) -ne '99.0.0' -or (Get-Content -LiteralPath $activeEntry -Raw) -cne $activeBefore) {throw 'Activation failure damaged the prior active runtime.'}
+        Update-SwsdRuntime
+        if ((Get-SwsdInstalledVersion) -ne '99.0.1' -or -not (Get-SwsdStatus).toolsInstalled) {throw 'Activation failure prevented a clean retry.'}
+        Set-SwsdActiveVersion $script:SwsdPackageVersion
+    } finally {$env:SWSD_TOKEN=$originalToken}
 
     # Invoke the actual installer: matching installs must skip npm but still refresh all client files.
     $script:MockNode = Join-Path $mockBin 'node.cmd'
@@ -140,7 +219,7 @@ exit /b 1
     foreach ($name in @('package.json','package-lock.json')) {
         if ((Get-Content -LiteralPath (Join-Path $client "runtime\$name") -Raw) -cne (Get-Content -LiteralPath (Join-Path $root "runtime\$name") -Raw)) { throw 'Skipped install did not retain the exact recipe.' }
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $shortcuts 'SolarWinds Service Desk Setup.lnk'))) { throw 'Skipped install did not refresh its shortcut.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $shortcuts 'SWSD Setup.lnk'))) { throw 'Skipped install did not refresh its shortcut.' }
     if ((Get-Content -LiteralPath $settingsPath -Raw) -cne $settingsBefore) { throw 'Skipped install modified settings.' }
     Assert-Fails { Install-SwsdTools -SourceRoot $root -ShortcutDirectory $shortcuts -Force } 'Tool installation failed'
     if (-not (Test-Path -LiteralPath $installLog)) { throw 'Forced repair did not invoke mocked npm.' }
@@ -152,7 +231,7 @@ exit /b 1
     '{"version":"0.0.1"}' | Set-Content -LiteralPath $manifest
     Assert-Fails { Install-SwsdTools -SourceRoot $root -ShortcutDirectory $shortcuts } 'Tool installation failed'
     if (-not (Test-Path -LiteralPath $installLog)) { throw 'Version mismatch wrongly skipped npm.' }
-    Write-Output 'PASS: installed/version comparisons; mocked npm success/offline/invalid/missing/timeout; exact pinned winget success/failure/missing/timeout; actual skip/force/incomplete/mismatch installer paths; client/recipe/shortcut refresh and settings preservation; no internet or real installs.'
+    Write-Output 'PASS: latest-version update and exact recipe; active runtime detection; registry/install/version/integrity/entry/source failure preserves prior runtimes; npm child excludes SWSD_TOKEN; mocked npm and winget; bundled install/repair and client refresh. Timeout process termination tests are opt-in.'
 } finally {
     $env:SWSD_NPM = $oldNpm
     $env:SWSD_WINGET = $oldWinget

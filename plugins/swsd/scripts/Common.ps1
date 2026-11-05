@@ -17,7 +17,107 @@ $script:SwsdProfiles = @(
 )
 
 function Get-SwsdPickerProfiles {
-    return @($script:SwsdProfiles | Where-Object { $_.picker })
+    return @($script:SwsdProfiles | Where-Object { $_.picker }) + @(Get-SwsdCustomProfiles)
+}
+
+function Get-SwsdAssetRoot {
+    if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'assets/tool-catalog.json')) { return Join-Path $PSScriptRoot 'assets' }
+    return Join-Path (Split-Path $PSScriptRoot) 'assets'
+}
+
+function Read-SwsdProfileFile([string]$Path) {
+    try {
+        if (-not [IO.Path]::IsPathRooted($Path) -or -not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw 'missing' }
+        if ((Get-Item -LiteralPath $Path).Length -gt 256KB) { throw 'too large' }
+        $value = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+        return ConvertTo-SwsdValidatedProfile $value
+    } catch {
+        if ($_.Exception.Message -like 'Profile JSON:*') { throw }
+        throw 'Profile JSON: Choose an existing, valid JSON profile file.'
+    }
+}
+
+function ConvertTo-SwsdValidatedProfile($Value) {
+    # Mirrors schemas/swsd-profile.schema.json (draft 2020-12), including exact key case.
+    if ($null -eq $Value -or $Value -isnot [pscustomobject]) { throw 'Profile JSON: Expected an object with name, version, and tools.' }
+    $keys = @($Value.PSObject.Properties.Name)
+    foreach ($key in $keys) {
+        if (@('name','version','tools','description') -cnotcontains $key) { throw 'Profile JSON: Only name, version, tools, and optional description are allowed.' }
+    }
+    foreach ($key in @('name','version','tools')) {
+        if ($keys -cnotcontains $key) { throw "Profile JSON: The $key field is required." }
+    }
+    if ($Value.name -isnot [string] -or $Value.name.Length -gt 80 -or $Value.name -cnotmatch '^[A-Za-z0-9][A-Za-z0-9 _.-]*$') {
+        throw 'Profile JSON: Use a name of 1 to 80 letters, numbers, spaces, underscores, dots, or hyphens, starting with a letter or number.'
+    }
+    if (($Value.version -isnot [int] -and $Value.version -isnot [long] -and $Value.version -isnot [double] -and $Value.version -isnot [decimal]) -or $Value.version -ne 1) { throw 'Profile JSON: version must be the number 1.' }
+    if ($Value.tools -isnot [array] -or $Value.tools.Count -gt 512) { throw 'Profile JSON: tools must be an array with at most 512 names.' }
+    foreach ($tool in $Value.tools) {
+        if ($tool -isnot [string] -or $tool.Length -eq 0 -or [regex]::Matches($tool, '[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]').Count -gt 128) { throw 'Profile JSON: Each tool must be a string of 1 to 128 characters.' }
+    }
+    $result = [ordered]@{ name=$Value.name; version=1; tools=@($Value.tools) }
+    if ($keys -ccontains 'description') {
+        if ($Value.description -isnot [string] -or [regex]::Matches($Value.description, '[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]').Count -gt 2048) { throw 'Profile JSON: description must be a string of at most 2048 characters.' }
+        $result.description=$Value.description
+    }
+    return [pscustomobject]$result
+}
+
+function Get-SwsdCustomProfiles {
+    $directory = Join-Path $script:SwsdHome 'profiles'
+    if (-not (Test-Path -LiteralPath $directory)) { return @() }
+    return @(Get-ChildItem -LiteralPath $directory -Filter '*.json' -File | ForEach-Object {
+        try {
+            $value = Read-SwsdProfileFile $_.FullName
+            # Built-in names are reserved, including the hidden legacy alias.
+            if ($value.name -notin @($script:SwsdProfiles.name)) {
+                @{ id=('custom:' + $_.BaseName); name=$value.name; description=$(if ($value.PSObject.Properties['description']) {$value.description} else {'Your selected tools'}); profileFile=$_.FullName; tools=@($value.tools); picker=$true }
+            }
+        } catch { # A damaged custom file must not prevent opening setup.
+        }
+    } | Sort-Object { $_.name })
+}
+
+function Save-SwsdCustomProfile {
+    param([Parameter(Mandatory)]$Value, [string]$PreviousPath)
+    $profile = ConvertTo-SwsdValidatedProfile $Value
+    if ($profile.name -in @($script:SwsdProfiles.name)) { throw 'Profile JSON: Choose a name different from the built-in profiles.' }
+    $catalog = Get-Content -LiteralPath (Join-Path (Get-SwsdAssetRoot) 'tool-catalog.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $unknown = @($profile.tools | Where-Object { @($catalog.name) -cnotcontains $_ } | Select-Object -Unique)
+    $profile.tools = @($profile.tools | Where-Object { @($catalog.name) -ccontains $_ })
+    $directory = Join-Path $script:SwsdHome 'profiles'
+    New-Item -ItemType Directory -Path $directory -Force | Out-Null
+    $hash = [Security.Cryptography.SHA256]::Create()
+    try { $safe = [BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($profile.name.ToLowerInvariant()))).Replace('-','').ToLowerInvariant() } finally { $hash.Dispose() }
+    $path = Join-Path $directory ($safe + '.json')
+    if ($PreviousPath -and $PreviousPath -ne $path -and (Test-Path -LiteralPath $path)) { throw 'Profile JSON: A profile with that name already exists. Choose another name.' }
+    $temporary = Join-Path $directory ([guid]::NewGuid().ToString('N') + '.tmp')
+    try {
+        $settings=Get-SwsdSettings
+        if ($profile.tools.Count -eq 0 -and $settings.profile -eq 'custom' -and $settings.profileFile -eq $path) {throw 'Profile JSON: Select at least one known tool for your active custom profile.'}
+        # Node's JSON.parse does not accept a UTF-8 BOM (PS 5.1's UTF8 encoding).
+        [IO.File]::WriteAllText($temporary, ($profile | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding($false)))
+        Move-Item -LiteralPath $temporary -Destination $path -Force
+    } finally { if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force } }
+    if ($PreviousPath -and $PreviousPath -ne $path) {
+        $settings = Get-SwsdSettings
+        if ($settings.profile -eq 'custom' -and $settings.profileFile -eq $PreviousPath) { Save-SwsdSettings -BaseUrl $settings.baseUrl -Profile custom -ProfileFile $path }
+        Remove-SwsdCustomProfile -Path $PreviousPath
+    }
+    return @{ path=$path; profile=$profile; skipped=$unknown; notice=$(if ($unknown.Count) {'Unknown tools skipped: ' + ($unknown -join ', ')} else {''}) }
+}
+
+function Import-SwsdCustomProfile([string]$Path) { return Save-SwsdCustomProfile -Value (Read-SwsdProfileFile $Path) }
+function Export-SwsdCustomProfile([string]$Path, [string]$Destination) {
+    $value = Read-SwsdProfileFile $Path
+    [IO.File]::WriteAllText($Destination, ($value | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding($false)))
+}
+function Remove-SwsdCustomProfile([string]$Path) {
+    $directory = [IO.Path]::GetFullPath((Join-Path $script:SwsdHome 'profiles'))
+    if ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($Path)) -ne $directory -or [IO.Path]::GetExtension($Path) -ne '.json') { throw 'Profile JSON: Choose a saved custom profile.' }
+    $settings = Get-SwsdSettings
+    if ($settings.profile -eq 'custom' -and $settings.profileFile -eq $Path) { Save-SwsdSettings -BaseUrl $settings.baseUrl -Profile agent }
+    Remove-Item -LiteralPath $Path -Force
 }
 
 function Resolve-SwsdProfileId([string]$Id) {
@@ -33,6 +133,16 @@ function Resolve-SwsdProfileId([string]$Id) {
 }
 
 function Get-SwsdProfileRow([string]$Id) {
+    if ($Id -eq 'custom' -or $Id.StartsWith('custom:')) {
+        $path = if ($Id -eq 'custom') {(Get-SwsdSettings).profileFile} else {''}
+        $row=Get-SwsdCustomProfiles | Where-Object { $_.id -eq $Id -or ($path -and $_.profileFile -eq $path) } | Select-Object -First 1
+        if ($row) {return $row}
+        if ($path) {
+            $value=Read-SwsdProfileFile $path
+            return @{id='custom'; name=$(if ($value.name -eq 'full') {'Operations'} else {$value.name}); description=$(if ($value.PSObject.Properties['description']) {$value.description} else {'Your selected tools'}); profileFile=$path; tools=@($value.tools)}
+        }
+        return $null
+    }
     $resolved = Resolve-SwsdProfileId $Id
     return $script:SwsdProfiles | Where-Object { $_.id -eq $resolved } | Select-Object -First 1
 }
@@ -109,7 +219,7 @@ namespace SwsdDesktop {
         Credential value = new Credential();
         value.Type = 1; value.TargetName = target;
         value.UserName = Environment.UserName;
-        value.Comment = "SolarWinds Service Desk JSON Web Token";
+        value.Comment = "SWSD JSON Web Token";
         value.CredentialBlob = blob; value.CredentialBlobSize = (uint)secret.Length * 2;
         value.Persist = 2;
         if (!WriteNative(ref value, 0)) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -128,7 +238,7 @@ namespace SwsdDesktop {
 
 function Get-SwsdSettings {
     $path = Join-Path $script:SwsdHome 'settings.json'
-    $settings = @{ baseUrl = 'https://api.samanage.com'; profile = 'agent'; theme = 'system' }
+    $settings = @{ baseUrl = 'https://api.samanage.com'; profile = 'agent'; profileFile = $null; profileError = $null; theme = 'system' }
     if (Test-Path -LiteralPath $path) {
         $saved = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
         if ($saved.baseUrl -notin @('https://api.samanage.com', 'https://apieu.samanage.com')) {
@@ -136,10 +246,20 @@ function Get-SwsdSettings {
         }
         $settings.baseUrl = $saved.baseUrl
         if ($saved.PSObject.Properties['profile']) {
-            if ($saved.profile -notin @('triage','agent','knowledge','operations','full')) {
+            if ($saved.profile -notin @('triage','agent','knowledge','operations','full','custom')) {
                 throw 'Invalid saved SWSD profile. Open SWSD setup and save a supported profile.'
             }
             $settings.profile = $saved.profile
+            if ($saved.profile -eq 'custom') {
+                try {
+                    if (-not $saved.PSObject.Properties['profileFile']) { throw 'missing' }
+                    $null = Read-SwsdProfileFile $saved.profileFile
+                    $settings.profileFile = [IO.Path]::GetFullPath($saved.profileFile)
+                } catch {
+                    $settings.profile = 'agent'
+                    $settings.profileError = 'Your custom profile could not be opened. Choose or import a valid profile on Tools, then select it again.'
+                }
+            }
         }
         if ($saved.PSObject.Properties['theme'] -and $saved.theme -in @('system','light','dark')) { $settings.theme = $saved.theme }
     }
@@ -149,14 +269,21 @@ function Get-SwsdSettings {
 function Save-SwsdSettings {
     param(
         [Parameter(Mandatory)][ValidateSet('https://api.samanage.com','https://apieu.samanage.com')][string]$BaseUrl,
-        [Parameter(Mandatory)][ValidateSet('triage','agent','knowledge','operations','full')][string]$Profile,
+        [Parameter(Mandatory)][ValidateSet('triage','agent','knowledge','operations','full','custom')][string]$Profile,
+        [string]$ProfileFile,
         [ValidateSet('system','light','dark')][string]$Theme
     )
     New-Item -ItemType Directory -Path $script:SwsdHome -Force | Out-Null
     $temporary = Join-Path $script:SwsdHome ('settings-' + [guid]::NewGuid().ToString('N') + '.tmp')
     try {
         if (-not $Theme) { $Theme = (Get-SwsdSettings).theme }
-        @{ baseUrl = $BaseUrl; profile = $Profile; theme = $Theme } | ConvertTo-Json | Set-Content -LiteralPath $temporary -Encoding UTF8
+        $value = @{ baseUrl = $BaseUrl; profile = $Profile; theme = $Theme }
+        if ($Profile -eq 'custom') {
+            if (-not $ProfileFile) { $ProfileFile = (Get-SwsdSettings).profileFile }
+            $null = Read-SwsdProfileFile $ProfileFile
+            $value.profileFile = [IO.Path]::GetFullPath($ProfileFile)
+        }
+        $value | ConvertTo-Json | Set-Content -LiteralPath $temporary -Encoding UTF8
         Move-Item -LiteralPath $temporary -Destination (Join-Path $script:SwsdHome 'settings.json') -Force
     } finally {
         if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
@@ -164,9 +291,14 @@ function Save-SwsdSettings {
 }
 
 function Save-SwsdProfile {
-    param([Parameter(Mandatory)][ValidateSet('triage','agent','knowledge','operations','full')][string]$Profile)
+    param([Parameter(Mandatory)][ValidateSet('triage','agent','knowledge','operations','full','custom')][string]$Profile, [string]$ProfileFile)
     $settings = Get-SwsdSettings
-    Save-SwsdSettings -BaseUrl $settings.baseUrl -Profile $Profile
+    if ($Profile -eq 'custom') {
+        $value=Read-SwsdProfileFile $ProfileFile
+        $catalog=Get-Content -LiteralPath (Join-Path (Get-SwsdAssetRoot) 'tool-catalog.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        if (-not @($value.tools | Where-Object {@($catalog.name) -ccontains $_}).Count) {throw 'Profile JSON: Select at least one known tool before using this profile.'}
+    }
+    Save-SwsdSettings -BaseUrl $settings.baseUrl -Profile $Profile -ProfileFile $ProfileFile
 }
 
 function Get-SwsdNode {
@@ -180,7 +312,31 @@ function Get-SwsdNode {
 }
 
 function Get-SwsdEntryPoint {
-    return Join-Path $script:SwsdHome "runtime\$script:SwsdPackageVersion\node_modules\swsd-mcp\dist\cli.js"
+    $version = Get-SwsdActiveVersion
+    return Join-Path $script:SwsdHome "runtime\$version\node_modules\swsd-mcp\dist\cli.js"
+}
+
+function Get-SwsdActiveVersion {
+    $path = Join-Path $script:SwsdHome 'runtime\active.txt'
+    if (Test-Path -LiteralPath $path -PathType Leaf) {
+        $value = (Get-Content -LiteralPath $path -Raw).Trim()
+        if ($value -match '^\d+\.\d+\.\d+$') { return $value }
+    }
+    return $script:SwsdPackageVersion
+}
+
+function Set-SwsdActiveVersion([string]$Version) {
+    if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Tool installation failed: The requested version is invalid.' }
+    $runtime = Join-Path $script:SwsdHome "runtime\$Version"
+    $pkg = Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
+    if ($pkg.version -ne $Version -or -not (Test-Path -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\dist\cli.js') -PathType Leaf)) { throw 'The SWSD server installation is incomplete.' }
+    $temporary = Join-Path $script:SwsdHome ('runtime\active-' + [guid]::NewGuid().ToString('N') + '.tmp')
+    try {
+        Set-Content -LiteralPath $temporary -Value $Version -Encoding ASCII
+        $active=Join-Path $script:SwsdHome 'runtime\active.txt'
+        if (Test-Path -LiteralPath $active -PathType Leaf) { [IO.File]::Replace($temporary,$active,(Join-Path $script:SwsdHome 'runtime\previous.txt')) }
+        else { [IO.File]::Move($temporary,$active) }
+    } finally { if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force } }
 }
 
 function Test-SwsdToken {
@@ -248,11 +404,13 @@ function Get-SwsdVerifiedIdentity {
 }
 
 function Get-SwsdInstalledVersion {
-    $packageJson = Join-Path $script:SwsdHome "runtime\$script:SwsdPackageVersion\node_modules\swsd-mcp\package.json"
+    $version = Get-SwsdActiveVersion
+    $packageJson = Join-Path $script:SwsdHome "runtime\$version\node_modules\swsd-mcp\package.json"
     if (-not (Test-Path -LiteralPath $packageJson)) { return $null }
     try {
         $pkg = Get-Content -LiteralPath $packageJson -Raw | ConvertFrom-Json
-        return $pkg.version
+        if ($pkg.version -eq $version) { return $pkg.version }
+        return $null
     } catch { return $null }
 }
 
@@ -266,7 +424,7 @@ function Get-SwsdLatestVersion {
         if (-not (Test-Path -LiteralPath $npmCli -PathType Leaf)) { return $null }
         $start = New-Object Diagnostics.ProcessStartInfo
         $start.FileName = $node
-        $start.Arguments = '"' + $npmCli + '" view swsd-mcp version'
+        $start.Arguments = '"' + $npmCli + '" view swsd-mcp version --registry=https://registry.npmjs.org'
         $start.EnvironmentVariables.Remove('SWSD_TOKEN')
         $start.UseShellExecute = $false
         $start.CreateNoWindow = $true
@@ -376,7 +534,7 @@ function Get-SwsdStatus {
             $manifestPath = Join-Path (Split-Path (Split-Path $entryPoint)) 'package.json'
             $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
             $installedVersion = [string]$manifest.version
-            $toolsInstalled = ($installedVersion -eq $script:SwsdPackageVersion)
+            $toolsInstalled = ($installedVersion -eq (Get-SwsdActiveVersion))
         } catch { $toolsInstalled = $false }
     }
     if (-not $installedVersion) {
@@ -497,6 +655,115 @@ function Set-SwsdClipboard {
     [Windows.Forms.Clipboard]::SetText($Text, [Windows.Forms.TextDataFormat]::UnicodeText)
 }
 
+function New-SwsdIssueUrl {
+    param(
+        [ValidateSet('bug','feature')][string]$Kind = 'bug',
+        [string]$AppVersion = $script:SwsdClientVersion,
+        [string]$ServerVersion = (Get-SwsdInstalledVersion),
+        [string]$WindowsVersion = ([Environment]::OSVersion.Version.ToString()),
+        [string]$Profile = (Get-SwsdSettings).profile
+    )
+    # Allowlist values as well as fields: no caller-supplied free text, settings
+    # object, credential, base URL, or custom profile path can enter a report URL.
+    if ($AppVersion -notmatch '^\d+\.\d+\.\d+$') { $AppVersion = 'unknown' }
+    if ($ServerVersion -notmatch '^\d+\.\d+\.\d+$') { $ServerVersion = 'unknown' }
+    if ($WindowsVersion -notmatch '^\d+\.\d+\.\d+(\.\d+)?$') { $WindowsVersion = 'unknown' }
+    if ($Profile -eq 'full') { $Profile='operations' }
+    if ($Profile -notin @('triage','agent','knowledge','operations')) { $Profile='custom' }
+    $template = if ($Kind -eq 'bug') {'bug_report.yml'} else {'feature_request.yml'}
+    $values = [ordered]@{template=$template; app_version=$AppVersion; server_version=$ServerVersion; windows_version=$WindowsVersion; profile=$Profile}
+    return 'https://github.com/mikimatsub/swsd-mcp/issues/new?' + ((@($values.Keys | ForEach-Object { $_ + '=' + [Uri]::EscapeDataString($values[$_]) })) -join '&')
+}
+
+function Get-SwsdReleaseNotes([string]$AssetRoot = (Get-SwsdAssetRoot)) {
+    # Bundled content only: opening What's new never depends on a network request.
+    $path = Join-Path $AssetRoot 'CHANGELOG.md'
+    if (-not (Test-Path -LiteralPath $path)) { return @(@{kind='text'; text='Release notes are unavailable. Repair SWSD tools to restore them.'}) }
+    $result = @()
+    foreach ($line in (Get-Content -LiteralPath $path -Encoding UTF8)) {
+        if ($line -match '^## \[([^\]]+)\](.*)$') { $result += @{kind='version'; text=($Matches[1] + $Matches[2])} }
+        elseif ($line -match '^### (Added|Changed|Deprecated|Removed|Fixed|Security)$') { $result += @{kind='section'; text=$Matches[1]} }
+        elseif ($line -match '^\s*[-*+] (.+)$') { $result += @{kind='item'; text=$Matches[1]} }
+        elseif ($result.Count -gt 0 -and $line -match '^\s{2,}(\S.*)$') { $result[-1].text += ' ' + $Matches[1] }
+    }
+    return $result
+}
+
+function Invoke-SwsdNpm {
+    param([string]$Arguments, [string]$WorkingDirectory)
+    $node = Get-SwsdNode
+    $npmCli = $env:SWSD_NPM
+    if (-not $npmCli) { $npmCli = Join-Path (Split-Path $node) 'node_modules\npm\bin\npm-cli.js' }
+    if (-not (Test-Path -LiteralPath $npmCli -PathType Leaf)) { throw 'npm is missing from this Node.js installation.' }
+    $start = New-Object Diagnostics.ProcessStartInfo
+    $start.FileName=$node
+    $start.Arguments='"' + $npmCli + '" ' + $Arguments + ' --registry=https://registry.npmjs.org'
+    $start.WorkingDirectory=$WorkingDirectory
+    $start.UseShellExecute=$false; $start.CreateNoWindow=$true
+    $start.RedirectStandardOutput=$true; $start.RedirectStandardError=$true
+    $start.EnvironmentVariables.Remove('SWSD_TOKEN')
+    $process = New-Object Diagnostics.Process
+    $process.StartInfo=$start
+    try {
+        [void]$process.Start()
+        $stdout=$process.StandardOutput.ReadToEndAsync(); $stderr=$process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit(240000)) { throw 'Tool installation timed out. Your previous tools remain available. Retry after npm finishes.' }
+        $output=$stdout.GetAwaiter().GetResult(); [void]$stderr.GetAwaiter().GetResult()
+        if ($process.ExitCode -ne 0) { throw 'Tool installation failed. Check access to the npm registry and retry. Your previous tools remain available.' }
+        return $output.Trim()
+    } finally { $process.Dispose() }
+}
+
+function Update-SwsdRuntime {
+    $latest = Get-SwsdLatestVersion
+    if (-not $latest -or $latest -notmatch '^\d+\.\d+\.\d+$') { throw 'Tool installation failed: Could not check the latest published version. Try again.' }
+    $runtimeRoot = Join-Path $script:SwsdHome 'runtime'
+    New-Item -ItemType Directory -Path $runtimeRoot -Force | Out-Null
+    $integrity = Invoke-SwsdNpm -Arguments ("view swsd-mcp@$latest dist.integrity") -WorkingDirectory $runtimeRoot
+    if ($integrity -notmatch '^sha512-[A-Za-z0-9+/]+={0,2}$') { throw 'Tool installation failed: The npm registry did not supply valid package integrity. Try again later.' }
+    $runtime = Join-Path $runtimeRoot $latest
+    if (Test-Path -LiteralPath $runtime) {
+        if ((Get-SwsdActiveVersion) -eq $latest -and (Get-SwsdInstalledVersion) -eq $latest -and (Test-Path -LiteralPath (Get-SwsdEntryPoint) -PathType Leaf)) { return }
+        throw 'Tool installation failed: That version already has an incomplete or inactive installation. Your current tools remain available.'
+    }
+    # Install in isolation, then rename into the exact version directory. No
+    # existing runtime is deleted or overwritten, including on validation failure.
+    $stage = Join-Path $runtimeRoot ('install-' + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $stage | Out-Null
+    $recipe=@{name='swsd-local-runtime'; private=$true; dependencies=@{'swsd-mcp'=$latest}} | ConvertTo-Json
+    [IO.File]::WriteAllText((Join-Path $stage 'package.json'), $recipe, (New-Object Text.UTF8Encoding($false)))
+    # Resolve and inspect every source before npm downloads package tarballs.
+    $null = Invoke-SwsdNpm -Arguments 'install --package-lock-only --ignore-scripts --strict-peer-deps --no-audit --no-fund' -WorkingDirectory $stage
+    try {
+        Add-Type -AssemblyName System.Web.Extensions
+        $parser = New-Object Web.Script.Serialization.JavaScriptSerializer
+        $lock = $parser.DeserializeObject((Get-Content -LiteralPath (Join-Path $stage 'package-lock.json') -Raw))
+        $installed = $lock['packages']['node_modules/swsd-mcp']
+        if ($lock['packages']['']['dependencies']['swsd-mcp'] -ne $latest -or $installed['version'] -ne $latest -or $installed['integrity'] -cne $integrity) { throw 'invalid package' }
+        foreach ($key in $lock['packages'].Keys) {
+            $item=$lock['packages'][$key]
+            if ($key -and (-not $item['resolved'] -or $item['resolved'] -cnotmatch '^https://registry\.npmjs\.org/' -or -not $item['integrity'])) { throw 'invalid source' }
+        }
+    } catch { throw 'Tool installation failed: The downloaded tools did not pass version and integrity checks. Your previous tools remain available.' }
+    $lockHash=(Get-FileHash -LiteralPath (Join-Path $stage 'package-lock.json') -Algorithm SHA256).Hash
+    $null = Invoke-SwsdNpm -Arguments 'ci --ignore-scripts --strict-peer-deps --no-audit --no-fund' -WorkingDirectory $stage
+    try {
+        $pkg = Get-Content -LiteralPath (Join-Path $stage 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
+        if ($pkg.version -ne $latest -or $lockHash -ne (Get-FileHash -LiteralPath (Join-Path $stage 'package-lock.json') -Algorithm SHA256).Hash -or
+            -not (Test-Path -LiteralPath (Join-Path $stage 'node_modules\swsd-mcp\dist\cli.js') -PathType Leaf)) { throw 'invalid installation' }
+    } catch { throw 'Tool installation failed: The installed tools did not pass version and integrity checks. Your previous tools remain available.' }
+    try {
+        Move-Item -LiteralPath $stage -Destination $runtime
+        Set-SwsdActiveVersion $latest
+    } catch {
+        # A failed pointer replacement must also leave a fresh retry possible.
+        if ((Get-SwsdActiveVersion) -ne $latest -and (Test-Path -LiteralPath $runtime) -and -not (Test-Path -LiteralPath $stage)) {
+            try { Move-Item -LiteralPath $runtime -Destination $stage } catch {}
+        }
+        throw 'Tool installation failed: The new tools could not be activated. Your previous tools remain available. Try again.'
+    }
+}
+
 function Install-SwsdTools {
     param(
         [Parameter(Mandatory)][string]$SourceRoot,
@@ -518,8 +785,9 @@ function Install-SwsdTools {
         throw 'The SWSD runtime recipe does not match this setup version. Ask IT to sync the reviewed plugin package.'
     }
     $runtime = Join-Path $script:SwsdHome "runtime\$script:SwsdPackageVersion"
-    $entryPoint = Get-SwsdEntryPoint
-    $installedVersion = Get-SwsdInstalledVersion
+    $entryPoint = Join-Path $runtime 'node_modules\swsd-mcp\dist\cli.js'
+    $installedVersion = $null
+    try { $installedVersion = (Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json).version } catch {}
     $skipNpmInstall = (-not $Force) -and
         ($installedVersion -eq $script:SwsdPackageVersion) -and
         (Test-Path -LiteralPath $entryPoint -PathType Leaf)
@@ -560,6 +828,7 @@ function Install-SwsdTools {
         $installed = Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
         if ($installed.version -ne $script:SwsdPackageVersion) { throw 'The installed SWSD server version does not match this setup version.' }
     }
+    Set-SwsdActiveVersion $script:SwsdPackageVersion
     $clientDir = Join-Path $script:SwsdHome "client\$script:SwsdClientVersion"
     New-Item -ItemType Directory -Path $clientDir -Force | Out-Null
     foreach ($name in @('Common.ps1', 'Start-Swsd.ps1', 'Manage-Swsd.ps1')) {
@@ -574,7 +843,7 @@ function Install-SwsdTools {
     New-Item -ItemType Directory -Path $recipeDir -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $SourceRoot 'runtime\package.json'), (Join-Path $SourceRoot 'runtime\package-lock.json') -Destination $recipeDir -Force
     $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut((Join-Path $ShortcutDirectory 'SolarWinds Service Desk Setup.lnk'))
+    $shortcut = $shell.CreateShortcut((Join-Path $ShortcutDirectory 'SWSD Setup.lnk'))
     $shortcut.TargetPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $shortcut.Arguments = '-NoProfile -STA -WindowStyle Hidden -File "' + (Join-Path $clientDir 'Manage-Swsd.ps1') + '"'
     $shortcut.Description = 'Set up, test, replace, or remove your SWSD connection'

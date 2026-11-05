@@ -43,11 +43,11 @@ try {
     foreach ($name in @('package.json','package-lock.json')) {
         if ((Get-FileHash -LiteralPath (Join-Path $root "runtime/$name")).Hash -ne (Get-FileHash -LiteralPath (Join-Path $client "runtime/$name")).Hash) { throw "Repair recipe $name differs from source." }
     }
-    foreach ($name in @('tool-catalog.json','jwt-help/jwt-help-profile-crop.png','jwt-help/jwt-help-actions-crop.png')) {
+    foreach ($name in @('tool-catalog.json','CHANGELOG.md','jwt-help/jwt-help-profile-crop.png','jwt-help/jwt-help-actions-crop.png')) {
         if ((Get-FileHash -LiteralPath (Join-Path $root "assets/$name")).Hash -ne (Get-FileHash -LiteralPath (Join-Path $client "assets/$name")).Hash) { throw "Installed WPF asset $name differs from source." }
     }
     $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut((Join-Path $shortcuts 'SolarWinds Service Desk Setup.lnk'))
+    $shortcut = $shell.CreateShortcut((Join-Path $shortcuts 'SWSD Setup.lnk'))
     if ($shortcut.TargetPath -ne (Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe')) { throw 'Shortcut targets the wrong executable.' }
     if ($shortcut.Arguments -ne ('-NoProfile -STA -WindowStyle Hidden -File "' + (Join-Path $client 'Manage-Swsd.ps1') + '"')) { throw 'Shortcut targets the wrong setup script.' }
     if ($shortcut.Arguments -match 'ExecutionPolicy') { throw 'Shortcut must not override script execution policy.' }

@@ -12,7 +12,7 @@ const [{ createMcpServer }, { registerTools }, { PROFILE_TOOLS }, { parseEnv }] 
   load('mcp/server.js'), load('config/toolRegistry.js'), load('config/profiles.js'), load('config/env.js'),
 ]);
 const catalog = JSON.parse(await readFile(new URL('../../plugins/swsd/assets/tool-catalog.json', import.meta.url), 'utf8'));
-const bannedShort = /authenticated user|numeric ID|structured filters|pagination|\[from, to\)|scanned tickets created OR|DESTRUCTIVE\s*—/i;
+const bannedShort = /authenticated user|numeric ID|structured filters|pagination|\[from, to\)|scanned tickets created OR|DESTRUCTIVE\s*—|Service Desk/i;
 const token = randomBytes(32).toString('hex');
 const completeProfile = Object.hasOwn(PROFILE_TOOLS, 'full') ? 'full' : 'operations';
 const env = parseEnv({ SWSD_TOKEN: token, SWSD_ENABLE_EXTRAS: '', SWSD_PROFILE: completeProfile });

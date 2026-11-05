@@ -1533,7 +1533,7 @@
     ],
     "area": "Service catalog",
     "friendly": "List catalog items",
-    "short": "List catalog items available in SolarWinds Service Desk",
+    "short": "List catalog items available in SWSD",
     "kind": "read",
     "example": "List catalog items in SWSD"
   },
