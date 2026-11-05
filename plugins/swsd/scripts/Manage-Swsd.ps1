@@ -2180,7 +2180,7 @@ public static class SwsdDpiProbe {
         if (-not $tokenBox.UseSystemPasswordChar) { throw 'Token field must be masked.' }
         if ($profile.Items.Count -ne 5) { throw 'Five profile choices are required.' }
         if ($profile.SelectedItem -ne 'Agent') { throw 'New installations must default to Agent.' }
-        foreach ($expectedName in @('Status Node.js','Status Tools installed','Status Token saved','Status Region','Status Profile','Status Updates')) {
+        foreach ($expectedName in @('Status Node.js','Status SolarWinds Service Desk tools installed','Status Token saved','Status Region','Status Profile','Status Updates')) {
             if (@($statusRows | Where-Object { $_.Panel.AccessibleName -eq $expectedName }).Count -ne 1) { throw "Status row '$expectedName' is missing." }
         }
         if ($copyDiagnostics.AccessibleName -ne 'Copy diagnostics' -or -not $statusButtonRow.Controls.Contains($copyDiagnostics) -or $statusButtonRow.WrapContents) { throw 'Copy diagnostics button or non-wrapping row is missing.' }
