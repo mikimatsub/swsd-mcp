@@ -15,16 +15,6 @@ The server holds **zero credentials at rest**. Tokens are forwarded per-request,
 
 ---
 
-## Upgrading to 3.0.0
-
-MCP SDK v2 preserves tool, profile and widget compatibility and four legacy
-HTTP/STDIO protocol revisions. Unknown tool names now raise JSON-RPC `-32602`
-errors; SDK callers should catch those rejected calls. Known-tool validation
-errors still return `isError: true`, with updated error text. Strict schema
-validators and tool-list snapshots should accept the new JSON Schema 2020-12
-serialization. Node 24 requirements and launch configuration are unchanged.
-See [the changelog](./CHANGELOG.md#300---2026-10-04) for details.
-
 ## Quick start
 
 You need:
@@ -182,7 +172,9 @@ Most users only need `SWSD_TOKEN` and `SWSD_BASE_URL`:
 |---|---|---|
 | `SWSD_TOKEN` | None | Required. Your SWSD admin token (JWT). |
 | `SWSD_BASE_URL` | `https://api.samanage.com` | EU tenant: `https://apieu.samanage.com` |
-| `SWSD_PROFILE` | `agent` | `triage`, `agent`, `knowledge`, `operations`, or `full`: see [Profiles](https://mcp-swsd.pages.dev/configuration/#profiles) |
+| `SWSD_PROFILE` | `agent` | `triage`, `agent`, `knowledge`, `operations`, or `custom`: see [Profiles](https://mcp-swsd.pages.dev/configuration/#profiles) |
+| `SWSD_TOOLS` | _(empty)_ | With `custom`, comma-separated tool names; whitespace is trimmed |
+| `SWSD_PROFILE_FILE` | _(empty)_ | With `custom`, a local JSON profile path; unioned with `SWSD_TOOLS` |
 | `SWSD_WRITE_MODE` | `live` | `live`, `dry-run`, or `disabled`: preview or block write tools without changing profiles |
 | `SWSD_ATTACHMENT_ROOT` | None | Optional real-path boundary for local `file_path` uploads in stdio mode |
 
@@ -199,8 +191,39 @@ Profiles control which tools are registered at startup. Cannot be changed mid-se
 | `triage` | Read-heavy first-line support + commenting | 21 |
 | `agent` | Full ticket-handler workflow (default) | 51 |
 | `knowledge` | KB-author workflow + incident reads | 17 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 143 |
-| `full` | Every tool | 145 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool | 145 |
+| `custom` | Explicit selection from the tool list or a JSON profile file | Varies |
+
+`operations` includes every tool, including KB authoring and guarded deletes. The legacy `SWSD_PROFILE=full` value is accepted as an alias for `operations` and emits one deprecation notice on stderr per process.
+
+### Custom profiles
+
+Set `SWSD_PROFILE=custom` and supply `SWSD_TOOLS`, `SWSD_PROFILE_FILE`, or both:
+
+```bash
+SWSD_PROFILE=custom
+SWSD_TOOLS="swsd_get_server_info, swsd_list_incidents"
+SWSD_PROFILE_FILE=./profiles/desk.json
+```
+
+The JSON file uses this format:
+
+```json
+{
+  "name": "Synthetic desk",
+  "version": 1,
+  "description": "Incident lookup and SLA review",
+  "tools": ["swsd_get_incident", "swsd_sla_risk"]
+}
+```
+
+Both sources are unioned and deduplicated. Unknown names produce a warning listing the skipped names on stderr. A selection with no valid tools is a startup error, even if extras are configured. No tools are included automatically. These two variables only select tools when the profile is `custom`.
+
+Paths may be absolute or relative to the server's startup working directory; symlinks are resolved. Files must be regular JSON files, at most 256 KiB, and are never imported or evaluated. The required `name` is 1–80 characters (letters, digits, spaces, `_`, `.`, `-`, starting with a letter or digit); `version` must be `1`; optional `description` is at most 2,048 characters. The combined input accepts at most 512 tool entries, before deduplication. File tool names are 1–128 characters; extra JSON properties are rejected. The [JSON Schema](./schemas/swsd-profile.schema.json) matches these file rules; tool availability and a nonempty union are checked at startup.
+
+Prompts and widgets appear only when all their required tools are selected. The catalog form requires both `swsd_get_catalog_item` and `swsd_create_service_request`; without the latter, the lookup remains available as text and structured data. Custom selections are fixed at startup; restart after changing the file or environment.
+
+Delete tools require `operations` or explicit inclusion in the custom CSV/file; `SWSD_ENABLE_EXTRAS` cannot add them to other profiles. Deletes retain their dry-run preview and `confirm` + matching `confirm_id` gates. `SWSD_WRITE_MODE` and SWSD permissions still apply.
 
 Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a profile.
 

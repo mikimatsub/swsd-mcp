@@ -14,15 +14,17 @@ const [{ createMcpServer }, { registerTools }, { PROFILE_TOOLS }, { parseEnv }] 
   load('mcp/server.js'), load('config/toolRegistry.js'), load('config/profiles.js'), load('config/env.js'),
 ]);
 const token = randomBytes(32).toString('hex');
-const env = parseEnv({ SWSD_TOKEN: token, SWSD_PROFILE: 'full', SWSD_ENABLE_EXTRAS: '' });
+const completeProfile = Object.hasOwn(PROFILE_TOOLS, 'full') ? 'full' : 'operations';
+const env = parseEnv({ SWSD_TOKEN: token, SWSD_PROFILE: completeProfile, SWSD_ENABLE_EXTRAS: '' });
 const server = createMcpServer();
 const client = new Proxy({}, { get() { throw new Error('Catalog generation must never call an HTTP client'); } });
 let tools;
 try {
-  registerTools(server, { env, client, token, profile: 'full', enabledTools: [] });
+  registerTools(server, { env, client, token, profile: env.SWSD_PROFILE, enabledTools: [] });
   tools = Object.entries(server._registeredTools).map(([name, metadata]) => ({
     name, description: metadata.description, annotations: metadata.annotations,
-    profiles: Object.entries(PROFILE_TOOLS).filter(([, names]) => names.includes(name)).map(([profile]) => profile),
+    profiles: [...new Set(Object.entries(PROFILE_TOOLS).filter(([, names]) => names.includes(name))
+      .map(([profile]) => profile === 'full' ? 'operations' : profile))],
   })).sort((a, b) => a.name.localeCompare(b.name));
 } finally { await server.close(); }
 const areas = [

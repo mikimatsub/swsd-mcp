@@ -9,8 +9,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Add contract item",
@@ -28,8 +27,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Add group member",
@@ -47,8 +45,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Add hardware warranty",
@@ -68,8 +65,7 @@
     "profiles": [
       "triage",
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "Add incident comment",
@@ -87,8 +83,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Add record comment",
@@ -107,8 +102,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "Assign incident",
@@ -127,8 +121,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Changes",
     "friendly": "Change calendar",
@@ -146,8 +139,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Service catalog",
     "friendly": "Create catalog item",
@@ -165,8 +157,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Create category",
@@ -184,8 +175,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Changes",
     "friendly": "Create change",
@@ -203,8 +193,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Service catalog",
     "friendly": "Create change catalog",
@@ -222,8 +211,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Create configuration item",
@@ -241,8 +229,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Create contract",
@@ -260,8 +247,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Create department",
@@ -279,8 +265,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Create group",
@@ -298,8 +283,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Create hardware asset",
@@ -318,8 +302,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "Create incident",
@@ -338,8 +321,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "Create incident task",
@@ -357,8 +339,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Create mobile device",
@@ -376,8 +357,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Create other asset",
@@ -396,8 +376,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Problems",
     "friendly": "Create problem",
@@ -415,8 +394,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Create purchase order",
@@ -434,8 +412,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Create record task",
@@ -453,8 +430,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Releases",
     "friendly": "Create release",
@@ -472,8 +448,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Create role",
@@ -492,8 +467,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Service catalog",
     "friendly": "Create service request",
@@ -511,8 +485,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Create site",
@@ -530,8 +503,8 @@
       "idempotentHint": false
     },
     "profiles": [
-      "knowledge",
-      "full"
+      "operations",
+      "knowledge"
     ],
     "area": "Knowledge",
     "friendly": "Create solution",
@@ -549,8 +522,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Create user",
@@ -568,8 +540,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Create vendor",
@@ -587,8 +558,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Service catalog",
     "friendly": "Delete catalog item",
@@ -606,8 +576,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Delete category",
@@ -625,8 +594,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Changes",
     "friendly": "Delete change",
@@ -644,8 +612,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Service catalog",
     "friendly": "Delete change catalog",
@@ -663,8 +630,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Delete comment",
@@ -682,8 +648,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete configuration item",
@@ -701,8 +666,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Delete contract",
@@ -720,8 +684,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Delete department",
@@ -739,8 +702,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Delete group",
@@ -758,8 +720,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete hardware asset",
@@ -777,8 +738,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete hardware warranty",
@@ -796,8 +756,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "Delete incident",
@@ -815,8 +774,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete mobile device",
@@ -834,8 +792,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Delete other asset",
@@ -853,8 +810,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Problems",
     "friendly": "Delete problem",
@@ -872,8 +828,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Delete purchase order",
@@ -891,8 +846,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Releases",
     "friendly": "Delete release",
@@ -910,8 +864,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Delete role",
@@ -929,8 +882,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Delete site",
@@ -948,8 +900,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Knowledge",
     "friendly": "Delete solution",
@@ -967,8 +918,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Delete task",
@@ -986,8 +936,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Delete time track",
@@ -1005,8 +954,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Delete user",
@@ -1024,8 +972,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Delete vendor",
@@ -1045,8 +992,7 @@
     "profiles": [
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Utilities",
     "friendly": "Describe custom fields",
@@ -1067,8 +1013,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Service catalog",
     "friendly": "Get catalog item",
@@ -1089,8 +1034,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Directory",
     "friendly": "Get category",
@@ -1108,8 +1052,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Changes",
     "friendly": "Get change",
@@ -1127,8 +1070,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Service catalog",
     "friendly": "Get change catalog",
@@ -1146,8 +1088,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Get configuration item",
@@ -1165,8 +1106,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Get contract",
@@ -1185,8 +1125,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Get department",
@@ -1205,8 +1144,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Get group",
@@ -1224,8 +1162,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Get hardware asset",
@@ -1246,8 +1183,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Incidents",
     "friendly": "Get incident",
@@ -1268,8 +1204,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Directory",
     "friendly": "Get me",
@@ -1287,8 +1222,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Get mobile device",
@@ -1306,8 +1240,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Get other asset",
@@ -1325,8 +1258,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Get printer",
@@ -1345,8 +1277,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Problems",
     "friendly": "Get problem",
@@ -1364,8 +1295,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Get purchase order",
@@ -1384,8 +1314,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Utilities",
     "friendly": "Get record audits",
@@ -1403,8 +1332,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Releases",
     "friendly": "Get release",
@@ -1423,8 +1351,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Get role",
@@ -1445,8 +1372,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Utilities",
     "friendly": "Get server info",
@@ -1465,8 +1391,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Get site",
@@ -1484,8 +1409,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Get software asset",
@@ -1505,8 +1429,7 @@
     "profiles": [
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Knowledge",
     "friendly": "Get solution",
@@ -1527,8 +1450,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Directory",
     "friendly": "Get user",
@@ -1546,8 +1468,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Get vendor",
@@ -1568,8 +1489,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Utilities",
     "friendly": "Health check",
@@ -1588,8 +1508,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "Link solution to incident",
@@ -1610,8 +1529,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Service catalog",
     "friendly": "List catalog items",
@@ -1632,8 +1550,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Directory",
     "friendly": "List categories",
@@ -1651,8 +1568,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Service catalog",
     "friendly": "List change catalogs",
@@ -1670,8 +1586,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Changes",
     "friendly": "List changes",
@@ -1689,8 +1604,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "List configuration items",
@@ -1708,8 +1622,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "List contracts",
@@ -1728,8 +1641,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "List departments",
@@ -1748,8 +1660,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "List groups",
@@ -1767,8 +1678,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "List hardware assets",
@@ -1786,8 +1696,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "List hardware warranties",
@@ -1807,8 +1716,7 @@
     "profiles": [
       "triage",
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "List incident comments",
@@ -1828,8 +1736,7 @@
     "profiles": [
       "triage",
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "List incident tasks",
@@ -1850,8 +1757,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Incidents",
     "friendly": "List incidents",
@@ -1869,8 +1775,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "List mobile devices",
@@ -1891,8 +1796,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Incidents",
     "friendly": "List my incidents",
@@ -1910,8 +1814,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "List other assets",
@@ -1929,8 +1832,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "List printers",
@@ -1950,8 +1852,7 @@
     "profiles": [
       "triage",
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Problems",
     "friendly": "List problems",
@@ -1969,8 +1870,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "List purchase orders",
@@ -1990,8 +1890,7 @@
     "profiles": [
       "triage",
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "List record comments",
@@ -2011,8 +1910,7 @@
     "profiles": [
       "triage",
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "List record tasks",
@@ -2030,8 +1928,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Releases",
     "friendly": "List releases",
@@ -2049,8 +1946,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "List risks",
@@ -2069,8 +1965,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "List roles",
@@ -2089,8 +1984,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "List sites",
@@ -2108,8 +2002,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "List software assets",
@@ -2128,8 +2021,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "List time tracks",
@@ -2150,8 +2042,7 @@
       "triage",
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Directory",
     "friendly": "List users",
@@ -2169,8 +2060,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "List vendors",
@@ -2189,8 +2079,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Log time",
@@ -2210,8 +2099,7 @@
     "profiles": [
       "triage",
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "My queue",
@@ -2229,8 +2117,7 @@
       "idempotentHint": true
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Remove group member",
@@ -2250,8 +2137,7 @@
     "profiles": [
       "agent",
       "operations",
-      "knowledge",
-      "full"
+      "knowledge"
     ],
     "area": "Knowledge",
     "friendly": "Search solutions",
@@ -2271,8 +2157,7 @@
     "profiles": [
       "triage",
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "SLA risk",
@@ -2292,8 +2177,7 @@
     "profiles": [
       "triage",
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "Ticket stats",
@@ -2311,8 +2195,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Service catalog",
     "friendly": "Update catalog item",
@@ -2330,8 +2213,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Update category",
@@ -2349,8 +2231,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Changes",
     "friendly": "Update change",
@@ -2368,8 +2249,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Service catalog",
     "friendly": "Update change catalog",
@@ -2388,8 +2268,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Update comment",
@@ -2407,8 +2286,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Update configuration item",
@@ -2426,8 +2304,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Update contract",
@@ -2445,8 +2322,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Update department",
@@ -2464,8 +2340,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Update group",
@@ -2483,8 +2358,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Update hardware asset",
@@ -2502,8 +2376,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Update hardware warranty",
@@ -2522,8 +2395,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "Update incident",
@@ -2542,8 +2414,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Incidents",
     "friendly": "Update incident state",
@@ -2561,8 +2432,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Update mobile device",
@@ -2580,8 +2450,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Update other asset",
@@ -2599,8 +2468,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Assets & CMDB",
     "friendly": "Update printer",
@@ -2619,8 +2487,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Problems",
     "friendly": "Update problem",
@@ -2638,8 +2505,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Update purchase order",
@@ -2657,8 +2523,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Releases",
     "friendly": "Update release",
@@ -2676,8 +2541,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Update role",
@@ -2695,8 +2559,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Update site",
@@ -2714,8 +2577,8 @@
       "idempotentHint": false
     },
     "profiles": [
-      "knowledge",
-      "full"
+      "operations",
+      "knowledge"
     ],
     "area": "Knowledge",
     "friendly": "Update solution",
@@ -2734,8 +2597,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Update task",
@@ -2754,8 +2616,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Update task state",
@@ -2774,8 +2635,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Update time track",
@@ -2793,8 +2653,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Directory",
     "friendly": "Update user",
@@ -2812,8 +2671,7 @@
       "idempotentHint": false
     },
     "profiles": [
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Contracts & vendors",
     "friendly": "Update vendor",
@@ -2832,8 +2690,7 @@
     },
     "profiles": [
       "agent",
-      "operations",
-      "full"
+      "operations"
     ],
     "area": "Comments & tasks",
     "friendly": "Upload attachment",

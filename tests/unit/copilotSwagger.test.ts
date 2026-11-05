@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { KNOWN_PROFILES } from '../../src/config/env.js';
+import { PROFILE_TOOLS } from '../../src/config/profiles.js';
 
 const COPILOT_DIR = resolve('copilot-studio');
 
 describe('Copilot Studio Swagger artifacts', () => {
-  for (const profile of KNOWN_PROFILES) {
+  for (const profile of Object.keys(PROFILE_TOOLS)) {
     describe(`${profile}.swagger.yaml`, () => {
       const path = resolve(COPILOT_DIR, `${profile}.swagger.yaml`);
 

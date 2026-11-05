@@ -11,7 +11,9 @@ All configuration is via environment variables. Most users only need to set `SWS
 |---|---|---|
 | `SWSD_TOKEN` | _(required for stdio)_ | Your SWSD admin token (JWT). For HTTP transport, pass per-request via the `Authorization` or `X-SWSD-Token` header instead. |
 | `SWSD_BASE_URL` | `https://api.samanage.com` | EU tenant: `https://apieu.samanage.com`. SSRF defense: must be on the `samanage.com` domain: other URLs are rejected at startup. |
-| `SWSD_PROFILE` | `agent` | Tool set: `triage`, `agent`, `knowledge`, `operations`, or `full`. See [Profiles](#profiles) below. |
+| `SWSD_PROFILE` | `agent` | Tool set: `triage`, `agent`, `knowledge`, `operations`, or `custom`. See [Profiles](#profiles) below. |
+| `SWSD_TOOLS` | _(empty)_ | With `custom`, comma-separated tool names, trimmed and deduplicated; unioned with the file selection. |
+| `SWSD_PROFILE_FILE` | _(empty)_ | With `custom`, a local JSON profile path, absolute or relative to the startup working directory. |
 
 ## Advanced (HTTP transport only)
 
@@ -54,16 +56,17 @@ Profiles control which tools are registered at startup. The choice is made once 
 | `triage` | Read-heavy first-line support workflow + commenting + read-only task/problem visibility | 21 |
 | `agent` | Full ticket-handler workflow + KB lookups + custom-field introspection + service-catalog + tasks + problems + work logs/attachments (default) | 51 |
 | `knowledge` | KB-author workflow + incident reads + custom-field introspection | 17 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 143 |
-| `full` | Every tool registered | 145 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool | 145 |
+| `custom` | Explicit selection from the tool list or a JSON profile file | Varies |
+
+`operations` includes every tool, including KB authoring and guarded deletes. Existing `SWSD_PROFILE=full` configurations map to `operations` and emit one deprecation notice on stderr per process.
 
 ### When to pick which
 
 - **`triage`**: first-line support agents who read tickets and post comments but don't reassign or close. Minimal write surface.
 - **`agent`** (default): full incident-handling: create, update, assign, state-transition, link solutions, plus comment writes, KB lookups, work logs, and attachments. The most common choice.
 - **`knowledge`**: KB authors who need full solution CRUD plus incident reads for context. No incident writes.
-- **`operations`**: agents who also need ITSM lifecycle and operational context: changes, releases, assets, CMDB records, contracts, purchase orders, vendors, and risks.
-- **`full`**: every tool. Use for hosted deployments serving multiple roles, or when you want to start permissive and tighten later.
+- **`operations`**: agents who also need ITSM lifecycle and operational context: changes, releases, assets, CMDB records, contracts, purchase orders, vendors, and risks. It includes all 145 tools, including KB authoring and guarded deletes.
 
 ### Adding individual tools to a profile
 
@@ -75,6 +78,37 @@ SWSD_ENABLE_EXTRAS=swsd_search_solutions,swsd_get_solution
 ```
 
 This gives you the `triage` profile **plus** solution lookups: handy when first-line support needs to reference KB articles. Unknown tool names cause a startup error so typos don't silently expand or contract the registered set.
+
+Delete tools require `operations` or explicit inclusion in a custom profile's CSV/file. `SWSD_ENABLE_EXTRAS` cannot add deletes to other profiles, or add an unselected delete to `custom`.
+
+### Custom profiles
+
+Choose `custom` when the built-in sets do not match the deployment. Supply either source, or both to union their tool names:
+
+```bash
+SWSD_PROFILE=custom
+SWSD_TOOLS="swsd_get_server_info, swsd_list_incidents"
+SWSD_PROFILE_FILE=./profiles/desk.json
+```
+
+```json
+{
+  "name": "Synthetic desk",
+  "version": 1,
+  "description": "Incident lookup and SLA review",
+  "tools": ["swsd_get_incident", "swsd_sla_risk"]
+}
+```
+
+CSV whitespace is trimmed and duplicate names collapse into one registration. Unknown names from either source are listed in a stderr warning and skipped. No tools are automatically added; an empty valid union fails startup, even if extras are set. `SWSD_TOOLS` and `SWSD_PROFILE_FILE` only select tools in `custom` mode.
+
+The file is read once at startup as JSON, never imported or evaluated. Paths resolve relative to the startup working directory (absolute paths also work), symlinks are resolved, and only regular files of at most 256 KiB are accepted. Missing or unreadable files, malformed JSON, unsupported versions, and invalid fields fail startup before HTTP begins listening.
+
+File rules are published in [`schemas/swsd-profile.schema.json`](https://github.com/mikimatsub/swsd-mcp/blob/main/schemas/swsd-profile.schema.json): required `name` (1–80 letters, digits, spaces, `_`, `.`, `-`, starting with a letter or digit), `version: 1`, optional `description` (up to 2,048 characters), and `tools` (up to 512 entries of 1–128 characters each). Extra properties are rejected. The combined CSV/file input also accepts at most 512 entries before deduplication. The schema validates the file shape; unknown tool names and the nonempty combined selection are checked at startup.
+
+Prompts require all their playbook tools. Widgets require all tools they use: the catalog form requires `swsd_get_catalog_item` and `swsd_create_service_request`, so a lookup-only selection returns text and structured data without an unusable Submit form. The remaining widgets accompany their selected read tools. Restart to apply any environment or file change.
+
+To include a delete tool, list its exact name in the custom CSV or file. The tool still requires its dry-run preview, `confirm: true`, and a matching `confirm_id` before deleting; `SWSD_WRITE_MODE` and tenant permissions remain in force.
 
 ## Verifying configuration at startup
 

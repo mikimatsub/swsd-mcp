@@ -34,7 +34,7 @@ describe('tool annotations', () => {
   it('declares every MCP annotation hint explicitly for every tool', () => {
     const server = new McpServer({ name: 'annotation-test', version: '0.0.0' });
     const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: [] });
-    ctx.profile = 'full';
+    ctx.profile = 'operations';
 
     registerTools(server, ctx);
 

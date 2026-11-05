@@ -22,7 +22,9 @@ function parseArgs(argv: string[]): { transport?: TransportName } {
           '  SWSD_TOKEN          (required for stdio)\n' +
           '  SWSD_BASE_URL       (default https://api.samanage.com)\n' +
           '  SWSD_TRANSPORT      stdio | http (default stdio)\n' +
-          '  SWSD_PROFILE        triage | agent | knowledge | operations | full (default agent)\n' +
+          '  SWSD_PROFILE        triage | agent | knowledge | operations | custom (default agent)\n' +
+          '  SWSD_TOOLS          comma-separated tool names for custom profile\n' +
+          '  SWSD_PROFILE_FILE   JSON profile path; union with SWSD_TOOLS\n' +
           '  SWSD_WRITE_MODE     live | dry-run | disabled (default live)\n' +
           '  PORT                (http transport, default 3000)\n',
       );

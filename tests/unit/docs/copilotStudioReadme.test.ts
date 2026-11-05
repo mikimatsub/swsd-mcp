@@ -13,13 +13,12 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PROFILE_TOOLS } from '../../../src/config/profiles.js';
-import { KNOWN_PROFILES } from '../../../src/config/env.js';
 
 const COPILOT_README = readFileSync(resolve('copilot-studio/README.md'), 'utf-8');
 
 describe('copilot-studio/README.md documentation contract', () => {
   describe('Files table', () => {
-    for (const profile of KNOWN_PROFILES) {
+    for (const profile of Object.keys(PROFILE_TOOLS) as (keyof typeof PROFILE_TOOLS)[]) {
       it(`${profile}.swagger.yaml row shows the correct tool count`, () => {
         const expected = PROFILE_TOOLS[profile].length;
         // Match: | `triage.swagger.yaml` | `triage` | 8 | description |

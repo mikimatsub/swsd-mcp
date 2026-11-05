@@ -15,7 +15,7 @@ function start(transport, port) {
   const processHandle = spawn(process.execPath, [resolve(root, 'dist/cli.js'), `--transport=${transport}`], {
     cwd: root,
     env: { ...process.env, SWSD_TOKEN: token, SWSD_BASE_URL: 'https://api.samanage.com',
-      SWSD_PROFILE: 'full', SWSD_WRITE_MODE: 'disabled', SWSD_ENABLE_EXTRAS: '',
+      SWSD_PROFILE: 'operations', SWSD_WRITE_MODE: 'disabled', SWSD_ENABLE_EXTRAS: '',
       SWSD_ALLOWED_ORIGINS: '', ...(port ? { PORT: String(port) } : {}) },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -59,7 +59,7 @@ async function check(exchange, version) {
   assert.equal(initialized.result?.protocolVersion, version, 'Legacy negotiation changed');
   assert.equal(initialized.result?.serverInfo.version, SERVER_VERSION);
   const listing = await exchange(request(2, 'tools/list'));
-  assert.deepEqual(listing.result.tools.map(tool => tool.name).sort(), [...PROFILE_TOOLS.full].sort());
+  assert.deepEqual(listing.result.tools.map(tool => tool.name).sort(), [...PROFILE_TOOLS.operations].sort());
   for (const tool of listing.result.tools) {
     assert.equal(tool.inputSchema.type, 'object');
     for (const hint of ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint']) {
@@ -87,7 +87,7 @@ for (const version of versions) {
       if (message.method === 'initialize') server.processHandle.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
       return response;
     }, version);
-    console.log(`PASS STDIO ${version}: negotiation, ${PROFILE_TOOLS.full.length} tools, annotations, metadata call, ${UI_TOOLS.length} widgets`);
+    console.log(`PASS STDIO ${version}: negotiation, ${PROFILE_TOOLS.operations.length} tools, annotations, metadata call, ${UI_TOOLS.length} widgets`);
   } finally { await stop(server); }
 }
 
@@ -119,7 +119,7 @@ try {
       return response.headers.get('content-type').includes('text/event-stream')
         ? JSON.parse(body.split('\n').find(line => line.startsWith('data:')).slice(5).trim()) : JSON.parse(body);
     }, version);
-    console.log(`PASS HTTP ${version}: negotiation, ${PROFILE_TOOLS.full.length} tools, annotations, metadata call, ${UI_TOOLS.length} widgets`);
+    console.log(`PASS HTTP ${version}: negotiation, ${PROFILE_TOOLS.operations.length} tools, annotations, metadata call, ${UI_TOOLS.length} widgets`);
   }
 } finally { await stop(server); }
 console.log('8 legacy transport checks passed; fixture credential only, write mode disabled.');

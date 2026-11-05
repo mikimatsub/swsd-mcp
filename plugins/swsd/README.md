@@ -48,9 +48,20 @@ This version does not use any old `SWSD_TOKEN` environment variable. If you prev
 - A personal SWSD token authorized for your intended work. Workspace installation does not grant SolarWinds permissions.
 - Corporate script-signing, AppLocker, or WDAC requirements may require IT deployment/signing. The plugin does not bypass them.
 - Server runtime is pinned to `swsd-mcp@3.2.0` (MCP SDK v2), with locked dependency versions. Plugin/client package version is `3.1.0`. The runtime pin must be the latest `swsd-mcp` version published on npm; `tests/unit/pluginRuntimeVersion.test.ts` enforces this.
-- The default is `agent`. Available profiles are `triage`, `agent`, `knowledge`, `operations`, and `full`. Write tools remain subject to the authenticated account's permissions and the host's tool approvals.
+- The default is `agent`. Available profiles are `triage`, `agent`, `knowledge`, `operations` (all 145 tools), and `custom` (explicit selection). Write tools remain subject to the authenticated account's permissions and the host's tool approvals.
 - This is a desktop-only local integration. Uploading it does not create a hosted app, OAuth sign-in button, automatic install-time wizard, or web/mobile connection.
 - Setup data and runtime live under `%LOCALAPPDATA%\swsd-mcp`. Uninstalling the plugin does not automatically erase credentials or these files: remove the saved token first, then quit the app.
+
+## Custom server profiles
+
+For server-side custom selection, set `SWSD_PROFILE=custom` with `SWSD_TOOLS`
+(comma-separated names) and/or `SWSD_PROFILE_FILE` (a version-1 JSON profile).
+See [Custom profiles](https://mcp-swsd.pages.dev/configuration/#custom-profiles)
+for validation and examples. These settings require a server containing this
+feature; the bundled runtime stays pinned to its existing published version.
+The Windows setup dropdown is unchanged. Legacy `full` values map to `operations`
+in the updated server, with one stderr deprecation notice. Delete tools remain
+guarded by preview and confirmation, and require `operations` or explicit custom selection.
 
 ## Sources
 

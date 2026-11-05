@@ -42,7 +42,7 @@ function setup(name: string, mode: Mode = 'live') {
   const server = new McpServer({ name: 'asset-subresource-test', version: '0.0.0' });
   const client = makeFakeClient();
   const ctx = makeCtx(client, { SWSD_WRITE_MODE: mode, SWSD_ENABLE_EXTRAS: [] });
-  ctx.profile = 'full';
+  ctx.profile = 'operations';
   registerTools(server, ctx);
   const tool = getRegisteredTool(server, name);
   const schema = tool.inputSchema as z.ZodType;
@@ -377,7 +377,7 @@ describe.each(CASES.filter((spec) => spec.root === 'warranty'))('$stem delete', 
     const client = createSwsdClient({ env: EnvSchema.parse({ SWSD_RETRY_MAX_ATTEMPTS: 3 }), token: 'synthetic-test-token' });
     const server = new McpServer({ name: 'asset-subresource-http-test', version: '0.0.0' });
     const ctx = makeCtx(client, { SWSD_ENABLE_EXTRAS: [] });
-    ctx.profile = 'full';
+    ctx.profile = 'operations';
     registerTools(server, ctx);
     const result = await getRegisteredTool(server, name).handler({ ...ref, confirm: true, confirm_id: ID }, {}) as CallToolResult;
     expect(result.isError).toBe(true);
@@ -391,7 +391,7 @@ describe.each(CASES.filter((spec) => spec.root === 'warranty'))('$stem delete', 
 
 describe('contract item update/delete', () => {
   it.each(['swsd_update_contract_item', 'swsd_delete_contract_item'])('is not offered because SWSD items have no stable ids: %s', (name) => {
-    for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full'] as const) {
+    for (const profile of ['triage', 'agent', 'knowledge', 'operations'] as const) {
       expect((PROFILE_TOOLS[profile] as readonly string[]).includes(name)).toBe(false);
     }
   });
@@ -417,12 +417,12 @@ describe('asset subresource schemas and profiles', () => {
     }
   });
 
-  it.each(['triage', 'agent', 'knowledge', 'operations', 'full'] as const)('registers the requested tools only in operations/full: %s', (profile) => {
+  it.each(['triage', 'agent', 'knowledge', 'operations'] as const)('registers the requested tools only in operations: %s', (profile) => {
     const server = new McpServer({ name: 'asset-subresource-profile-test', version: '0.0.0' });
     const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: [] });
     ctx.profile = profile;
     registerTools(server, ctx);
-    const enabled = profile === 'operations' || profile === 'full';
+    const enabled = profile === 'operations';
     for (const { name } of tools) {
       expect((PROFILE_TOOLS[profile] as readonly string[]).includes(name)).toBe(enabled);
       expect(ctx.enabledTools.includes(name)).toBe(enabled);

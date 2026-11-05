@@ -10,7 +10,7 @@ import { UI_TOOLS } from './ui-tools.mjs';
 assert.ok(process.env.SWSD_TOKEN, 'SWSD_TOKEN must already be configured');
 const repoRoot = resolve(import.meta.dirname, '..');
 let passed = 0;
-for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full']) {
+for (const profile of ['triage', 'agent', 'knowledge', 'operations']) {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [resolve(repoRoot, 'dist/cli.js'), '--transport=stdio'],
@@ -29,7 +29,7 @@ for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full']) {
     assert.ok(PROFILE_TOOLS[profile].every((name) => tools.some((tool) => tool.name === name)), 'Profile tool missing');
     passed++;
     console.log(`PASS ${profile} handshake (${tools.length} tools)`);
-    if (profile !== 'full') continue;
+    if (profile !== 'operations') continue;
     async function call(name, args = {}) {
       currentCheck = name;
       const tool = tools.find((item) => item.name === name);

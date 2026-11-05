@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { McpServer, type CallToolResult } from '@modelcontextprotocol/server';
 import type { z } from 'zod';
 import { PROFILE_TOOLS } from '../../../src/config/profiles.js';
-import type { ProfileName } from '../../../src/config/env.js';
 import { registerTools } from '../../../src/config/toolRegistry.js';
 import { MAX_EMAIL_CHARS, MAX_LABEL_CHARS } from '../../../src/schemas/limits.js';
 import { SwsdHttpError } from '../../../src/swsd/errors.js';
@@ -36,7 +35,7 @@ function setup(name: string, mode: Mode = 'live') {
   const server = new McpServer({ name: 'record-comments-tasks-test', version: '0.0.0' });
   const client = makeFakeClient();
   const ctx = makeCtx(client, { SWSD_WRITE_MODE: mode, SWSD_ENABLE_EXTRAS: [] });
-  ctx.profile = 'full';
+  ctx.profile = 'operations';
   registerTools(server, ctx);
   const tool = getRegisteredTool(server, name);
   const schema = tool.inputSchema as z.ZodType;
@@ -301,7 +300,7 @@ describe('record comment/task input validation and annotations', () => {
 });
 
 describe('record comment/task profiles', () => {
-  it.each(Object.keys(PROFILE_TOOLS) as ProfileName[])('registers tools in %s according to the profile rules', (profile) => {
+  it.each(Object.keys(PROFILE_TOOLS) as (keyof typeof PROFILE_TOOLS)[])('registers tools in %s according to the profile rules', (profile) => {
     const server = new McpServer({ name: 'record-profiles-test', version: '0.0.0' });
     const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: [] });
     ctx.profile = profile;
@@ -314,7 +313,7 @@ describe('record comment/task profiles', () => {
       if (canList) expect(getRegisteredTool(server, name)).toBeDefined();
     }
     for (const { name } of WRITE_CASES) {
-      const canWrite = profile === 'operations' || profile === 'full';
+      const canWrite = profile === 'operations';
       expect(names.includes(name)).toBe(canWrite);
       expect(ctx.enabledTools.includes(name)).toBe(canWrite);
       if (canWrite) expect(getRegisteredTool(server, name)).toBeDefined();

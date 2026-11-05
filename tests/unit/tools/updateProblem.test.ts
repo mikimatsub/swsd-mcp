@@ -182,7 +182,7 @@ describe('swsd_update_problem', () => {
     expect(setup().tool.annotations).toEqual({
       readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true,
     });
-    for (const profile of ['agent', 'operations', 'full'] as const) {
+    for (const profile of ['agent', 'operations'] as const) {
       const names: readonly string[] = PROFILE_TOOLS[profile];
       expect(names[names.indexOf('swsd_create_problem') + 1]).toBe('swsd_update_problem');
       const server = new McpServer({ name: 'registry-test', version: '0.0.0' });

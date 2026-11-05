@@ -288,7 +288,7 @@ describe('safe delete schema, profiles, and HTTP boundary', () => {
     expect(SafeDeleteInput.safeParse({ id: ID, confirm: 'true' }).success).toBe(false);
   });
 
-  it('registers delete tools only in operations and full profiles', () => {
+  it('registers delete tools only in operations', () => {
     const deleteNames = [
       'swsd_delete_comment',
       'swsd_delete_task',
@@ -305,8 +305,8 @@ describe('safe delete schema, profiles, and HTTP boundary', () => {
       'swsd_delete_configuration_item',
       ...Object.keys(REGISTRARS).map((kind) => `swsd_delete_${kind}`),
     ];
-    for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full'] as const) {
-      const expected = profile === 'operations' || profile === 'full' ? deleteNames : [];
+    for (const profile of ['triage', 'agent', 'knowledge', 'operations'] as const) {
+      const expected = profile === 'operations' ? deleteNames : [];
       expect(PROFILE_TOOLS[profile].filter((name) => name.startsWith('swsd_delete_'))).toEqual(expected);
       const server = new McpServer({ name: 'profile-test', version: '0.0.0' });
       const ctx = makeCtx(makeFakeClient(), { SWSD_ENABLE_EXTRAS: [] });

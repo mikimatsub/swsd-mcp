@@ -14,11 +14,12 @@ const [{ createMcpServer }, { registerTools }, { PROFILE_TOOLS }, { parseEnv }] 
 const catalog = JSON.parse(await readFile(new URL('../../plugins/swsd/assets/tool-catalog.json', import.meta.url), 'utf8'));
 const bannedShort = /authenticated user|numeric ID|structured filters|pagination|\[from, to\)|scanned tickets created OR|DESTRUCTIVE\s*—/i;
 const token = randomBytes(32).toString('hex');
-const env = parseEnv({ SWSD_TOKEN: token, SWSD_ENABLE_EXTRAS: '', SWSD_PROFILE: 'full' });
+const completeProfile = Object.hasOwn(PROFILE_TOOLS, 'full') ? 'full' : 'operations';
+const env = parseEnv({ SWSD_TOKEN: token, SWSD_ENABLE_EXTRAS: '', SWSD_PROFILE: completeProfile });
 const server = createMcpServer();
 const client = new Proxy({}, { get() { throw new Error('Catalog verification must never call an HTTP client'); } });
 try {
-  registerTools(server, { env, client, token, profile: 'full', enabledTools: [] });
+  registerTools(server, { env, client, token, profile: env.SWSD_PROFILE, enabledTools: [] });
   // Same inspected SDK registry used by tests/unit/toolAnnotations.test.ts.
   const registered = server._registeredTools;
   assert.equal(new Set(catalog.map(t => t.name)).size, catalog.length, 'Duplicate catalog IDs');
@@ -27,8 +28,12 @@ try {
     const actual = registered[tool.name];
     assert.equal(tool.description, actual.description, `${tool.name}: description drift`);
     assert.deepEqual(tool.annotations, actual.annotations, `${tool.name}: annotation drift`);
-    const profiles = Object.entries(PROFILE_TOOLS).filter(([, names]) => names.includes(tool.name)).map(([profile]) => profile);
+    // The pinned published runtime may still expose full separately. Its union
+    // becomes operations in the current catalog, matching the server alias.
+    const profiles = [...new Set(Object.entries(PROFILE_TOOLS).filter(([, names]) => names.includes(tool.name))
+      .map(([profile]) => profile === 'full' ? 'operations' : profile))];
     assert.deepEqual([...tool.profiles].sort(), profiles.sort(), `${tool.name}: profile drift`);
+    assert.ok(tool.profiles.includes('operations') && !tool.profiles.includes('full'), `${tool.name}: noncanonical complete profile`);
     assert.ok(tool.friendly && tool.area && tool.short && tool.example, `${tool.name}: missing humanized metadata`);
     assert.doesNotMatch(tool.short, bannedShort, `${tool.name}: developer wording in short description`);
     const kind = actual.annotations.readOnlyHint ? 'read' : actual.annotations.destructiveHint && /^swsd_(delete_|remove_group_member$)/.test(tool.name) ? 'delete' : 'edit';
