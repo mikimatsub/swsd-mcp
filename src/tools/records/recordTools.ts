@@ -66,6 +66,7 @@ interface RecordConfig {
   summaryKey: string;
   detailKey?: string;
   supportsLayout?: boolean;
+  readRoot?: string;
   descriptionUse: string;
   write?: {
     root: string;
@@ -82,52 +83,126 @@ interface WriteConfig {
   labelSingular: string;
 }
 
-const AssetLabelInput = z.string().min(1).max(MAX_LABEL_CHARS);
-const AssetIdInput = z.number().int().positive().describe('Internal asset record ID.');
+const RecordLabelInput = z.string().min(1).max(MAX_LABEL_CHARS);
+const RecordIdInput = z.number().int().positive().describe('Internal record ID.');
 const AssetFields = {
-  status_name: AssetLabelInput.optional(),
-  site_name: AssetLabelInput.optional(),
-  department_name: AssetLabelInput.optional(),
+  status_name: RecordLabelInput.optional(),
+  site_name: RecordLabelInput.optional(),
+  department_name: RecordLabelInput.optional(),
   description: z.string().max(MAX_LONG_TEXT_CHARS).optional(),
 };
 const CreateHardwareAssetInput = z.object({
   ...AssetFields,
-  name: AssetLabelInput,
-  asset_tag: AssetLabelInput.optional(),
+  name: RecordLabelInput,
+  asset_tag: RecordLabelInput.optional(),
   owner_email: EmailInput.optional(),
   user_email: EmailInput.optional(),
   technical_contact_email: EmailInput.optional(),
-  ip_address: AssetLabelInput.optional(),
-  serial_number: AssetLabelInput.optional().describe('Hardware serial number, sent as bio.ssn.'),
+  ip_address: RecordLabelInput.optional(),
+  serial_number: RecordLabelInput.optional().describe('Hardware serial number, sent as bio.ssn.'),
 });
 const CreateMobileDeviceInput = z.object({
   ...AssetFields,
-  device_type: AssetLabelInput.optional(),
-  manufacturer: AssetLabelInput,
-  model: AssetLabelInput,
-  serial_number: AssetLabelInput.optional(),
+  device_type: RecordLabelInput.optional(),
+  manufacturer: RecordLabelInput,
+  model: RecordLabelInput,
+  serial_number: RecordLabelInput.optional(),
   user_email: EmailInput.optional(),
 });
 const CreateOtherAssetInput = z.object({
   ...AssetFields,
-  name: AssetLabelInput,
-  asset_id: AssetLabelInput.optional(),
-  asset_type_name: AssetLabelInput.optional(),
-  manufacturer: AssetLabelInput.optional(),
-  model: AssetLabelInput.optional(),
-  serial_number: AssetLabelInput.optional(),
+  name: RecordLabelInput,
+  asset_id: RecordLabelInput.optional(),
+  asset_type_name: RecordLabelInput.optional(),
+  manufacturer: RecordLabelInput.optional(),
+  model: RecordLabelInput.optional(),
+  serial_number: RecordLabelInput.optional(),
   owner_email: EmailInput.optional(),
   user_email: EmailInput.optional(),
 });
 const CreateConfigurationItemInput = z.object({
   ...AssetFields,
-  name: AssetLabelInput,
+  name: RecordLabelInput,
   user_email: EmailInput.optional(),
 });
 const UpdatePrinterInput = z.object({
   ...AssetFields,
-  id: AssetIdInput,
-  name: AssetLabelInput.optional(),
+  id: RecordIdInput,
+  name: RecordLabelInput.optional(),
+});
+
+const RecordTextInput = z.string().max(MAX_LONG_TEXT_CHARS);
+const RecordDateInput = z.iso.date().max(MAX_LABEL_CHARS);
+const CurrencyInput = z.string().max(MAX_LABEL_CHARS).regex(/^[A-Z]{3}$/, 'Use a three-letter uppercase currency code.');
+const ProcurementLocationFields = {
+  site_name: RecordLabelInput.optional(),
+  department_name: RecordLabelInput.optional(),
+};
+const CatalogAssignmentFields = {
+  default_assignee_id: RecordIdInput.optional(),
+  default_group_assignee_id: RecordIdInput.optional(),
+  site_id: RecordIdInput.optional(),
+  department_id: RecordIdInput.optional(),
+};
+const CreateContractInput = z.object({
+  name: RecordLabelInput,
+  type: RecordLabelInput.optional(),
+  status_name: RecordLabelInput.optional(),
+  manufacturer_name: RecordLabelInput.optional(),
+  start_date: RecordDateInput.optional(),
+  end_date: RecordDateInput.optional(),
+  ...ProcurementLocationFields,
+  note: RecordTextInput.optional(),
+});
+const CreatePurchaseOrderInput = z.object({
+  name: RecordLabelInput,
+  state: RecordLabelInput.optional(),
+  vendor_name: RecordLabelInput.optional(),
+  requester_email: EmailInput.optional(),
+  buyer_email: EmailInput.optional(),
+  order_date: RecordDateInput.optional(),
+  due_date: RecordDateInput.optional(),
+  currency: CurrencyInput.optional(),
+  payment_terms: RecordLabelInput.optional(),
+  notes: RecordTextInput.optional(),
+  ...ProcurementLocationFields,
+});
+const CreateVendorInput = z.object({
+  name: RecordLabelInput,
+  vendor_type: RecordLabelInput.optional(),
+  url: z.url({ protocol: /^https?$/ }).max(MAX_LABEL_CHARS).optional(),
+  contact_name: RecordLabelInput.optional(),
+  contact_email: EmailInput.optional(),
+  contact_phone: RecordLabelInput.optional(),
+  telephone: RecordLabelInput.optional(),
+  address: RecordLabelInput.optional(),
+  city: RecordLabelInput.optional(),
+  state: RecordLabelInput.optional(),
+  zip: RecordLabelInput.optional(),
+  note: RecordTextInput.optional(),
+});
+const CreateCatalogItemInput = z.object({
+  name: RecordLabelInput,
+  description: RecordTextInput.optional(),
+  state: RecordLabelInput.optional(),
+  category_name: RecordLabelInput.optional(),
+  price: z.number().nonnegative().optional(),
+  currency: CurrencyInput.optional(),
+  show_price: z.boolean().optional(),
+  ...CatalogAssignmentFields,
+  expected_delivery_time: RecordLabelInput.optional(),
+});
+const CreateChangeCatalogInput = z.object({
+  name: RecordLabelInput,
+  description: RecordTextInput.optional(),
+  change_type: RecordLabelInput.optional(),
+  priority: RecordLabelInput.optional(),
+  state: RecordLabelInput.optional(),
+  change_plan: RecordTextInput.optional(),
+  rollback_plan: RecordTextInput.optional(),
+  test_plan: RecordTextInput.optional(),
+  show_in_portal: z.boolean().optional(),
+  ...CatalogAssignmentFields,
 });
 
 const READ_CONFIGS = {
@@ -166,7 +241,7 @@ const READ_CONFIGS = {
     write: {
       root: 'hardware',
       create: CreateHardwareAssetInput,
-      update: CreateHardwareAssetInput.partial().extend({ id: AssetIdInput }),
+      update: CreateHardwareAssetInput.partial().extend({ id: RecordIdInput }),
       delete: true,
       required: 'name',
     },
@@ -183,7 +258,7 @@ const READ_CONFIGS = {
     write: {
       root: 'mobile',
       create: CreateMobileDeviceInput,
-      update: CreateMobileDeviceInput.partial().extend({ id: AssetIdInput }),
+      update: CreateMobileDeviceInput.partial().extend({ id: RecordIdInput }),
       delete: true,
       required: 'manufacturer and model',
     },
@@ -224,7 +299,7 @@ const READ_CONFIGS = {
     write: {
       root: 'other_asset',
       create: CreateOtherAssetInput,
-      update: CreateOtherAssetInput.partial().extend({ id: AssetIdInput }),
+      update: CreateOtherAssetInput.partial().extend({ id: RecordIdInput }),
       delete: true,
       required: 'name',
     },
@@ -241,7 +316,7 @@ const READ_CONFIGS = {
     write: {
       root: 'configuration_item',
       create: CreateConfigurationItemInput,
-      update: CreateConfigurationItemInput.partial().extend({ id: AssetIdInput }),
+      update: CreateConfigurationItemInput.partial().extend({ id: RecordIdInput }),
       delete: true,
       required: 'name',
     },
@@ -256,6 +331,13 @@ const READ_CONFIGS = {
     detailKey: 'contract',
     supportsLayout: true,
     descriptionUse: 'Use for support, warranty, and procurement context.',
+    write: {
+      root: 'contract',
+      create: CreateContractInput,
+      update: CreateContractInput.partial().extend({ id: RecordIdInput }),
+      delete: true,
+      required: 'name',
+    },
   },
   purchaseOrders: {
     toolList: 'swsd_list_purchase_orders',
@@ -266,6 +348,13 @@ const READ_CONFIGS = {
     summaryKey: 'purchase_orders',
     detailKey: 'purchase_order',
     descriptionUse: 'Use for procurement context.',
+    write: {
+      root: 'purchase_order',
+      create: CreatePurchaseOrderInput,
+      update: CreatePurchaseOrderInput.partial().extend({ id: RecordIdInput }),
+      delete: true,
+      required: 'name',
+    },
   },
   vendors: {
     toolList: 'swsd_list_vendors',
@@ -276,6 +365,31 @@ const READ_CONFIGS = {
     summaryKey: 'vendors',
     detailKey: 'vendor',
     descriptionUse: 'Use for vendor/contact lookup.',
+    write: {
+      root: 'vendor',
+      create: CreateVendorInput,
+      update: CreateVendorInput.partial().extend({ id: RecordIdInput }),
+      delete: true,
+      required: 'name',
+    },
+  },
+  changeCatalogs: {
+    toolList: 'swsd_list_change_catalogs',
+    toolGet: 'swsd_get_change_catalog',
+    collectionPath: '/change_catalogs',
+    labelPlural: 'change catalogs',
+    labelSingular: 'change catalog',
+    summaryKey: 'change_catalogs',
+    detailKey: 'change_catalog',
+    readRoot: 'change_catalog',
+    descriptionUse: 'Use for change catalog template lookup.',
+    write: {
+      root: 'change_catalog',
+      create: CreateChangeCatalogInput,
+      update: CreateChangeCatalogInput.partial().extend({ id: RecordIdInput }),
+      delete: true,
+      required: 'name',
+    },
   },
   risks: {
     toolList: 'swsd_list_risks',
@@ -286,6 +400,31 @@ const READ_CONFIGS = {
     descriptionUse: 'Use for risk context surfaced by SWSD.',
   },
 } as const satisfies Record<string, RecordConfig>;
+
+// Catalog reads retain their dedicated tools in ../catalog/.
+const CATALOG_ITEM_WRITE_CONFIG = {
+  toolList: 'swsd_list_catalog_items',
+  toolGet: 'swsd_get_catalog_item',
+  collectionPath: '/catalog_items',
+  labelPlural: 'catalog items',
+  labelSingular: 'catalog item',
+  summaryKey: 'catalog_items',
+  detailKey: 'catalog_item',
+  descriptionUse: 'Use for service catalog administration.',
+  write: {
+    root: 'catalog_item',
+    create: CreateCatalogItemInput,
+    update: CreateCatalogItemInput.partial().extend({ id: RecordIdInput }),
+    delete: true,
+    required: 'name',
+  },
+} satisfies RecordConfig;
+
+function readRecord(raw: unknown, root?: string): unknown {
+  return root && raw && typeof raw === 'object' && root in raw
+    ? (raw as Record<string, unknown>)[root]
+    : raw;
+}
 
 function pathJson(path: string): string {
   return `${path}.json`;
@@ -326,7 +465,7 @@ function registerListTool(server: McpServer, ctx: ToolContext, cfg: RecordConfig
         );
         const rows = Array.isArray(body) ? body : [];
         const records = rows
-          .map(toGenericRecordSummary)
+          .map((row) => toGenericRecordSummary(readRecord(row, cfg.readRoot)))
           .filter((x): x is NonNullable<typeof x> => x !== null);
         return structuredResult(
           { [cfg.summaryKey]: records, pagination },
@@ -362,7 +501,7 @@ function registerGetTool(server: McpServer, ctx: ToolContext, cfg: RecordConfig)
           pathJson(`${cfg.collectionPath}/${String(input.id)}`),
           layoutParams(input.detail_level, cfg.supportsLayout),
         );
-        const record = toGenericRecordDetail(body);
+        const record = toGenericRecordDetail(readRecord(body, cfg.readRoot));
         if (!record) {
           return toolError(`Could not parse ${cfg.labelSingular} ${String(input.id)} response from SWSD.`);
         }
@@ -457,13 +596,13 @@ function registerUpdateTool(
   );
 }
 
-function assetWriteFields(root: string, input: Record<string, unknown>): Record<string, unknown> {
+function recordWriteFields(root: string, input: Record<string, unknown>): Record<string, unknown> {
   const fields: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(input)) {
     if (key === 'id' || value === undefined) continue;
-    if (['status_name', 'site_name', 'department_name', 'asset_type_name'].includes(key)) {
+    if (['status_name', 'site_name', 'department_name', 'asset_type_name', 'vendor_name', 'category_name'].includes(key)) {
       fields[key.slice(0, -5)] = { name: value };
-    } else if (['owner_email', 'user_email', 'technical_contact_email'].includes(key)) {
+    } else if (['owner_email', 'user_email', 'technical_contact_email', 'requester_email', 'buyer_email'].includes(key)) {
       fields[key.slice(0, -6)] = { email: value };
     } else if (root === 'hardware' && key === 'serial_number') {
       fields.bio = { ssn: value };
@@ -474,7 +613,7 @@ function assetWriteFields(root: string, input: Record<string, unknown>): Record<
   return fields;
 }
 
-function registerAssetWrite(
+function registerRecordWrite(
   server: McpServer,
   ctx: ToolContext,
   cfg: RecordConfig,
@@ -498,7 +637,7 @@ function registerAssetWrite(
     },
     async (input: Record<string, unknown>) => {
       try {
-        const fields = assetWriteFields(write.root, input);
+        const fields = recordWriteFields(write.root, input);
         const changed = Object.keys(fields);
         if (update && changed.length === 0) {
           return toolError('No fields to update — provide at least one field besides id.');
@@ -536,7 +675,7 @@ function registerAssetWrite(
   );
 }
 
-function registerAssetDelete(server: McpServer, ctx: ToolContext, cfg: RecordConfig): void {
+function registerRecordDelete(server: McpServer, ctx: ToolContext, cfg: RecordConfig): void {
   if (!cfg.write?.delete || !cfg.toolGet) return;
   registerSafeDelete(server, ctx, {
     kind: cfg.labelSingular,
@@ -628,40 +767,90 @@ export const registerUpdateRelease = (server: McpServer, ctx: ToolContext): void
   });
 
 export const registerCreateHardwareAsset = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetWrite(server, ctx, READ_CONFIGS.hardwareAssets, 'create');
+  registerRecordWrite(server, ctx, READ_CONFIGS.hardwareAssets, 'create');
 
 export const registerUpdateHardwareAsset = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetWrite(server, ctx, READ_CONFIGS.hardwareAssets, 'update');
+  registerRecordWrite(server, ctx, READ_CONFIGS.hardwareAssets, 'update');
 
 export const registerDeleteHardwareAsset = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetDelete(server, ctx, READ_CONFIGS.hardwareAssets);
+  registerRecordDelete(server, ctx, READ_CONFIGS.hardwareAssets);
 
 export const registerCreateMobileDevice = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetWrite(server, ctx, READ_CONFIGS.mobileDevices, 'create');
+  registerRecordWrite(server, ctx, READ_CONFIGS.mobileDevices, 'create');
 
 export const registerUpdateMobileDevice = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetWrite(server, ctx, READ_CONFIGS.mobileDevices, 'update');
+  registerRecordWrite(server, ctx, READ_CONFIGS.mobileDevices, 'update');
 
 export const registerDeleteMobileDevice = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetDelete(server, ctx, READ_CONFIGS.mobileDevices);
+  registerRecordDelete(server, ctx, READ_CONFIGS.mobileDevices);
 
 export const registerCreateOtherAsset = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetWrite(server, ctx, READ_CONFIGS.otherAssets, 'create');
+  registerRecordWrite(server, ctx, READ_CONFIGS.otherAssets, 'create');
 
 export const registerUpdateOtherAsset = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetWrite(server, ctx, READ_CONFIGS.otherAssets, 'update');
+  registerRecordWrite(server, ctx, READ_CONFIGS.otherAssets, 'update');
 
 export const registerDeleteOtherAsset = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetDelete(server, ctx, READ_CONFIGS.otherAssets);
+  registerRecordDelete(server, ctx, READ_CONFIGS.otherAssets);
 
 export const registerCreateConfigurationItem = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetWrite(server, ctx, READ_CONFIGS.configurationItems, 'create');
+  registerRecordWrite(server, ctx, READ_CONFIGS.configurationItems, 'create');
 
 export const registerUpdateConfigurationItem = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetWrite(server, ctx, READ_CONFIGS.configurationItems, 'update');
+  registerRecordWrite(server, ctx, READ_CONFIGS.configurationItems, 'update');
 
 export const registerDeleteConfigurationItem = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetDelete(server, ctx, READ_CONFIGS.configurationItems);
+  registerRecordDelete(server, ctx, READ_CONFIGS.configurationItems);
 
 export const registerUpdatePrinter = (server: McpServer, ctx: ToolContext): void =>
-  registerAssetWrite(server, ctx, READ_CONFIGS.printers, 'update');
+  registerRecordWrite(server, ctx, READ_CONFIGS.printers, 'update');
+
+export const registerListChangeCatalogs = (server: McpServer, ctx: ToolContext): void =>
+  registerListTool(server, ctx, READ_CONFIGS.changeCatalogs);
+export const registerGetChangeCatalog = (server: McpServer, ctx: ToolContext): void =>
+  registerGetTool(server, ctx, READ_CONFIGS.changeCatalogs);
+
+export const registerCreateContract = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, READ_CONFIGS.contracts, 'create');
+
+export const registerUpdateContract = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, READ_CONFIGS.contracts, 'update');
+
+export const registerDeleteContract = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordDelete(server, ctx, READ_CONFIGS.contracts);
+
+export const registerCreatePurchaseOrder = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, READ_CONFIGS.purchaseOrders, 'create');
+
+export const registerUpdatePurchaseOrder = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, READ_CONFIGS.purchaseOrders, 'update');
+
+export const registerDeletePurchaseOrder = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordDelete(server, ctx, READ_CONFIGS.purchaseOrders);
+
+export const registerCreateVendor = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, READ_CONFIGS.vendors, 'create');
+
+export const registerUpdateVendor = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, READ_CONFIGS.vendors, 'update');
+
+export const registerDeleteVendor = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordDelete(server, ctx, READ_CONFIGS.vendors);
+
+export const registerCreateCatalogItem = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, CATALOG_ITEM_WRITE_CONFIG, 'create');
+
+export const registerUpdateCatalogItem = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, CATALOG_ITEM_WRITE_CONFIG, 'update');
+
+export const registerDeleteCatalogItem = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordDelete(server, ctx, CATALOG_ITEM_WRITE_CONFIG);
+
+export const registerCreateChangeCatalog = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, READ_CONFIGS.changeCatalogs, 'create');
+
+export const registerUpdateChangeCatalog = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordWrite(server, ctx, READ_CONFIGS.changeCatalogs, 'update');
+
+export const registerDeleteChangeCatalog = (server: McpServer, ctx: ToolContext): void =>
+  registerRecordDelete(server, ctx, READ_CONFIGS.changeCatalogs);
