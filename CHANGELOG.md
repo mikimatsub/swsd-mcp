@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tools warn and are skipped; an empty valid selection fails startup. Published
   `schemas/swsd-profile.schema.json` matches runtime file validation.
 
+- Issue-form app, server, Windows, and profile fields support URL prefills, with a warning to omit secrets and use synthetic examples.
+- Changelog format validation through `npm run check:changelog` in the CI lint job.
+
 ### Changed
 
 - `operations` now includes all 145 tools, including KB authoring. `full` remains
@@ -21,7 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   profile tables, Registry metadata, and connector manifests use `operations`.
 - Delete tools require `operations` or explicit inclusion in a custom profile,
   retaining preview, `confirm`, and matching `confirm_id` safety gates.
-- Removed the README's obsolete `Upgrading to 3.0.0` section.
 
 - Rebuilt Windows setup in WPF/XAML for PowerShell 5.1 with the A3 Home shell,
   top Home/Tools navigation, a searchable 145-tool browser with profile locks and
@@ -36,6 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.2.0`.
 - Release tag pushes now publish the container image with `X.Y.Z` and `X.Y`
   tags and a matching `org.opencontainers.image.version` label.
+
+- Changelog headings, categories, UTC publication dates, and version links follow Keep a Changelog 1.1.0 throughout the release history.
+
+### Removed
+
+- Removed the README's obsolete `Upgrading to 3.0.0` section.
 
 ### Fixed
 
@@ -61,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   full card width and use one column when needed, fixing overflow at 125% scaling.
   DPI diagnostics and light/dark layout checks retain the `SWSD_UI_SCALE` test hook.
 
-## [3.2.0] - 2026-11-04
+## [3.2.0] - 2026-11-05
 
 ### Added
 
@@ -204,16 +212,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.1.1] - 2026-11-02
 
-### Security
-
-- Updated the MCP SDK Node adapter and made the already-reviewed
-  `@hono/node-server` 2.1.5 fix an exact public dependency for
-  GHSA-rmxm-3fg6-px4f. The Windows plugin runtime also overrides its published
-  3.1.0 dependency graph instead of retaining vulnerable adapter 1.19.17.
-- Overrode development-only `minimatch` to 11.0.1, fixing
-  GHSA-g3hv-75wg-m249 across ESLint and typescript-eslint without suppressing
-  the audit or OSV findings.
-
 ### Changed
 
 - Moved the Windows plugin runtime pin to the published `swsd-mcp@3.1.0`
@@ -226,7 +224,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refreshed the pinned Node 24 Alpine image digest. Node 26 is now Active LTS,
   but its runtime and Windows-plugin migration remains separately gated.
 
-## [3.1.0] - 2026-10-23
+### Security
+
+- Updated the MCP SDK Node adapter and made the already-reviewed
+  `@hono/node-server` 2.1.5 fix an exact public dependency for
+  GHSA-rmxm-3fg6-px4f. The Windows plugin runtime also overrides its published
+  3.1.0 dependency graph instead of retaining vulnerable adapter 1.19.17.
+- Overrode development-only `minimatch` to 11.0.1, fixing
+  GHSA-g3hv-75wg-m249 across ESLint and typescript-eslint without suppressing
+  the audit or OSV findings.
+
+## [3.1.0] - 2026-10-24
 
 ### Added
 
@@ -250,12 +258,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   14 / 37 / 15 / 64 / 66.
 - Updated ESLint to 10.13.0 and Astro to 7.4.0 after their publication-age gates.
 
-### Security
-
-- Updated transitive `body-parser` to 2.4.0 for GHSA-27r3-jxmh-p828 (DoS via
-  trailing bytes after a compressed body), ahead of the publication-age gate.
-
-### Deferred work
+**Deferred work**
 
 - `typescript-eslint` 8.72.0, Astro 7.4.1/7.4.2 and Vite 8.3.5 await their
   three-day publication-age gates.
@@ -263,6 +266,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   credential create/replace/remove, private token entry, credential-backed live
   access, supported desktop delivery, and profile changes on new connections.
 - The plugin keeps Node `>=24.15.0 <25`; see `plugins/swsd/ADMIN.md` and #73.
+
+### Security
+
+- Updated transitive `body-parser` to 2.4.0 for GHSA-27r3-jxmh-p828 (DoS via
+  trailing bytes after a compressed body), ahead of the publication-age gate.
 
 ## [3.0.2] - 2026-10-19
 
@@ -283,7 +291,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   coverage gates, server/widget/docs builds, legacy protocol checks, live
   read-only SWSD checks, and container build and smoke tests.
 
-### Deferred work
+**Deferred work**
 
 - Astro 7.4.1, Undici 8.12.3, and other releases published on October 19 remain
   deferred until their three-day publication-age gates elapse and a fresh
@@ -294,15 +302,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   administrator import, and clean coworker installation verification.
 
 ## [3.0.1] - 2026-10-12
-
-### Security
-
-- Overrode the documentation build's transitive `postcss-selector-parser` to
-  7.1.6, fixing CVE-2026-104844 / GHSA-rj75-hqrm-r3gf without suppressing the
-  affected dependency path or weakening the OSV gate.
-- Updated Express to 5.3.0, including upstream `qs` fixes for CVE-2026-2391,
-  CVE-2026-82417, and CVE-2026-82562. The release passed the ordinary three-day
-  publication-age gate; no security exception was used.
 
 ### Changed
 
@@ -319,7 +318,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   names, schemas, environment variables, transports, and runtime requirements
   are unchanged from 3.0.0.
 
-### Deferred work
+**Deferred work**
 
 - Vitest 5.0.4, DOMPurify 3.4.17, Zod 4.6.6, and OSV Scanner Action 2.7.0
   remain deferred until every changed version has passed the inherited
@@ -327,9 +326,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Draft #141 remains separate pending native credential, administrator import,
   and clean coworker installation verification.
 
+### Security
+
+- Overrode the documentation build's transitive `postcss-selector-parser` to
+  7.1.6, fixing CVE-2026-104844 / GHSA-rj75-hqrm-r3gf without suppressing the
+  affected dependency path or weakening the OSV gate.
+- Updated Express to 5.3.0, including upstream `qs` fixes for CVE-2026-2391,
+  CVE-2026-82417, and CVE-2026-82562. The release passed the ordinary three-day
+  publication-age gate; no security exception was used.
+
 ## [3.0.0] - 2026-10-04
 
-### Breaking changes and upgrade guidance
+### Changed
+
+**Breaking changes and upgrade guidance**
 
 - Unknown tool names now return a JSON-RPC `-32602` error instead of a successful
   JSON-RPC envelope containing `CallToolResult.isError: true`. SDK clients must
@@ -344,8 +354,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumers pinned to the 2.x SemVer range on that line. The four existing legacy
   protocol revisions work over both transports. Node requirements, profile
   selection, environment variables and launch commands are unchanged.
-
-### Changed
 
 - Migrated MCP Apps to 2.0.3 and replaced the monolithic SDK with compatible
   client/core/server 2.2.0 packages and Node HTTP adapter 2.1.0. All new exact
@@ -363,7 +371,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Regenerated all five Copilot connector versions to match 3.0.0. The 2026-07-28
   HTTP binding remains a separate protocol migration.
 
-### Deferred work
+**Deferred work**
 
 - #140's regenerated dependency head remains open until its three-day gate has
   elapsed and fresh combined checks pass. #141's repaired Windows plugin remains
@@ -372,20 +380,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   supported management session and a broader recurring prompt.
 
 ## [2.3.2] - 2026-10-04
-
-### Security
-
-- Removed `vite-plugin-singlefile` and its unpatched `braces` dependency
-  ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)).
-  A dependency-free Vite plugin now inlines each widget's JavaScript and CSS,
-  escapes HTML terminators, and rejects missing or leftover external assets.
-- Replaced the docs-only, unpatched `http-cache-semantics` dependency
-  ([GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp))
-  with a private adapter that grants no cache lifetime. Remote docs images
-  expire immediately and must be revalidated. Regression checks exercise
-  Astro's real image-loading functions before every docs build.
-- Added fresh npm vulnerability audit gates for the server, documentation,
-  and release builds. No vulnerability findings are suppressed.
 
 ### Changed
 
@@ -404,6 +398,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated immutable GitHub Actions pins for Node setup, Docker builds and
   publishing, CodeQL, and OSV; updated the MCP publisher to 1.8.1.
 
+**Maintenance scope**
+
+- Newer releases still inside the three-day soak window remain deferred.
+  Renovate regenerated #140 after the original lock update was incorporated;
+  its newer head remains open pending release age and a fresh review.
+  MCP Apps 2 requires the SDK 2 migration, TypeScript 7 exceeds the current
+  lint toolchain's peer range, and Node 26 is outside the supported Node 24
+  runtime line. These require separate compatibility work.
+- Draft #141 remains separate: workspace administrator import and a clean
+  coworker installation have not been verified. This release does not enable
+  or deploy that plugin.
+
 ### Fixed
 
 - Manual release recovery now checks out the existing release tag instead
@@ -417,17 +423,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   verifying the root adapter reference with strict clean installations.
 - Regenerated all five Copilot connector versions to match 2.3.2.
 
-### Maintenance scope
+### Security
 
-- Newer releases still inside the three-day soak window remain deferred.
-  Renovate regenerated #140 after the original lock update was incorporated;
-  its newer head remains open pending release age and a fresh review.
-  MCP Apps 2 requires the SDK 2 migration, TypeScript 7 exceeds the current
-  lint toolchain's peer range, and Node 26 is outside the supported Node 24
-  runtime line. These require separate compatibility work.
-- Draft #141 remains separate: workspace administrator import and a clean
-  coworker installation have not been verified. This release does not enable
-  or deploy that plugin.
+- Removed `vite-plugin-singlefile` and its unpatched `braces` dependency
+  ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)).
+  A dependency-free Vite plugin now inlines each widget's JavaScript and CSS,
+  escapes HTML terminators, and rejects missing or leftover external assets.
+- Replaced the docs-only, unpatched `http-cache-semantics` dependency
+  ([GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp))
+  with a private adapter that grants no cache lifetime. Remote docs images
+  expire immediately and must be revalidated. Regression checks exercise
+  Astro's real image-loading functions before every docs build.
+- Added fresh npm vulnerability audit gates for the server, documentation,
+  and release builds. No vulnerability findings are suppressed.
 
 ## [2.3.1] - 2026-08-20
 
@@ -462,6 +470,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compatibility, container, and security validation.
 - Updated the documentation site to `@astrojs/starlight` 0.41.7.
 
+### Fixed
+
+- Enforced MCP Registry metadata limits in tests and made partially completed
+  release workflows safely resumable without moving an existing release tag.
+
 ### Security
 
 - Bounded MCP query, label, long-text, filter, relationship, custom-field, and
@@ -469,17 +482,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hardened attachment inputs to require exactly one source, canonical base64,
   safe display names, regular local files, and the SWSD 25 MB per-file limit.
 
-### Fixed
-
-- Enforced MCP Registry metadata limits in tests and made partially completed
-  release workflows safely resumable without moving an existing release tag.
-
 ## [2.2.1] - 2026-08-03
-
-### Security
-
-- Raised the minimum DOMPurify version to 3.4.13 so downstream installs cannot
-  retain releases affected by the sanitizer advisories fixed through 3.4.12.
 
 ### Changed
 
@@ -487,6 +490,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   added a registry-wide regression test for annotation completeness.
 - Refreshed runtime and development dependency locks, including
   `@hono/node-server` 2.0.12 and `brace-expansion` 5.0.9.
+
+### Security
+
+- Raised the minimum DOMPurify version to 3.4.13 so downstream installs cannot
+  retain releases affected by the sanitizer advisories fixed through 3.4.12.
 
 ## [2.2.0] - 2026-07-09
 
@@ -518,17 +526,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `full` profile now exposes 66 tools across 15 categories.
 - Copilot Studio Swagger artifacts now include the new `operations` profile.
 
-## [2.1.1] - 2026-06-05
-
-Patch release for public package metadata only. No API behavior changes.
+## [2.1.1] - 2026-06-06
 
 ### Fixed
+
+Patch release for public package metadata only. No API behavior changes.
 
 - Refresh published npm and MCP Registry metadata after the repository rename/casing cleanup.
 - Publish `server.json` to the MCP Registry from the trusted tag release workflow.
 - Align the runtime MCP server version reported in banners, `User-Agent`, and `swsd_get_server_info` with `package.json`.
 
 ## [2.1.0] - 2026-05-08
+
+### Added
 
 The v2.1 release: strictly additive over v2.0.2. Closes the
 "too-many-round-trips" UX gap surfaced in v2.0 user smoke testing
@@ -537,8 +547,6 @@ first to translate a human-facing `number` into an internal `id`)
 and broadens the rich-UI surface from 4 widgets to 7. Adds two
 entirely new tool families (Tasks, Problems) and a date-natural-language
 alias on the two highest-traffic list tools.
-
-### Added
 
 - **Tools accept either id or human-facing number** on every id-keyed
   tool: `swsd_get_incident`, `swsd_update_incident`, `swsd_assign_incident`,
@@ -581,6 +589,34 @@ alias on the two highest-traffic list tools.
   and created date: fields the `?layout=long` API already returned but
   the widget never surfaced.
 
+### Changed
+
+- `swsd_get_record_audits`: when `object_type` is `incidents` or
+  `solutions`, the `id` field accepts either form (internal id ≥7 digits
+  or human-facing number ≤6 digits). Other object types (`problems`,
+  `changes`, `releases`, `hardwares`, `other_assets`) remain id-only
+  until those entities gain list APIs to disambiguate against.
+
+**Dependencies**
+
+- **Added:** `dompurify@^3.4.2` (no peer-deps, npm audit clean) for HTML
+  sanitization in solution-detail, incident-detail, comment-thread, and
+  catalog-item-form widgets.
+- **Added (devDep):** `jsdom@^29.1.1` for DOMPurify-using sanitizer
+  tests.
+
+**Internal**
+
+- New shared utilities: `src/utils/idResolver.ts` (id-vs-number
+  resolver) and `src/utils/dateAliases.ts` (`updated_within` parser).
+- New shared UI helpers: `src/ui/shared/sanitizeHtml.ts` (DOMPurify
+  wrapper), `src/ui/shared/error.ts` (`renderError`), and the
+  consolidated `tests/unit/tools/_helpers/mockClient.ts` (eliminated
+  ~571 lines of test-fixture duplication across 8 tool tests).
+- Tool count after v2.1: `triage` 14, `agent` 33 (default), `knowledge`
+  15, `full` 35 across 10 categories (added Tasks and Problems
+  categories). Per-profile Swagger specs regenerated.
+
 ### Fixed
 
 - **`swsd_list_my_incidents` and `swsd_list_incidents` now actually filter by user.**
@@ -618,41 +654,30 @@ alias on the two highest-traffic list tools.
   (`th:focus-visible` outline that never fired because `<th>` elements
   have no `tabindex` and no keyboard handler).
 
+## [2.0.2] - 2026-05-08
+
 ### Changed
 
-- `swsd_get_record_audits`: when `object_type` is `incidents` or
-  `solutions`, the `id` field accepts either form (internal id ≥7 digits
-  or human-facing number ≤6 digits). Other object types (`problems`,
-  `changes`, `releases`, `hardwares`, `other_assets`) remain id-only
-  until those entities gain list APIs to disambiguate against.
+**Internal**
 
-### Dependencies
+- New `.github/codeql/codeql-config.yml` scopes CodeQL analysis to
+  `src/` only, excluding `scripts/` (maintainer-only utilities not
+  shipped in the npm tarball), `tests/` (synthetic fixtures), `dist/`
+  (generated output), `.research/` (gitignored probes),
+  `node_modules/`, and `copilot-studio/`. Closes the
+  `js/http-to-file-access` finding on `scripts/dump-custom-fields.ts`
+  for the right structural reason: maintainer scripts where the user
+  controls both the SWSD response and the output path are
+  out-of-scope for production-code analysis.
+- Net dependencies: added `helmet@^8.1.0` (one prod dep, ~30 KB
+  unpacked); bumped `express-rate-limit` patch version. No new
+  transitive vulnerabilities introduced (`npm audit` clean).
 
-- **Added:** `dompurify@^3.4.2` (no peer-deps, npm audit clean) for HTML
-  sanitization in solution-detail, incident-detail, comment-thread, and
-  catalog-item-form widgets.
-- **Added (devDep):** `jsdom@^29.1.1` for DOMPurify-using sanitizer
-  tests.
-
-### Internal
-
-- New shared utilities: `src/utils/idResolver.ts` (id-vs-number
-  resolver) and `src/utils/dateAliases.ts` (`updated_within` parser).
-- New shared UI helpers: `src/ui/shared/sanitizeHtml.ts` (DOMPurify
-  wrapper), `src/ui/shared/error.ts` (`renderError`), and the
-  consolidated `tests/unit/tools/_helpers/mockClient.ts` (eliminated
-  ~571 lines of test-fixture duplication across 8 tool tests).
-- Tool count after v2.1: `triage` 14, `agent` 33 (default), `knowledge`
-  15, `full` 35 across 10 categories (added Tasks and Problems
-  categories). Per-profile Swagger specs regenerated.
-
-## [2.0.2] - 2026-05-07
+### Security
 
 Defense-in-depth security release. Addresses 4 findings from the new
 Aikido Security integration plus 2 CodeQL alerts. No public API
 changes; no behavior changes for legitimate inputs.
-
-### Security
 
 - **HTTP security headers via Helmet** (Aikido finding). The Express
   HTTP transport now mounts `helmet()` first in the middleware chain,
@@ -710,22 +735,21 @@ changes; no behavior changes for legitimate inputs.
   `osv-scanner.toml` `IgnoredVulns` entry: the suppression is no
   longer needed since the vulnerability is patched at the source.
 
-### Internal
-
-- New `.github/codeql/codeql-config.yml` scopes CodeQL analysis to
-  `src/` only, excluding `scripts/` (maintainer-only utilities not
-  shipped in the npm tarball), `tests/` (synthetic fixtures), `dist/`
-  (generated output), `.research/` (gitignored probes),
-  `node_modules/`, and `copilot-studio/`. Closes the
-  `js/http-to-file-access` finding on `scripts/dump-custom-fields.ts`
-  for the right structural reason: maintainer scripts where the user
-  controls both the SWSD response and the output path are
-  out-of-scope for production-code analysis.
-- Net dependencies: added `helmet@^8.1.0` (one prod dep, ~30 KB
-  unpacked); bumped `express-rate-limit` patch version. No new
-  transitive vulnerabilities introduced (`npm audit` clean).
-
 ## [2.0.1] - 2026-05-07
+
+### Changed
+
+**Internal**
+
+- Bundle size budget for UI artifacts raised from 200 KB to 500 KB to
+  accommodate the canonical SDK (`tests/unit/ui/build.test.ts`).
+  Empirical bundle size is ~340 KB raw / ~82 KB gzipped per widget.
+  The change is metadata-only; the npm tarball grows from ~97 KB to
+  ~320 KB compressed.
+- Removed `tests/unit/ui/host.test.ts`: its 4 tests pinned a runtime
+  `--`-prefix guard on the deleted `applyHostThemeVariables` helper.
+  The SDK's `applyHostStyleVariables` enforces the same constraint at
+  the type level, so the runtime test no longer applies.
 
 ### Fixed
 
@@ -751,19 +775,9 @@ changes; no behavior changes for legitimate inputs.
   `applyHostFonts` so widgets respond to host theme + font changes,
   not just CSS variables.
 
-### Internal
-
-- Bundle size budget for UI artifacts raised from 200 KB to 500 KB to
-  accommodate the canonical SDK (`tests/unit/ui/build.test.ts`).
-  Empirical bundle size is ~340 KB raw / ~82 KB gzipped per widget.
-  The change is metadata-only; the npm tarball grows from ~97 KB to
-  ~320 KB compressed.
-- Removed `tests/unit/ui/host.test.ts`: its 4 tests pinned a runtime
-  `--`-prefix guard on the deleted `applyHostThemeVariables` helper.
-  The SDK's `applyHostStyleVariables` enforces the same constraint at
-  the type level, so the runtime test no longer applies.
-
 ## [2.0.0] - 2026-05-07
+
+### Added
 
 The v2 release. Strictly additive over v1.0.1: no existing tool's input or
 output schema changed, no tool was removed, no breaking change in any wire
@@ -793,7 +807,7 @@ Highlights:
   (`filtered` / `tenant` / `unknown`) and `applied_filters` echo so agents
   can distinguish "narrowed to my filters" from "all tenant data".
 
-### Added (Tier 2: v2 Service Catalog support)
+**Tier 2: v2 Service Catalog support**
 
 - Three new tools that surface SWSD's Service Catalog:
   - `swsd_list_catalog_items`: paginated browse of catalog items with
@@ -840,7 +854,7 @@ bad tool. Will revisit once SWSD documents the correct filter mechanism
 or exposes a top-level `/service_requests.json` collection (currently
 404).
 
-### Added (Tier 1: v2 MCP Apps capability)
+**Tier 1: v2 MCP Apps capability**
 
 - MCP Apps support (SEP-1865, spec 2025-11-25) for `swsd_get_incident`,
   `swsd_get_solution`, `swsd_list_incidents`, and
@@ -854,6 +868,37 @@ or exposes a top-level `/service_requests.json` collection (currently
   registers them via `registerAppTool` / `registerAppResource` from
   `@modelcontextprotocol/ext-apps@^1.7.1`.
 
+**Tier 1: v2 identity & scope**
+
+- New tool `swsd_get_me`: JWT-payload decode + `GET /users/{id}.json` + optional `GET /profile.json` enrichment. Returns the authenticated user's id, email, name, role, department, site, group_ids, and assignment status. **Call this first when the request mentions "me", "my", or "I"**; server INSTRUCTIONS now teach the model this pattern.
+- New tool `swsd_list_my_incidents`: thin wrapper that internally calls `swsd_get_me` then `swsd_list_incidents` with `assignee_email = your email`. Same input shape as `swsd_list_incidents` minus the `assignee_email` parameter. Asana-style explicit-my-X pattern (Stream 4 research).
+- `applied_filters` echo + `pagination.total_scope` discriminator (`filtered` | `tenant` | `unknown`) on `swsd_list_incidents` and `swsd_list_my_incidents` responses. Closes the brief's scope-ambiguity failure mode in-band: the model can now distinguish "25 of 87 matching your filters" from "25 of 56,800 tenant-wide" without guessing. **No comparable MCP server in the ecosystem ships this** as of May 2026 (Linear, GitHub, Atlassian, Asana, ServiceNow, Notion, Slack, Stripe: verified during v2 research).
+- Server `INSTRUCTIONS` augmented with whoami-first guidance: model receives this in the MCP `initialize` response, mirroring GitHub's `serverInstructions` "Always call get_me first" pattern.
+- New JWT decoder helper (`src/swsd/jwt.ts`): extracts user_ic + any other JWT claims locally, no HTTP cost. Defensive parsing returns null on any malformed input.
+
+**Tests (Tier 1: v2 identity & scope)**
+
+- New `tests/unit/swsd/jwt.test.ts`: 8 edge cases (sample SWSD JWT, ESM extra claims, invalid base64, non-JSON payload, non-object payload, defensive null/undefined inputs).
+- New `tests/unit/mappers/me.test.ts`: 8 edge cases on `toUserMeRecord` (full record projection, /profile.json enrichment, defensive null handling, non-numeric id rejection, group_ids filtering of non-numeric entries).
+
+**Tier 1: v2 custom-field writes**
+
+- `custom_fields` parameter on `swsd_create_incident`, `swsd_update_incident`, `swsd_create_solution`, and `swsd_update_solution`. Accepts `[{name, value}]` rows. Name-keyed for cross-entity portability (Solutions reject `custom_field_id`-only keying with HTTP 400; Incidents accept either). Validated field types: Text, Dropdown, Number, Checkbox, Date.
+
+**Tier 1: v2 quick wins**
+
+- `detail_level: 'short' | 'long'` parameter on `swsd_get_incident` and `swsd_get_solution`. Use `'long'` to fold SWSD's `?layout=long` extras (comments, attachments, audits, SLA data, tags, statistics, satisfaction, resolution for incidents; attachments, audits, tags, full statistics for solutions) into one call. Replaces the typical 2–3 round-trip pattern.
+- New tool `swsd_get_record_audits`: wraps `GET /{type}/{id}/audits.json` for `incidents`, `problems`, `changes`, `releases`, `solutions`, `hardwares`, and `other_assets`. In the `agent` and `full` profiles. Lets the model answer "who changed this and when?" without parsing layout=long.
+- Expanded `swsd_list_incidents` filters: `sites`, `departments`, `assigned_to_group`, `created_from`/`created_to`, `updated_to`, `state_is_not`, `sort_by`, `sort_order`, free-text `query`. All forward-only: no breaking changes.
+- `outputSchema` declared on all 15 read tools: enables client-side response validation, particularly useful for Microsoft Copilot Studio response shape validation.
+- `upstream_rate_limit` block added to `swsd_get_server_info` output. Documents SWSD's account-wide rate limits (1000 cpm Advanced / 1500 cpm Premier; signal: `429 + Retry-After` only: no `X-RateLimit-*` headers).
+- New tool `swsd_get_record_audits` registered in `agent` and `full` profiles, raising tool count from 23 to 24 across 7 categories (added the Audits category).
+
+**Tests (Tier 1: v2 quick wins)**
+
+- New `tests/unit/mappers/audit.test.ts`: 8 edge-case tests for `toAuditSummary`.
+- New `tests/unit/toolNames.test.ts`: 25 tests asserting every tool in `PROFILE_TOOLS` matches the SEP-986 name regex (`^[a-zA-Z][a-zA-Z0-9_-]{0,127}$`). Defense against future drift.
+
 ### Changed
 
 - Migrated dependency-update automation from Dependabot to Renovate. The
@@ -864,58 +909,33 @@ or exposes a top-level `/service_requests.json` collection (currently
   weekly lock-file maintenance, abandonment detection, and pinned-digest
   helpers for Docker and GitHub Actions.
 
-### Added (Tier 1: v2 identity & scope)
-
-- New tool `swsd_get_me`: JWT-payload decode + `GET /users/{id}.json` + optional `GET /profile.json` enrichment. Returns the authenticated user's id, email, name, role, department, site, group_ids, and assignment status. **Call this first when the request mentions "me", "my", or "I"**; server INSTRUCTIONS now teach the model this pattern.
-- New tool `swsd_list_my_incidents`: thin wrapper that internally calls `swsd_get_me` then `swsd_list_incidents` with `assignee_email = your email`. Same input shape as `swsd_list_incidents` minus the `assignee_email` parameter. Asana-style explicit-my-X pattern (Stream 4 research).
-- `applied_filters` echo + `pagination.total_scope` discriminator (`filtered` | `tenant` | `unknown`) on `swsd_list_incidents` and `swsd_list_my_incidents` responses. Closes the brief's scope-ambiguity failure mode in-band: the model can now distinguish "25 of 87 matching your filters" from "25 of 56,800 tenant-wide" without guessing. **No comparable MCP server in the ecosystem ships this** as of May 2026 (Linear, GitHub, Atlassian, Asana, ServiceNow, Notion, Slack, Stripe: verified during v2 research).
-- Server `INSTRUCTIONS` augmented with whoami-first guidance: model receives this in the MCP `initialize` response, mirroring GitHub's `serverInstructions` "Always call get_me first" pattern.
-- New JWT decoder helper (`src/swsd/jwt.ts`): extracts user_ic + any other JWT claims locally, no HTTP cost. Defensive parsing returns null on any malformed input.
-
-### Tests (Tier 1: v2 identity & scope)
-
-- New `tests/unit/swsd/jwt.test.ts`: 8 edge cases (sample SWSD JWT, ESM extra claims, invalid base64, non-JSON payload, non-object payload, defensive null/undefined inputs).
-- New `tests/unit/mappers/me.test.ts`: 8 edge cases on `toUserMeRecord` (full record projection, /profile.json enrichment, defensive null handling, non-numeric id rejection, group_ids filtering of non-numeric entries).
-
-### Added (Tier 1: v2 custom-field writes)
-
-- `custom_fields` parameter on `swsd_create_incident`, `swsd_update_incident`, `swsd_create_solution`, and `swsd_update_solution`. Accepts `[{name, value}]` rows. Name-keyed for cross-entity portability (Solutions reject `custom_field_id`-only keying with HTTP 400; Incidents accept either). Validated field types: Text, Dropdown, Number, Checkbox, Date.
-
-### Fixed / Retracted
-
-- The v0.5 documented limitation that "SWSD returns 500 on every payload variant tested" for custom-field writes was **incorrect**. v1's investigation tested only the array-direct shape `{custom_fields_values: [{name, value}]}`. The actual shape SWSD requires is the SAManage-documented nested wrapper `{custom_fields_values: {custom_fields_value: [{name, value}]}}`: confirmed live against the live tenant on May 6, 2026 and against the official `SAManage/Samples` Ruby code (https://github.com/SAManage/Samples/blob/master/Sync%20Users/sync_users.rb). The `swsd_describe_custom_fields` tool description and the server-level INSTRUCTIONS string have been updated accordingly.
-
-### Added (Tier 1: v2 quick wins)
-
-- `detail_level: 'short' | 'long'` parameter on `swsd_get_incident` and `swsd_get_solution`. Use `'long'` to fold SWSD's `?layout=long` extras (comments, attachments, audits, SLA data, tags, statistics, satisfaction, resolution for incidents; attachments, audits, tags, full statistics for solutions) into one call. Replaces the typical 2–3 round-trip pattern.
-- New tool `swsd_get_record_audits`: wraps `GET /{type}/{id}/audits.json` for `incidents`, `problems`, `changes`, `releases`, `solutions`, `hardwares`, and `other_assets`. In the `agent` and `full` profiles. Lets the model answer "who changed this and when?" without parsing layout=long.
-- Expanded `swsd_list_incidents` filters: `sites`, `departments`, `assigned_to_group`, `created_from`/`created_to`, `updated_to`, `state_is_not`, `sort_by`, `sort_order`, free-text `query`. All forward-only: no breaking changes.
-- `outputSchema` declared on all 15 read tools: enables client-side response validation, particularly useful for Microsoft Copilot Studio response shape validation.
-- `upstream_rate_limit` block added to `swsd_get_server_info` output. Documents SWSD's account-wide rate limits (1000 cpm Advanced / 1500 cpm Premier; signal: `429 + Retry-After` only: no `X-RateLimit-*` headers).
-- New tool `swsd_get_record_audits` registered in `agent` and `full` profiles, raising tool count from 23 to 24 across 7 categories (added the Audits category).
-
-### Changed (Tier 1: v2 quick wins)
+**Tier 1: v2 quick wins**
 
 - `@modelcontextprotocol/sdk` floor relaxed from exact `1.29.0` to `^1.26.0`. Picks up `GHSA-345p-7cg4-v4c7` (cross-client response-leak) fix as defense-in-depth even though v1's per-request server construction was already safe.
 
-### Tests (Tier 1: v2 quick wins)
+### Fixed
 
-- New `tests/unit/mappers/audit.test.ts`: 8 edge-case tests for `toAuditSummary`.
-- New `tests/unit/toolNames.test.ts`: 25 tests asserting every tool in `PROFILE_TOOLS` matches the SEP-986 name regex (`^[a-zA-Z][a-zA-Z0-9_-]{0,127}$`). Defense against future drift.
+**Fixed / Retracted**
 
-## [1.0.1] - 2026-05-03
+- The v0.5 documented limitation that "SWSD returns 500 on every payload variant tested" for custom-field writes was **incorrect**. v1's investigation tested only the array-direct shape `{custom_fields_values: [{name, value}]}`. The actual shape SWSD requires is the SAManage-documented nested wrapper `{custom_fields_values: {custom_fields_value: [{name, value}]}}`: confirmed live against the live tenant on May 6, 2026 and against the official `SAManage/Samples` Ruby code (https://github.com/SAManage/Samples/blob/master/Sync%20Users/sync_users.rb). The `swsd_describe_custom_fields` tool description and the server-level INSTRUCTIONS string have been updated accordingly.
+
+## [1.0.1] - 2026-05-04
+
+### Changed
 
 Patch release. Mechanical version bump only (`package.json` and `package-lock.json`): no source-code or behavior changes versus v1.0.0. Published to npm 2026-05-04.
 
-## [1.0.0]: _pending first publish_
+## [1.0.0] - 2026-05-04
 
-### Initial public release
+### Added
+
+**Initial public release**
 
 First public release on npm and GitHub. The pre-release work happened
 across 11 commits on the `main` branch: full git history captures
 the development trajectory.
 
-#### Tools (23 total across 6 categories)
+**Tools (23 total across 6 categories)**
 
 **Utility (2)**: `swsd_get_server_info`, `swsd_health_check`
 
@@ -936,14 +956,14 @@ the development trajectory.
 **Custom fields (1)**: `swsd_describe_custom_fields` (read-only;
 writes deferred per documented investigation)
 
-#### Profiles
+**Profiles**
 
 * `triage` (9 tools): first-line support workflow
 * `agent` (21 tools, default): full ticket-handler workflow
 * `knowledge` (11 tools): KB-author workflow
 * `full` (23 tools): every non-destructive validated tool
 
-#### Architecture
+**Architecture**
 
 * Dual transport: stdio (local agents) and Streamable HTTP (Copilot
   Studio + hosted)
@@ -955,13 +975,13 @@ writes deferred per documented investigation)
 * Defensive parsing for unknown SWSD response shapes
 * 146 unit tests, all hermetic (no live API)
 
-#### Distribution
+**Distribution**
 
 * npm: `swsd-mcp` (public, free)
 * Docker: `ghcr.io/mikimatsub/swsd-mcp:latest`
 * MIT license
 
-#### Build & supply chain
+**Build & supply chain**
 
 * GitHub Actions pinned to commit SHAs
 * Dockerfile base image pinned by digest
@@ -970,7 +990,7 @@ writes deferred per documented investigation)
 * Dependabot for npm, GitHub Actions, Docker base
 * Branch protection on `main`
 
-#### Documentation
+**Documentation**
 
 * `README.md`: install, configuration, transports, distribution
 * `CONTRIBUTING.md`: bug reports, PR review criteria, local dev
@@ -982,7 +1002,7 @@ writes deferred per documented investigation)
 * `copilot-studio/README.md`: per-profile Swagger 2.0 connector specs
   with import procedure for Microsoft Copilot Studio
 
-#### Empirically validated against live tenant
+**Empirically validated against live tenant**
 
 * All 23 tools exercised end-to-end (read + write smoke tests)
 * SWSD API behavior findings documented in tool descriptions:
@@ -992,7 +1012,7 @@ writes deferred per documented investigation)
   - Custom-field values cannot be written via SWSD API in tested
     payload variants: documented as known limitation
 
-#### Known limitations
+**Known limitations**
 
 * Custom-field WRITES via incident/solution write tools are not
   supported (SWSD returns 500 on every payload variant tested).
@@ -1001,9 +1021,7 @@ writes deferred per documented investigation)
 * Source-code SAST (CodeQL) and Docker image scanning (Trivy) not
   yet enabled: `npm audit` covers npm CVEs.
 
----
-
-## Pre-1.0 development history
+**Pre-1.0 development history**
 
 Prior to v1.0, all work happened on `main` without published releases.
 Detailed history available via `git log`.
@@ -1019,7 +1037,7 @@ Detailed history available via `git log`.
 * **2026-05-03**: `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.2.0...HEAD
+[unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.2.0...HEAD
 [3.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.1.1...v3.2.0
 [3.1.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.2...v3.1.0
