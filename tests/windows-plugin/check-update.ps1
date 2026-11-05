@@ -75,12 +75,12 @@ console.log('3.2.0');
 > "%~dp0winget-args.txt" echo %*
 exit /b 0
 '@ | Set-Content -LiteralPath $mockWinget -Encoding ASCII
-    $expectedArguments = 'install --id OpenJS.NodeJS.LTS --version 24.22.1 --exact --silent --accept-package-agreements --accept-source-agreements'
-    if ((Get-SwsdNodeInstallCommand) -ne "winget $expectedArguments") { throw 'Node helper must pin exactly 24.22.1.' }
+    $expectedArguments = 'install --id OpenJS.NodeJS.LTS --exact --silent --accept-package-agreements --accept-source-agreements'
+    if ((Get-SwsdNodeInstallCommand) -ne "winget $expectedArguments") { throw 'Node helper must install the current supported LTS without a version pin.' }
     $wingetLog = Join-Path $mockBin 'winget-args.txt'
     if (Test-Path -LiteralPath $wingetLog) { throw 'Command construction launched winget.' }
     Install-SwsdNode
-    if ((Get-Content -LiteralPath $wingetLog -Raw).Trim() -ne $expectedArguments) { throw 'Node install did not pass the exact pinned arguments.' }
+    if ((Get-Content -LiteralPath $wingetLog -Raw).Trim() -ne $expectedArguments) { throw 'Node install did not pass the exact current-LTS arguments.' }
     @('@echo off', 'echo synthetic-error 1>&2', 'exit /b 1') | Set-Content -LiteralPath $mockWinget -Encoding ASCII
     Assert-Fails { Install-SwsdNode } 'Node.js installation failed'
     $env:SWSD_WINGET = Join-Path $mockBin 'missing-winget.cmd'

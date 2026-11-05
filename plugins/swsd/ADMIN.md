@@ -56,10 +56,10 @@ Verify per-user installation, repair, private setup and live launcher access sep
 
 ## Node.js version
 
-The plugin requires Node `>=24.15.0 <25`, matching the server's `engines`
-field, because the setup script runs npm from the user's own Node install.
-Keep that range until the server's Node 26 migration (#73) ships. When the
-server package adopts Node 26, the plugin follows in the same release: update
-the setup script's Node check, the user-facing requirement text, and the
-Windows CI Node version, then re-run the clean-user gates on Node 26. Avoid
-widening the range to allow both 24 and 26 before the server declares it.
+The plugin supports Node.js 24.15+ within major version 24 or Node.js 26+,
+including npm. Node 25 is not supported. The server's `engines` field keeps
+the minimum at `>=24.15.0`; the Windows helper also rejects Node 25 because
+it is end of life. Setup runs npm from the user's own Node install and can
+install the current supported Node.js LTS through winget without a version pin.
+Primary CI tests Node 24 and 26; Windows plugin and docs CI retain Node 24
+to verify the minimum supported line.

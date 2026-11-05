@@ -5,7 +5,7 @@
 1. Install SolarWinds Service Desk from your organization's plugin directory.
 2. Open a **new local Work or Codex chat** in the Windows desktop app.
 3. Ask: **Set up SolarWinds Service Desk on this computer.**
-4. In the separate setup window, click **Install / repair tools**. Node.js 24.15 or newer within version 24 must already be installed with npm; ask IT if it is missing.
+4. In the separate setup window, click **Install / repair tools**. Node.js 24.15+ within version 24 or Node.js 26+ must be installed with npm. Node 25 is not supported. Setup can install the current supported Node.js LTS through winget; ask IT if needed.
 5. Choose your SWSD region and paste your own API token into the masked field. Never paste a token into chat.
 6. Click **Test and save token**. A successful message means SolarWinds accepted the credential and allowed a minimal incident read.
 7. Choose a **Profile** from the dropdown and click **Save profile**. Agent is the default.
@@ -43,7 +43,7 @@ This version does not use any old `SWSD_TOKEN` environment variable. If you prev
 ## Requirements and limits
 
 - Windows with Windows PowerShell 5.1, and a local desktop agent capable of running the setup skill.
-- Node.js 24.15+ within major version 24, including npm.
+- Node.js 24.15+ within major version 24 or Node.js 26+, including npm. Node 25 is not supported.
 - Network access to the npm registry and the selected SWSD API host.
 - A personal SWSD token authorized for your intended work. Workspace installation does not grant SolarWinds permissions.
 - Corporate script-signing, AppLocker, or WDAC requirements may require IT deployment/signing. The plugin does not bypass them.

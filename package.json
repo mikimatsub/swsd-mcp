@@ -5,7 +5,7 @@
   "description": "MCP server for SolarWinds Service Desk (SWSD / Samanage). Dual transport: stdio for local agents, Streamable HTTP for Copilot Studio and hosted deployments. Not affiliated with SolarWinds.",
   "type": "module",
   "engines": {
-    "node": ">=24.15.0 <25"
+    "node": ">=24.15.0"
   },
   "bin": {
     "swsd-mcp": "dist/cli.js"

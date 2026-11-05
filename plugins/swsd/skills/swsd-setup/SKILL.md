@@ -15,7 +15,7 @@ Never ask the user to paste a token into chat, a tool argument, a command line, 
 
 1. Resolve `../../scripts/Manage-Swsd.ps1` relative to this SKILL.md into an absolute path. Do not guess a cache location or username.
 2. Check readiness with Windows PowerShell: `powershell.exe -NoProfile -File "<absolute script path>" -CheckOnly`. The output contains booleans and a version, never credentials.
-3. If Node.js is unsupported or absent, explain that this release needs Node.js 24.15 or newer within version 24. Use the organization's approved software deployment process or ask IT. Do not change machine security policy, bypass AppLocker/WDAC, or install an arbitrary latest Node version.
+3. If Node.js is unsupported or absent, explain that this release needs Node.js 24.15+ within version 24 or Node.js 26+. Node 25 is not supported. Setup can install the current supported Node.js LTS through winget when permitted by the organization; otherwise use its approved software deployment process or ask IT. Do not change machine security policy, bypass AppLocker/WDAC, or install an arbitrary latest Node version.
 4. Launch the private setup window with `Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile -STA -WindowStyle Hidden -File "<absolute script path>"'`. The window is intentionally interactive; do not fill or inspect the token field. Do not add execution-policy bypasses.
 5. Tell the user to choose **Install / repair tools**, select the correct region, privately paste their personal SWSD API token, then choose **Test and save token**. Do not generate a token on their behalf. If they cannot obtain one, their SWSD administrator must provide the approved process.
 6. The same window offers **Test saved connection** and **Remove saved token**. Removing a local credential does not revoke it in SWSD or stop a server already running with that token. Fully quit the desktop app after removal or replacement to end old sessions.
@@ -31,7 +31,7 @@ Tell the user to fully quit and reopen the desktop app, then start a new chat. P
 ## Troubleshooting
 
 - Missing launcher or runtime: open this skill and choose Install / repair tools.
-- Node requirement: Node 24.15+ within major 24, with npm, must be installed on the host.
+- Node requirement: Node.js 24.15+ within major 24 or Node.js 26+, with npm, must be installed on the host. Node 25 is not supported.
 - 401: invalid or revoked personal token; replace it in the private window.
 - 403: account permissions or wrong service access; contact the SWSD administrator.
 - Download failure: check access to registry.npmjs.org and npm's approved proxy configuration.

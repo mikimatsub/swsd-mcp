@@ -20,7 +20,7 @@ The server holds **zero credentials at rest**. HTTP tokens are supplied per requ
 You need:
 
 - An MCP client installed: the client must support stdio or Streamable HTTP ([compatibility matrix](https://mcp-swsd.pages.dev/compatibility/))
-- Node.js 24.x, at least 24.15.0 and below 25, for local npm/`npx` installs
+- Node.js 24.15+ or Node.js 26+ for local npm/`npx` installs. Node 25 is not supported.
 - An SWSD **JSON Web Token**: in **Setup → Users & Groups → Users**, open your User detail page and copy the existing token. Use **Actions → Generate JSON Web Token** only when no token is shown (SWSD administrator rights required to generate)
 
 ### VS Code

@@ -423,10 +423,10 @@ function Save-SwsdProfile {
 
 function Get-SwsdNode {
     $node = Get-Command node.exe -ErrorAction SilentlyContinue
-    if (-not $node) { throw 'Node.js 24.15 or newer within version 24 is required. Ask IT to install Node.js 24, then reopen this window.' }
+    if (-not $node) { throw 'Node.js 24.15+ within version 24 or Node.js 26+ is required. Node 25 is not supported. Ask IT to install supported Node.js LTS, then reopen this window.' }
     $version = [version]((& $node.Source --version).Trim().TrimStart('v'))
-    if ($version.Major -ne 24 -or $version -lt [version]'24.15.0') {
-        throw 'This SWSD release requires Node.js 24.15 or newer within version 24. Ask IT to install the supported version.'
+    if (-not (($version.Major -eq 24 -and $version -ge [version]'24.15.0') -or ($version.Major -ge 26))) {
+        throw 'This SWSD release requires Node.js 24.15+ within version 24 or Node.js 26+. Node 25 is not supported. Ask IT to install supported Node.js LTS.'
     }
     return $node.Source
 }
@@ -585,8 +585,8 @@ function Compare-SwsdVersion {
 }
 
 function Get-SwsdNodeInstallCommand {
-    # Reviewed Node 24 pin: the unversioned LTS package now selects unsupported Node 26.
-    return 'winget install --id OpenJS.NodeJS.LTS --version 24.22.1 --exact --silent --accept-package-agreements --accept-source-agreements'
+    # The current LTS line is Node 26, which is supported alongside Node 24.15+.
+    return 'winget install --id OpenJS.NodeJS.LTS --exact --silent --accept-package-agreements --accept-source-agreements'
 }
 
 function Get-SwsdWinget {
@@ -603,7 +603,7 @@ function Get-SwsdWinget {
 function Install-SwsdNode {
     param([ValidateRange(1, 600)][int]$TimeoutSeconds = 300)
     $winget = Get-SwsdWinget
-    if (-not $winget) { throw 'Windows Package Manager is unavailable. Ask IT to install Node.js 24.22.1, then reopen setup.' }
+    if (-not $winget) { throw 'Windows Package Manager is unavailable. Ask IT to install supported Node.js LTS, then reopen setup.' }
     $process = $null
     try {
         $start = New-Object Diagnostics.ProcessStartInfo
@@ -625,7 +625,7 @@ function Install-SwsdNode {
         }
         [void]$stdout.GetAwaiter().GetResult()
         [void]$stderr.GetAwaiter().GetResult()
-        if ($process.ExitCode -ne 0) { throw 'Node.js installation failed. Ask IT to install Node.js 24.22.1, then reopen setup.' }
+        if ($process.ExitCode -ne 0) { throw 'Node.js installation failed. Ask IT to install supported Node.js LTS, then reopen setup.' }
     } finally {
         if ($process) { $process.Dispose() }
     }
@@ -641,7 +641,7 @@ function Get-SwsdStatus {
             $nodePath = $nodeCmd.Source
             $nodeVersion = (& $nodeCmd.Source --version).Trim().TrimStart('v')
             $parsed = [version]$nodeVersion
-            if ($parsed.Major -eq 24 -and $parsed -ge [version]'24.15.0') {
+            if (($parsed.Major -eq 24 -and $parsed -ge [version]'24.15.0') -or ($parsed.Major -ge 26)) {
                 $nodeSupported = $true
             }
         }
