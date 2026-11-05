@@ -26,6 +26,21 @@ describe('createSwsdClient request boundary', () => {
     vi.restoreAllMocks();
   });
 
+  it.each(['HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'])('never retries %s on HTTP or network failures', async (method) => {
+    vi.useFakeTimers();
+    for (const network of [false, true]) {
+      const fetchMock = vi.fn<typeof fetch>();
+      if (network) fetchMock.mockRejectedValue(new Error('SYNTHETIC_NETWORK_FAILURE'));
+      else fetchMock.mockResolvedValue(new Response(null, { status: 503 }));
+      vi.stubGlobal('fetch', fetchMock);
+      const client = createSwsdClient({ env: makeEnv({ SWSD_RETRY_MAX_ATTEMPTS: 1 }), token: 'SYNTHETIC_TOKEN' });
+      const assertion = expect(client.rawRequest('/incidents/1234567.json', { method })).rejects.toThrow();
+      await vi.runAllTimersAsync();
+      await assertion;
+      expect(fetchMock).toHaveBeenCalledOnce();
+    }
+  });
+
   it('builds an authenticated GET with encoded query values and pagination defaults', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       jsonResponse([{ id: 1 }], {

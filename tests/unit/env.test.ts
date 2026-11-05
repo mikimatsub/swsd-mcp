@@ -37,6 +37,19 @@ describe('EnvSchema SWSD_BASE_URL allowlist (SSRF defense)', () => {
     const r = EnvSchema.safeParse({ SWSD_BASE_URL: 'not-a-url' });
     expect(r.success).toBe(false);
   });
+
+  it.each(['http://api.samanage.com', 'https://user:pass@api.samanage.com', 'https://user@api.samanage.com'])('rejects insecure SWSD_BASE_URL %s', (url) => {
+    expect(EnvSchema.safeParse({ SWSD_BASE_URL: url }).success).toBe(false);
+  });
+});
+
+describe('EnvSchema SWSD_ALLOWED_HOSTS', () => {
+  it('defaults to no Host allowlist and parses exact hosts with ports', () => {
+    expect(EnvSchema.parse({}).SWSD_ALLOWED_HOSTS).toBeUndefined();
+    expect(EnvSchema.parse({ SWSD_ALLOWED_HOSTS: '' }).SWSD_ALLOWED_HOSTS).toEqual([]);
+    expect(EnvSchema.parse({ SWSD_ALLOWED_HOSTS: ' mcp.example.test, localhost:3000, ' }).SWSD_ALLOWED_HOSTS)
+      .toEqual(['mcp.example.test', 'localhost:3000']);
+  });
 });
 
 describe('EnvSchema SWSD_TRUST_PROXY transform', () => {
