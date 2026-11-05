@@ -5,26 +5,18 @@ description: Threat model, supply-chain hardening, and how to report vulnerabili
 
 swsd-mcp's security model is built around four principles:
 
-1. **Zero credentials at rest**: the server never persists or logs API tokens
-2. **Defense in depth**: multiple independent controls so any single bypass isn't compromise
-3. **Verifiable supply chain**: published artifacts tied to specific commits via SLSA provenance attestations
+1. **Zero credentials at rest**: the MCP server does not save JSON Web Tokens to disk or log request bodies
+2. **Defense in depth**: independent controls for URL validation, request handling, and write safety
+3. **Verifiable supply chain**: npm publishing requests provenance attestations linking the package to its build
 4. **Transparent governance**: open source, explicit disclosure process, code review, change-management tooling
 
-For deep compliance-grade details (every claim mapped to source-code verification), see [`SECURITY-POSTURE.md`](https://github.com/mikimatsub/swsd-mcp/blob/main/docs/SECURITY-POSTURE.md). This page is the user-facing summary.
+For more detail on the controls and reporting process, see [`SECURITY-POSTURE.md`](https://github.com/mikimatsub/swsd-mcp/blob/main/docs/SECURITY-POSTURE.md). This page summarizes the controls.
 
 ## Vulnerability reporting
 
 → **[Open a private security advisory](https://github.com/mikimatsub/swsd-mcp/security/advisories/new)**
 
-Do **not** open a public issue for vulnerabilities. The advisory channel is private and only visible to the maintainer.
-
-| | |
-|---|---|
-| Acknowledgment SLA | 72 hours |
-| Initial assessment SLA | 7 days |
-| Patch SLA (high-severity) | 30 days |
-| Disclosure model | Coordinated (fix-then-publicize) |
-| Reporter credit | Yes, in release notes (unless anonymity requested) |
+Do **not** open a public issue for vulnerabilities. Use the private advisory channel for the disclosure process.
 
 Full process in [`SECURITY.md`](https://github.com/mikimatsub/swsd-mcp/blob/main/SECURITY.md).
 
@@ -38,15 +30,19 @@ The server has no concept of "its own" SWSD identity. Every API call uses the ca
 - `Authorization: Bearer <token>` header (Streamable HTTP)
 - `X-SWSD-Token: <token>` header (alternate, for Copilot Studio)
 
-Tokens exist only in process memory for the lifetime of a single request. They are never written to disk, never logged, and never sent anywhere except the configured SWSD API host (validated against `*.samanage.com`).
+HTTP uses a request-scoped token and SWSD client. Stdio keeps the configured token for the server process lifetime. The MCP server does not save either token to disk; SWSD requests use the configured HTTPS API URL.
+
+The Windows companion deliberately saves the user's JSON Web Token in Windows Credential Manager and passes it to the local server at launch. Region, profile, and appearance are saved separately in `%LOCALAPPDATA%\swsd-mcp\settings.json`. Other MCP clients manage their own credential storage.
+
+The server checks token format locally; SWSD validates credentials and account permissions when an upstream request is made. Local metadata tools do not verify SWSD access.
 
 ### SSRF defense
 
-`SWSD_BASE_URL` is validated at startup against the `samanage.com` domain. Other URLs are rejected. This prevents an attacker who manages to influence the env var (e.g., via a misconfigured deployment) from redirecting forwarded tokens to a server they control.
+`SWSD_BASE_URL` must use HTTPS on `samanage.com` or a subdomain without embedded credentials. Other URLs are rejected at startup, restricting where the deployment can configure its upstream API.
 
 ### Rate limiting
 
-`/mcp` requests are rate-limited per `sha256(token + IP)` using `express-rate-limit`. Conservative defaults shipped; tunable per deployment via `SWSD_RATE_LIMIT_MAX` and `SWSD_RATE_LIMIT_WINDOW_MS`. Standards-compliant `RateLimit-Policy` and `RateLimit` headers in responses (draft-7 spec) so well-behaved clients can self-regulate.
+`/mcp` requests are rate-limited per SHA256 hash of the token and normalized IP (IPv6 /56 bucket) using `express-rate-limit`. Conservative defaults shipped; tunable per deployment via `SWSD_RATE_LIMIT_MAX` and `SWSD_RATE_LIMIT_WINDOW_MS`. Standards-compliant `RateLimit-Policy` and `RateLimit` headers in responses (draft-7 spec) so well-behaved clients can self-regulate.
 
 The token is hashed (never stored as a key) for memory safety. `/healthz` is deliberately exempted: health probes from orchestrators hit it constantly.
 
@@ -56,29 +52,31 @@ The `/mcp` endpoint validates the `Origin` header against an allowlist (`SWSD_AL
 
 Empty allowlist = only loopback origins are accepted. Requests without an `Origin` header are unaffected.
 
+`SWSD_ALLOWED_HOSTS` optionally restricts exact Host headers, including ports when present. This check applies to `/mcp` and does not change the listen address.
+
 ### Request timeouts
 
-All outbound SWSD calls have a configurable timeout (default 30 seconds) via `AbortSignal.timeout`. Prevents hung connections from exhausting worker resources.
+Each outbound fetch attempt has a configurable timeout (default 30 seconds). GET retries and backoff can make the whole tool call longer. Writes are never automatically retried.
 
 ### Logging discipline
 
 - HTTP request bodies are never logged (they may contain tokens)
-- Error responses include the SWSD response body for actionable debugging, but errors are mapped through a sanitization layer in [`src/swsd/errors.ts`](https://github.com/mikimatsub/swsd-mcp/blob/main/src/swsd/errors.ts)
+- Error responses can include upstream body content for debugging. The active token, credential-named fields, and recognizable credential text are redacted through the error and transport layers in [`src/swsd/errors.ts`](https://github.com/mikimatsub/swsd-mcp/blob/main/src/swsd/errors.ts)
 - No telemetry, no analytics, no phone-home calls
-- Server startup log line is the only stdout output by default
+- HTTP startup, warnings, and errors go to stderr. Stdio stdout is reserved for MCP messages
 
 ### Health endpoint information disclosure
 
-`/healthz` returns `{"ok":true}` only: deliberately omits version information to avoid leaking stack details to anonymous callers. Server metadata (name, version, profile, enabled tools) is available via the `swsd_get_server_info` MCP tool, which is behind the authenticated MCP transport.
+`/healthz` returns `{"ok":true}` only and omits version information. Server metadata (name, version, profile, enabled tools) is available via `swsd_get_server_info` when that tool is selected. HTTP requires a syntactically valid token header to call it, but this local tool does not contact SWSD or authenticate the caller's SWSD account. Use `swsd_health_check` to verify upstream access.
 
 ## Supply chain
 
-Every published artifact is cryptographically tied to a specific source commit and CI workflow.
+The npm release workflow requests provenance; container builds use pinned inputs and source metadata.
 
 | Layer | Mitigation |
 |---|---|
-| **npm package** | OIDC trusted publishing (no long-lived `NPM_TOKEN` exists); SLSA provenance attestations on every release; verifiable with `npm audit signatures` |
-| **Direct dependencies** | All pinned to exact versions in `package-lock.json`; Renovate weekly updates; `npm audit` in CI; small surface (7 direct production deps: `@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, `dompurify`, `express`, `express-rate-limit`, `helmet`, `zod`) |
+| **npm package** | OIDC trusted publishing with `--provenance`; inspect the published package's attestations and verify dependency signatures with `npm audit signatures` |
+| **Direct dependencies** | Resolved versions and integrity hashes in `package-lock.json`; Renovate configuration; `npm audit` in CI; 11 direct production dependencies, including the split MCP client/core/server/node packages, MCP Apps, Hono's Node adapter, DOMPurify, Express, rate limiting, Helmet, and Zod |
 | **GitHub Actions** | All pinned to commit SHAs (not version tags); Renovate auto-PRs new SHAs |
 | **Docker base image** | `node:24-alpine` pinned by SHA256 digest in `Dockerfile`; Renovate tracks new digests |
 
@@ -91,7 +89,7 @@ npm audit signatures
 
 ## Continuous scanning
 
-Every push and PR runs three security workflows in parallel:
+Pushes to `main` and PRs targeting `main` run three parallel security jobs:
 
 | Tool | What it scans |
 |---|---|
@@ -109,10 +107,10 @@ Reference frameworks we've drawn from. **We don't claim formal certification aga
 
 | Framework | Where we align |
 |---|---|
-| [SLSA](https://slsa.dev) Build Level 3 | npm publish via OIDC + signed provenance attestations + reproducible builds |
-| [NIST SSDF](https://csrc.nist.gov/Projects/ssdf) | PW.4 (review code), PW.7 (review and analyze software design), PW.8 (reuse vetted software), PS.2 (provenance), RV.1 (vulnerability disclosure) |
+| [SLSA](https://slsa.dev) provenance | npm publishing requests provenance through GitHub Actions OIDC |
+| [NIST SSDF](https://csrc.nist.gov/Projects/ssdf) | Dependency auditing, static analysis, provenance publishing, and a vulnerability-reporting policy |
 | [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) | V13 (API and Web Service): authentication, rate limiting, input validation, output encoding |
-| [npm audit signatures](https://docs.npmjs.com/cli/v11/commands/npm-audit/#audit-signatures) | All releases signed; users verify with `npm audit signatures` |
+| [npm audit signatures](https://docs.npmjs.com/cli/v11/commands/npm-audit/#audit-signatures) | Verify installed dependency signatures and attestations with `npm audit signatures` |
 
 ## Threat model
 
@@ -120,16 +118,16 @@ Reference frameworks we've drawn from. **We don't claim formal certification aga
 
 | Threat | Severity | Mitigation |
 |---|---|---|
-| Token logged or persisted by the server | High → Mitigated | No filesystem writes for tokens; HTTP body never logged |
-| Token forwarded to attacker-controlled URL (SSRF) | High → Mitigated | `SWSD_BASE_URL` validated against `*.samanage.com` allowlist at startup |
+| Token logged or persisted by the server | High → Mitigated | MCP server has no credential-file writes; Windows companion uses Credential Manager; HTTP bodies are not logged |
+| Token forwarded to attacker-controlled URL (SSRF) | High → Mitigated | HTTPS URL and `samanage.com` domain validation at startup |
 | DoS via request flooding | Medium → Mitigated | Per-token+IP rate limiting on `/mcp`; standards-compliant headers |
-| DoS via hung outbound calls | Medium → Mitigated | 30-second per-request timeout via `AbortSignal.timeout` |
+| DoS via hung outbound calls | Medium → Mitigated | 30-second timeout per outbound fetch attempt |
 | DNS rebinding | Medium → Mitigated | `Origin` header validation hook on `/mcp` |
-| Compromised maintainer account → malicious release | High → Mitigated | npm OIDC; SLSA provenance |
+| Compromised maintainer account → malicious release | High → Reduced | npm OIDC and provenance identify the publishing workflow; they do not prevent malicious authorized changes |
 | Compromised dependency (transitive) | Medium → Mitigated | Pinned `package-lock.json`; Renovate; `npm audit` in CI; small surface |
 | Compromised GitHub Action | Medium → Mitigated | All actions pinned to commit SHAs; Renovate auto-PRs |
 | Compromised Docker base image | Medium → Mitigated | Pinned by SHA256 digest; Renovate tracks |
-| Tenant data leakage in error responses | Medium → Mitigated | Error mapper sanitizes upstream bodies |
+| Credential leakage in error responses | Medium → Reduced | Credential redaction; upstream errors can still contain tenant data |
 
 ### Out of scope
 
@@ -138,15 +136,15 @@ Reference frameworks we've drawn from. **We don't claim formal certification aga
 | SolarWinds Service Desk API vulnerabilities | Report directly to SolarWinds, not this project |
 | User's deployment environment hardening | Each operator hosts their own instance |
 | User's MCP host security (Claude, Copilot Studio, etc.) | Upstream implementations out of our control |
-| User's token rotation discipline | Per-user responsibility; we never persist tokens |
-| Corporate TLS-intercepting proxies | IT decision; we use TLS 1.2+ which is standard |
+| User's token rotation discipline | Per-user responsibility; the Windows companion stores the token in Credential Manager |
+| Corporate TLS-intercepting proxies | Operator-managed trust and network configuration |
 
 ## How to verify
 
 Every claim above includes a path to verification. The general approach:
 
-1. **Source code claims**: clone the repo, navigate to the cited file, read the implementation. The TypeScript source under `src/` is about 9,400 lines not counting tests.
-2. **Dependency claims**: `cat package.json package-lock.json` shows exact pinned versions; `cat .github/workflows/*.yml` shows pinned action SHAs.
+1. **Source code claims**: clone the repo, navigate to the cited file, read the implementation. Runtime controls live under `src/`; Windows credential handling lives under `plugins/swsd/scripts/`.
+2. **Dependency claims**: `cat package.json package-lock.json` shows dependency declarations and resolved versions; `cat .github/workflows/*.yml` shows pinned action SHAs.
 3. **Provenance claims**: `npm view swsd-mcp --json | jq .dist.attestations` shows SLSA attestations; `npm audit signatures` verifies.
 4. **CI claims**: workflow runs are public at [Actions tab](https://github.com/mikimatsub/swsd-mcp/actions); logs are inspectable.
 

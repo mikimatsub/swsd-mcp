@@ -14,7 +14,7 @@ This page covers Docker (works anywhere) and a complete Azure Container Apps wal
 
 ## Docker
 
-The published image at `ghcr.io/mikimatsub/swsd-mcp:latest` runs on any container platform.
+The image is published at `ghcr.io/mikimatsub/swsd-mcp:latest` for compatible container hosts.
 
 ### Quick smoke test
 
@@ -23,9 +23,8 @@ bash / zsh / Git Bash:
 ```bash
 docker run --rm -d \
   --name swsd-mcp \
-  -p 3000:3000 \
+  -p 127.0.0.1:3000:3000 \
   -e SWSD_TRANSPORT=http \
-  -e SWSD_TRUST_PROXY=1 \
   -e SWSD_BASE_URL=https://api.samanage.com \
   ghcr.io/mikimatsub/swsd-mcp:latest
 
@@ -39,9 +38,8 @@ PowerShell (Windows):
 ```powershell
 docker run --rm -d `
   --name swsd-mcp `
-  -p 3000:3000 `
+  -p 127.0.0.1:3000:3000 `
   -e SWSD_TRANSPORT=http `
-  -e SWSD_TRUST_PROXY=1 `
   -e SWSD_BASE_URL=https://api.samanage.com `
   ghcr.io/mikimatsub/swsd-mcp:latest
 
@@ -63,8 +61,8 @@ Image tags:
 
 - `:latest`: the latest main-branch commit
 - `:sha-XXXXXXX`: pinned to a specific commit (recommended for production)
-- `:X.Y.Z`: a release tag build (from 3.2.1 onward)
-- `:X.Y`: the newest release tag build in that minor line (from 3.2.1 onward)
+- `:X.Y.Z`: a release tag build
+- `:X.Y`: the newest release tag build in that minor line
 
 Browse all tags at [GitHub Packages](https://github.com/mikimatsub/swsd-mcp/pkgs/container/swsd-mcp).
 
@@ -72,15 +70,15 @@ Browse all tags at [GitHub Packages](https://github.com/mikimatsub/swsd-mcp/pkgs
 
 ## Azure Container Apps
 
-The recommended path for Microsoft Copilot Studio integration. Same Microsoft ecosystem (auth, networking, identity all integrate cleanly), scale-to-zero pricing, public HTTPS endpoint with auto-managed TLS, no Kubernetes complexity.
+The recommended path for Microsoft Copilot Studio integration. It provides managed HTTPS ingress and scaling without managing a Kubernetes cluster.
 
-Typical cost for a single team's usage: **$0–5/month**.
+Costs depend on the Azure plan, region, traffic, and supporting resources. See [Cost monitoring](#cost-monitoring).
 
 ### Prerequisites
 
 - An **Azure subscription** ([free tier available](https://azure.microsoft.com/free/))
 - **Azure CLI** installed locally: verify with `az --version`. [Install instructions](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli).
-- A SolarWinds Service Desk **admin token** for verification (each end user will use their own; this is just for the smoke test)
+- An SWSD **JSON Web Token** for verification (each end user will use their own; this is just for the smoke test)
 
 ### Step 1: Login to Azure
 
@@ -109,7 +107,7 @@ az containerapp env create \
   --location eastus
 ```
 
-This takes ~3 minutes.
+Wait for the environment to finish provisioning before deploying the app.
 
 ### Step 4: Deploy the swsd-mcp container
 
@@ -140,15 +138,15 @@ Key flags:
 |---|---|
 | `--target-port 3000` | The container's internal listen port (matches the Dockerfile's EXPOSE) |
 | `--ingress external` | Accept traffic from the public internet (required for Copilot Studio) |
-| `SWSD_TRUST_PROXY=1` | Tell Express to trust Container Apps' reverse proxy so `req.ip` shows the real client (rate-limit accuracy) |
+| `SWSD_TRUST_PROXY=1` | Trust one proxy hop; verify this matches your ingress path before using it for rate limiting |
 | `SWSD_PROFILE=operations` | Register all 145 tools, including KB authoring and guarded deletes; use `custom` for an explicit subset |
 | `SWSD_WRITE_MODE=live` | Allow writes. Use `dry-run` for payload previews or `disabled` for read-only hosted deployments |
 | `SWSD_RATE_LIMIT_MAX=200` | Slightly higher than default since this is a shared instance |
-| `--min-replicas 0` | Scale to zero when idle (the magic that makes this nearly free) |
+| `--min-replicas 0` | Allow scale to zero when idle |
 | `--max-replicas 3` | Cap concurrent instances to control cost spikes |
-| `--cpu 0.25 --memory 0.5Gi` | Right-sized for low/medium traffic |
+| `--cpu 0.25 --memory 0.5Gi` | Example resource allocation; measure and adjust for your workload |
 
-This takes ~2 minutes.
+Wait for provisioning to complete before checking the endpoint.
 
 ### Step 5: Get the public URL
 
@@ -175,39 +173,30 @@ curl -X POST -H "Content-Type: application/json" \
 # Expect: 401 with "Missing token..." message
 ```
 
-If both responses match, the deployment is healthy.
+These responses verify the HTTP listener and missing-token check. To verify SWSD connectivity, connect an MCP client with your JSON Web Token and call `swsd_health_check`.
 
 ### Cost monitoring
 
-Azure Container Apps charges for vCPU-seconds and memory-GiB-seconds when active, plus a small per-request fee. With `min-replicas 0`, idle time is free.
-
-| Usage pattern | Approximate cost |
-|---|---|
-| Personal testing (10s of requests/day) | $0–1/month |
-| Small team (100s of requests/day) | $1–5/month |
-| Active team (1000s of requests/day) | $5–20/month |
-| Large org (10,000+ requests/day) | $20–100+/month |
-
-Monitor via Azure Portal → Cost Management. Free tier credits often cover this entirely for the first year.
+Use [Azure Container Apps pricing](https://azure.microsoft.com/pricing/details/container-apps/) and Azure Portal → Cost Management to estimate and track your deployment. Compute, requests, logs, networking, and any supporting resources can affect the total. Scale-to-zero settings do not guarantee a zero bill.
 
 ### Updating to a new version
 
-The Container App auto-pulls the new `:latest` image on the next cold start. To force an immediate update:
-
-```bash
-az containerapp update \
-  --name swsd-mcp \
-  --resource-group swsd-mcp-rg \
-  --image ghcr.io/mikimatsub/swsd-mcp:latest
-```
-
-Or pin to a specific version:
+Deploy a selected image to update the Container App. For repeatable deployments, use a commit tag from [GitHub Packages](https://github.com/mikimatsub/swsd-mcp/pkgs/container/swsd-mcp) or an image digest rather than relying on a mutable `:latest` tag:
 
 ```bash
 az containerapp update \
   --name swsd-mcp \
   --resource-group swsd-mcp-rg \
   --image ghcr.io/mikimatsub/swsd-mcp:sha-XXXXXXX
+```
+
+Replace `XXXXXXX` with the selected image's commit suffix. Release builds also provide `X.Y.Z` and `X.Y` tags. To pin an immutable digest:
+
+```bash
+az containerapp update \
+  --name swsd-mcp \
+  --resource-group swsd-mcp-rg \
+  --image ghcr.io/mikimatsub/swsd-mcp@sha256:YOUR_IMAGE_DIGEST
 ```
 
 ### Tearing down
@@ -226,7 +215,7 @@ az group delete --name swsd-mcp-rg --yes --no-wait
 |---|---|---|
 | `curl /healthz` hangs | Container starting up (cold start) | Wait 30–60 seconds, retry. Cold starts are normal with `min-replicas 0`. |
 | `404` from `/healthz` | Wrong FQDN, or container failed to start | `az containerapp logs show --name swsd-mcp --resource-group swsd-mcp-rg --follow` |
-| `403` from `/mcp` | The request's `Origin` is not in `SWSD_ALLOWED_ORIGINS` (empty allows only loopback origins) | Add the calling origin to the allowlist |
+| `403` from `/mcp` | The request's `Origin` or `Host` fails its allowlist | Check `SWSD_ALLOWED_ORIGINS` and `SWSD_ALLOWED_HOSTS`; empty origins allow only loopback browser origins |
 | Token forwarded but SWSD returns 401 | Token expired or invalid | Generate a fresh token in SWSD UI |
 
 ### Hardening for production
@@ -236,7 +225,7 @@ The recipe above is suitable for team use within a trusted network. For broader 
 - **Azure AD authentication** at the Container Apps level (Easy Auth): restrict who can even reach `/mcp` before the SWSD token check
 - **VNet integration + private endpoints**: bring the endpoint inside your corporate network
 - **IP allowlisting** via Container Apps ingress restrictions: limit to known office/VPN IPs
-- **Custom domain + your own TLS certificate**: looks more polished, allows custom DNS-rebinding-prevention
+- **Custom domain + TLS certificate**: configure HTTPS for your chosen hostname, with `SWSD_ALLOWED_HOSTS` for the accepted Host headers
 
 Each of these adds operational complexity in exchange for security.
 
@@ -266,7 +255,7 @@ Per-profile Swagger files live in [`copilot-studio/`](https://github.com/mikimat
 2. In Copilot Studio: **Add a tool → Custom connector → New connector → Import from OpenAPI file**
 3. Wizard authentication settings:
    - **Authentication type**: API Key
-   - **Parameter label**: `SWSD API Token` (or anything user-friendly)
+   - **Parameter label**: `SWSD JSON Web Token` (or anything user-friendly)
    - **Parameter name**: `X-SWSD-Token` _(must match exactly)_
    - **Parameter location**: Header
 4. Save the connector
@@ -276,7 +265,7 @@ Per-profile Swagger files live in [`copilot-studio/`](https://github.com/mikimat
 In Copilot Studio's connector test pane:
 
 1. Click **Test → New connection**
-2. Paste a valid SWSD API token
+2. Paste a valid SWSD JSON Web Token
 3. Click **Test operation** on `InvokeMCP`
 4. Provide a minimal MCP JSON-RPC body for `tools/list`:
 
@@ -293,10 +282,10 @@ Successful response: a JSON-RPC object with the tools array containing the entri
 ### Notes
 
 - `x-ms-agentic-protocol: mcp-streamable-1.0` is the Microsoft extension declaring the endpoint speaks MCP over Streamable HTTP: already present in the bundled Swagger files.
-- Copilot Studio dropped MCP-over-SSE support in August 2025; only Streamable HTTP is supported, which is what these connectors declare.
+- Use Streamable HTTP for [Copilot Studio's MCP connection](https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-existing-server-to-agent); the bundled connector declares that transport.
 
 ---
 
 ## Other platforms
 
-The Docker image runs anywhere: AWS App Runner, GCP Cloud Run, Render, Fly.io, your own VM. Concrete recipes for those platforms are not yet written; PRs welcome.
+Use the Docker image on a compatible container platform or VM. Check that the platform supports the image architecture, configured port, and HTTP request/response streaming. Concrete recipes for other platforms are not yet written; PRs welcome.
