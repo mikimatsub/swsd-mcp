@@ -190,18 +190,14 @@ function Get-SwsdInstalledVersion {
 function Get-SwsdLatestVersion {
     param([ValidateRange(1, 60)][int]$TimeoutSeconds = 10)
     $process = $null
-    $npmCmd = $env:SWSD_NPM
-    if (-not $npmCmd) {
-        try {
-            $node = Get-Command node.exe -ErrorAction SilentlyContinue
-            if ($node) { $npmCmd = Join-Path (Split-Path $node.Source) 'npm.cmd' }
-        } catch {}
-    }
-    if (-not $npmCmd -or -not (Test-Path -LiteralPath $npmCmd)) { return $null }
     try {
+        $node = Get-SwsdNode
+        $npmCli = $env:SWSD_NPM
+        if (-not $npmCli) { $npmCli = Join-Path (Split-Path $node) 'node_modules\npm\bin\npm-cli.js' }
+        if (-not (Test-Path -LiteralPath $npmCli -PathType Leaf)) { return $null }
         $start = New-Object Diagnostics.ProcessStartInfo
-        $start.FileName = $npmCmd
-        $start.Arguments = 'view swsd-mcp version'
+        $start.FileName = $node
+        $start.Arguments = '"' + $npmCli + '" view swsd-mcp version'
         $start.EnvironmentVariables.Remove('SWSD_TOKEN')
         $start.UseShellExecute = $false
         $start.CreateNoWindow = $true
@@ -213,7 +209,10 @@ function Get-SwsdLatestVersion {
         $stdoutTask = $process.StandardOutput.ReadToEndAsync()
         $stderrTask = $process.StandardError.ReadToEndAsync()
         if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-            try { $process.Kill() } catch {}
+            try { $process.Kill($true) } catch {
+                if (-not $process.HasExited) { & taskkill.exe /T /F /PID $process.Id > $null 2>&1 }
+            }
+            $process.WaitForExit()
             return $null
         }
         $stdout = $stdoutTask.GetAwaiter().GetResult().Trim()
@@ -443,6 +442,15 @@ function Install-SwsdTools {
     $skipNpmInstall = (-not $Force) -and
         ($installedVersion -eq $script:SwsdPackageVersion) -and
         (Test-Path -LiteralPath $entryPoint -PathType Leaf)
+    if ($skipNpmInstall) {
+        try {
+            $installedLock = Join-Path $runtime 'package-lock.json'
+            $bundledLock = Join-Path $SourceRoot 'runtime\package-lock.json'
+            $skipNpmInstall = (Test-Path -LiteralPath $installedLock -PathType Leaf) -and
+                ((Get-FileHash -LiteralPath $installedLock -Algorithm SHA256).Hash -eq
+                 (Get-FileHash -LiteralPath $bundledLock -Algorithm SHA256).Hash)
+        } catch { $skipNpmInstall = $false }
+    }
     if (-not $skipNpmInstall) {
         New-Item -ItemType Directory -Path $runtime -Force | Out-Null
         Copy-Item -LiteralPath (Join-Path $SourceRoot 'runtime\package.json') -Destination $runtime -Force

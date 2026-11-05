@@ -124,10 +124,10 @@ try {
 using System;
 using System.Runtime.InteropServices;
 public static class SwsdDpiBootstrap {
+    // System-aware DPI. The WinForms layout is validated for system DPI scaling;
+    // per-monitor awareness breaks it (-ValidateWindow fails at 125%).
     [DllImport("user32.dll")] private static extern bool SetProcessDPIAware();
-    [DllImport("shcore.dll")] private static extern int SetProcessDpiAwarenessContext(IntPtr value);
     public static void Enable() {
-        try { SetProcessDpiAwarenessContext(new IntPtr(-4)); return; } catch {}
         try { SetProcessDPIAware(); } catch {}
     }
 }
@@ -1321,7 +1321,7 @@ function Start-SwsdInstall {
                 Copy-Item -LiteralPath (Join-Path $ScriptsRoot 'runtime\package.json'),(Join-Path $ScriptsRoot 'runtime\package-lock.json') -Destination (Join-Path $stage 'runtime') -Force
                 $sourceRoot = $stage
             }
-            Install-SwsdTools -SourceRoot $sourceRoot
+            Install-SwsdTools -SourceRoot $sourceRoot -Force
         }).AddArgument($PSScriptRoot).AddArgument($script:SwsdHome).AddArgument($script:SwsdCredentialTarget).AddArgument($mockBody).AddArgument($mockFails).AddArgument($mockCalls).AddArgument($Operation).AddArgument($operationFunction).AddArgument($mockResult)
         $handle = $powershell.BeginInvoke()
         # Script scope keeps the worker alive after the Click callback returns.
@@ -1732,7 +1732,8 @@ if ($ValidateWindow) {
         return $script:SwsdMockNodeConfirm
     }
     function script:Install-SwsdTools {
-        param($SourceRoot)
+        param($SourceRoot, [switch]$Force)
+        if (-not $Force) { throw 'UI repair must force installation.' }
         $script:SwsdMockCalls.Enqueue('install')
         Start-Sleep -Milliseconds 350
         if ($script:SwsdMockInstallFails) { throw 'mock install failure' }

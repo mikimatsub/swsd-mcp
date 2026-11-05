@@ -15,10 +15,11 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot '../../plugins/swsd')).Path
 $temporary = Join-Path ([IO.Path]::GetTempPath()) ('swsd-update-test-' + [guid]::NewGuid().ToString('N'))
 $script:SwsdHome = Join-Path $temporary 'home'
 $mockBin = Join-Path $temporary 'mock bin'
+$slowNpmPidPath = Join-Path $mockBin 'npm-pid.txt'
 $oldNpm = $env:SWSD_NPM
 $oldWinget = $env:SWSD_WINGET
 # Point at missing doubles immediately; a setup failure must never fall back to real tools.
-$env:SWSD_NPM = Join-Path $mockBin 'npm.cmd'
+$env:SWSD_NPM = Join-Path $mockBin 'npm-cli.js'
 $env:SWSD_WINGET = Join-Path $mockBin 'winget.cmd'
 function Assert-Fails([scriptblock]$Action, [string]$Message) {
     $failed = $false
@@ -47,25 +48,23 @@ try {
     @{ version = $script:SwsdPackageVersion } | ConvertTo-Json | Set-Content -LiteralPath $manifest
     if ((Get-SwsdInstalledVersion) -ne $script:SwsdPackageVersion) { throw 'Installed version did not match the manifest.' }
 
-    # Batch doubles also cover paths with spaces and the production npm.cmd launch mechanism.
+    # JavaScript doubles run through Get-SwsdNode and cover npm-cli.js paths with spaces.
     $mockNpm = $env:SWSD_NPM
     @'
-@echo off
-> "%~dp0npm-args.txt" echo %*
-echo 3.2.0
-exit /b 0
+require('node:fs').writeFileSync(require('node:path').join(__dirname, 'npm-args.txt'), process.argv.slice(2).join(' '));
+console.log('3.2.0');
 '@ | Set-Content -LiteralPath $mockNpm -Encoding ASCII
     if ((Get-SwsdLatestVersion) -ne '3.2.0') { throw 'Mock npm lookup failed.' }
     if ((Get-Content -LiteralPath (Join-Path $mockBin 'npm-args.txt') -Raw).Trim() -ne 'view swsd-mcp version') { throw 'Wrong npm lookup arguments.' }
     foreach ($output in @('invalid', '3.2.0-rc.1', '3.2.0 garbage')) {
-        @('@echo off', "echo $output", 'exit /b 0') | Set-Content -LiteralPath $mockNpm -Encoding ASCII
+        "console.log('$output');" | Set-Content -LiteralPath $mockNpm -Encoding ASCII
         if ($null -ne (Get-SwsdLatestVersion)) { throw 'Invalid registry response was accepted.' }
     }
-    @('@echo off', 'echo synthetic-error 1>&2', 'exit /b 1') | Set-Content -LiteralPath $mockNpm -Encoding ASCII
+    @("console.error('synthetic-error');", 'process.exitCode = 1;') | Set-Content -LiteralPath $mockNpm -Encoding ASCII
     $stopwatch = [Diagnostics.Stopwatch]::StartNew()
     if ($null -ne (Get-SwsdLatestVersion)) { throw 'Offline npm must return null.' }
     if ($stopwatch.ElapsedMilliseconds -gt 5000) { throw 'Offline npm did not return promptly.' }
-    $env:SWSD_NPM = Join-Path $mockBin 'missing-npm.cmd'
+    $env:SWSD_NPM = Join-Path $mockBin 'missing-npm-cli.js'
     if ($null -ne (Get-SwsdLatestVersion)) { throw 'Missing npm must return null without fallback.' }
 
     # Command construction must be pure: even a present winget double must never be queried.
@@ -86,17 +85,26 @@ exit /b 0
     $env:SWSD_WINGET = Join-Path $mockBin 'missing-winget.cmd'
     Assert-Fails { Install-SwsdNode } 'Windows Package Manager is unavailable'
 
-    # A sleeping native double proves timeouts without launching child processes or using a network.
+    # Record the real Node child's PID so an immediate launch failure cannot pass as a timeout.
+    @'
+require('node:fs').writeFileSync(require('node:path').join(__dirname, 'npm-pid.txt'), String(process.pid));
+setTimeout(() => {}, 30000);
+'@ | Set-Content -LiteralPath $mockNpm -Encoding ASCII
+    $env:SWSD_NPM = $mockNpm
+    $stopwatch.Restart()
+    if ($null -ne (Get-SwsdLatestVersion -TimeoutSeconds 1)) { throw 'Timed-out lookup must return null.' }
+    if ($stopwatch.ElapsedMilliseconds -gt 5000) { throw 'Lookup timeout did not bound the wait.' }
+    if ($stopwatch.ElapsedMilliseconds -lt 1000) { throw 'Lookup returned before the timeout.' }
+    $slowNpmProcessId = [int](Get-Content -LiteralPath $slowNpmPidPath -Raw)
+    if (Get-Process -Id $slowNpmProcessId -ErrorAction SilentlyContinue) { throw 'Timed-out npm child is still running.' }
+
+    # Winget still launches a native tool; use a sleeping double without any network access.
     $slowTool = Join-Path $mockBin 'slow-tool.exe'
     Add-Type -OutputAssembly $slowTool -OutputType ConsoleApplication -TypeDefinition @'
 public static class SlowTool {
   public static void Main(string[] args) { System.Threading.Thread.Sleep(30000); }
 }
 '@
-    $env:SWSD_NPM = $slowTool
-    $stopwatch.Restart()
-    if ($null -ne (Get-SwsdLatestVersion -TimeoutSeconds 1)) { throw 'Timed-out lookup must return null.' }
-    if ($stopwatch.ElapsedMilliseconds -gt 5000) { throw 'Lookup timeout did not bound the wait.' }
     $env:SWSD_WINGET = $slowTool
     $stopwatch.Restart()
     Assert-Fails { Install-SwsdNode -TimeoutSeconds 1 } 'Node.js installation timed out'
@@ -118,6 +126,7 @@ exit /b 1
     $entryPoint = Get-SwsdEntryPoint
     New-Item -ItemType Directory -Path (Split-Path $entryPoint) -Force | Out-Null
     '// synthetic entry point' | Set-Content -LiteralPath $entryPoint
+    Copy-Item -LiteralPath (Join-Path $root 'runtime/package-lock.json') -Destination (Join-Path $script:SwsdHome "runtime\$script:SwsdPackageVersion\package-lock.json")
     Save-SwsdSettings -BaseUrl 'https://apieu.samanage.com' -Profile 'knowledge'
     $settingsPath = Join-Path $script:SwsdHome 'settings.json'
     $settingsBefore = Get-Content -LiteralPath $settingsPath -Raw
@@ -147,6 +156,9 @@ exit /b 1
 } finally {
     $env:SWSD_NPM = $oldNpm
     $env:SWSD_WINGET = $oldWinget
+    if (Test-Path -LiteralPath $slowNpmPidPath) {
+        Get-Process -Id ([int](Get-Content -LiteralPath $slowNpmPidPath -Raw)) -ErrorAction SilentlyContinue | Stop-Process -Force
+    }
     $resolved = [IO.Path]::GetFullPath($temporary)
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
     if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
