@@ -51,6 +51,7 @@ interface Pagination {
   per_page?: number;
   total?: number;
   total_scope?: string;
+  matched_total?: number | null;
   has_more?: boolean;
   next_page?: number;
 }
@@ -62,6 +63,7 @@ interface Payload {
 }
 
 let all: Incident[] = [];
+let pagination: Pagination | undefined;
 let sortKey: SortKey = 'updated_at';
 let sortDesc = true;
 
@@ -94,7 +96,7 @@ mountApp<Payload>({
     if (Array.isArray(data?.incidents)) {
       all = data.incidents;
     }
-    updateTitle(all.length, data?.pagination);
+    pagination = data?.pagination;
     render();
   },
   onError: ({ message }) => {
@@ -122,14 +124,14 @@ document.querySelectorAll<HTMLTableCellElement>('th[data-sort]').forEach((th) =>
 
 function updateTitle(shown: number, pagination: Pagination | undefined): void {
   if (!titleEl) return;
-  const total = pagination?.total;
-  const scope = typeof pagination?.total_scope === 'string' ? pagination.total_scope : undefined;
+  const total = pagination?.matched_total !== undefined
+    ? pagination.matched_total
+    : pagination?.total_scope === 'filtered' || pagination?.total_scope === 'tenant'
+      ? pagination.total : undefined;
   if (typeof total === 'number') {
-    titleEl.textContent = `Incidents (${String(shown)} of ${String(total)}${
-      scope ? `, ${scope}` : ''
-    })`;
+    titleEl.textContent = `Incidents (${String(shown)} of ${String(total)})`;
   } else {
-    titleEl.textContent = `Incidents (${String(shown)})`;
+    titleEl.textContent = `Incidents (${String(shown)} shown)`;
   }
 }
 
@@ -137,6 +139,7 @@ function render(): void {
   if (!searchEl || !rowsEl || !emptyEl) return;
   renderHeaders();
   const filtered = filterAndSort(all, searchEl.value, sortKey, sortDesc);
+  updateTitle(filtered.length, pagination);
 
   clear(rowsEl);
   for (const i of filtered) {

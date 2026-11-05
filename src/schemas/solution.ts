@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RECORD_REFERENCE_DESCRIPTION } from '../utils/idResolver.js';
 import { CustomFieldsArray } from './customFieldWrite.js';
 import { MAX_LABEL_CHARS, MAX_LONG_TEXT_CHARS, MAX_QUERY_CHARS } from './limits.js';
 
@@ -36,7 +37,7 @@ export const GetSolutionInput = z.object({
     .int()
     .positive()
     .describe(
-      'SWSD solution reference. Accepts either the internal id (>=7 digits) or the human-facing number (<=4 digits). The handler auto-detects via digit count.',
+      'SWSD solution reference. ' + RECORD_REFERENCE_DESCRIPTION + 'The handler auto-detects via digit count.',
     ),
   detail_level: z
     .enum(['short', 'long'])
@@ -77,7 +78,7 @@ export const UpdateSolutionInput = z.object({
     .int()
     .positive()
     .describe(
-      'SWSD solution reference. Accepts either the internal id (>=7 digits) or the human-facing number (<=4 digits). The handler auto-detects via digit count.',
+      'SWSD solution reference. ' + RECORD_REFERENCE_DESCRIPTION + 'The handler auto-detects via digit count.',
     ),
   name: z.string().min(1).max(255).optional().describe('New title.'),
   description: z.string().max(MAX_LONG_TEXT_CHARS).optional().describe('New body (replaces existing).'),

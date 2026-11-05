@@ -2,7 +2,7 @@ import type { Env } from '../config/env.js';
 import { buildHeaders } from './headers.js';
 import { serializeQuery } from './query.js';
 import { extractPagination, type PaginationMeta } from './pagination.js';
-import { SwsdHttpError, SwsdNetworkError } from './errors.js';
+import { SwsdDecodeError, SwsdHttpError, SwsdNetworkError } from './errors.js';
 import { redactValue } from '../utils/secrets.js';
 
 export interface SwsdGetResult<T> {
@@ -116,10 +116,18 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
     const contentType = res.headers.get('content-type') ?? '';
     const isJson = contentType.includes('application/json') || contentType.includes('+json');
     let body: unknown;
-    if (isJson) {
-      body = await res.json().catch(() => null);
-    } else {
-      body = await res.text().catch(() => '');
+    try {
+      const text = await res.text();
+      // An empty body on a write is not a decode error: the write may already
+      // have been applied, and failing it would invite a duplicate retry.
+      // Reads must return a document, so an empty GET body still fails.
+      const allowsEmpty = method !== 'GET' || res.status === 204 || res.status === 205;
+      body = isJson ? text.trim() === '' && allowsEmpty ? null : JSON.parse(text) : text;
+    } catch {
+      // The request has already reached SWSD. Do not retry a decode failure,
+      // or retain parse/body-read exceptions that may contain response data.
+      if (res.ok) throw new SwsdDecodeError(res.status);
+      throw new SwsdHttpError(res.status, 'Could not decode the SWSD error response.', res.headers.get('retry-after') ?? undefined);
     }
 
     if (!res.ok) {

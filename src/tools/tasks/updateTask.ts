@@ -39,11 +39,8 @@ export function registerUpdateTask(server: McpServer, ctx: ToolContext): void {
         const raw = body && typeof body === 'object' && 'task' in body ? body.task : body;
         const task = toTask(raw);
         if (!task) return toolError('Could not parse updated-task response from SWSD.');
-        // Honor is_complete when supplied without changing the legacy state tool mapper.
-        const complete = raw && typeof raw === 'object' && 'is_complete' in raw
-          && typeof raw.is_complete === 'boolean' ? raw.is_complete : task.completed;
         return structuredResult(
-          { task: { ...task, completed: complete, is_complete: complete }, changed_fields: changed },
+          { task: { ...task, is_complete: task.completed }, changed_fields: changed },
           `Updated task ${String(task_id)} on incident ${String(resolvedIncidentId)} (${changed.join(', ')}).`,
         );
       } catch (err) {

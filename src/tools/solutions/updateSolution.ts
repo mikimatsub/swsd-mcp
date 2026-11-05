@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 import { UpdateSolutionInput } from '../../schemas/solution.js';
+import { RECORD_REFERENCE_DESCRIPTION } from '../../utils/idResolver.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
@@ -16,7 +17,7 @@ export function registerUpdateSolution(server: McpServer, ctx: ToolContext): voi
     'swsd_update_solution',
     {
       description:
-        'Update an existing SWSD knowledge-base solution. Pass `id` and any fields ' +
+        'Update an existing SWSD knowledge-base solution. ' + RECORD_REFERENCE_DESCRIPTION + 'Pass `id` and any fields ' +
         'to change. Only provided fields are sent — others stay as-is. To replace ' +
         'the description entirely, pass the full new body. WRITE — does not retry ' +
         'on transient failure.' +

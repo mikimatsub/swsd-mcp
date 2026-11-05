@@ -100,6 +100,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   iframe, preserving cached render targets and interactive controls.
 - `swsd_sla_risk_review` accepts a numeric group ID directly, so group-scoped
   reviews work in every supported profile without a group lookup tool.
+- `swsd_list_my_incidents` now applies requester email locally, case-insensitively,
+  together with the authenticated assignee filter.
+- Incident lists, My Queue and SLA Risk now distinguish upstream candidate counts
+  from matched totals, omit sort/display options from applied filters, and show
+  an honest visible count in the incident-list widget.
+- Task list, create and update results now consistently honor boolean
+  `is_complete`, with the state-based fallback shared by every handler.
+- Malformed or interrupted upstream responses and unexpected list shapes now
+  report sanitized errors instead of successful empty results.
+- Hour-based `updated_within` aliases preserve the full ISO timestamp; day and
+  week aliases retain their UTC calendar-date behavior.
+- `swsd_sla_risk` now collects `max_results` across up to ten candidate pages and
+  reports scan truncation when pages or matching rows remain.
+- My-incident group fallback hints now use the public `assigned_to_group` input.
+- Solution get/update descriptions now share delete's six-digit number and
+  seven-digit internal-ID boundary with the resolver.
+- Change-calendar conflict details are capped at 200 while retaining aggregate
+  and per-record counts; the widget reports omitted details and indexes them once.
+- Group lookups preserve membership IDs and user labels, exposing user IDs only
+  when supplied explicitly by SWSD.
+- Configuration-item writes now use `state`, `site_id` and `department_id`.
+- Change-catalog writes now validate and send `state_id` instead of `state`.
 - HTTP-selected CLI launches now propagate the transport mode, and HTTP always
   rejects local `file_path` attachments before accessing the filesystem.
 - Invalid SWSD tokens fail before fetch; credentials are redacted from errors,

@@ -47,6 +47,17 @@ describe('generic record tools', () => {
     });
   });
 
+  it.each([null, {}, 'SYNTHETIC_TOKEN', { changes: [] }])('rejects an unexpected list response shape: %s', async (body) => {
+    client.setLookupBody(body);
+    registerListChanges(server, makeCtx(client));
+    const tool = getRegisteredTool(server, 'swsd_list_changes');
+    const result = await tool.handler({ page: 1, per_page: 25 }, {}) as CallToolResult;
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toBeUndefined();
+    expect(JSON.stringify(result)).not.toContain('SYNTHETIC_TOKEN');
+  });
+
   it('fetches a hardware asset with layout=long when supported', async () => {
     client.setLookupBody({ id: 501, name: 'Laptop 501', asset_tag: 'L501' });
     registerGetHardwareAsset(server, makeCtx(client));

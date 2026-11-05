@@ -21,22 +21,27 @@ import type { TaskSummary } from '../types.js';
  * above is documented in `.research/v2.1-audit-findings.md` Section C "Gap:
  * Tasks (sub-tasks of incidents)".
  *
- * `state: "Completed"` (not "Done" or "Closed") is the verified terminal value
- * — see Step 6 in the v2.1 plan and SWSD's task-state list.
+ * Boolean `is_complete` is authoritative when supplied. Otherwise completion
+ * falls back to `state === "Completed"` (not "Done" or "Closed"). Normalize
+ * contradictory/missing states to Completed or New, matching updateTaskState.
  */
 
 export function toTask(raw: unknown): TaskSummary | null {
   if (!isPlainObject(raw)) return null;
   const id = numberOrNull(raw.id);
   if (id === null) return null;
-  const state = stringOrEmpty(raw.state);
+  const rawState = stringOrEmpty(raw.state);
+  const completed = typeof raw.is_complete === 'boolean' ? raw.is_complete : rawState === 'Completed';
+  const state = typeof raw.is_complete === 'boolean'
+    ? completed ? 'Completed' : rawState && rawState !== 'Completed' ? rawState : 'New'
+    : rawState;
   return {
     id,
     name: stringOrEmpty(raw.name),
     description: stringOrUndefined(raw.description),
     description_no_html: stringOrUndefined(raw.description_no_html),
     state,
-    completed: state === 'Completed',
+    completed,
     position: numberOrUndefined(raw.position),
     assignee: nestedAssignee(raw.assignee),
     due_at: stringOrUndefined(raw.due_at),

@@ -3,6 +3,7 @@ import {
   toCategorySummary,
   toUserSummary,
   toGroupSummary,
+  toGroupMembers,
   toSiteSummary,
   toDepartmentSummary,
   toRoleSummary,
@@ -103,6 +104,26 @@ describe('toGroupSummary', () => {
   it('returns undefined member_count when memberships missing', () => {
     const g = toGroupSummary({ id: 100, name: 'x', disabled: false });
     expect(g?.member_count).toBeUndefined();
+  });
+});
+
+describe('toGroupMembers', () => {
+  it('preserves documented membership ids and user labels without inventing user ids', () => {
+    expect(toGroupMembers({ memberships: [{ id: '1234567', user: 'Synthetic member' }] })).toEqual([
+      { membership_id: 1234567, name: 'Synthetic member' },
+    ]);
+  });
+
+  it('exposes user ids only from explicit user_id or nested user.id', () => {
+    expect(toGroupMembers({ memberships: [
+      { id: 1234567, user_id: '1234568', user: 'Synthetic label', email: 'member@example.test' },
+      { id: 1234569, user: { id: '1234570', name: 'Nested member', email: 'nested@example.test' } },
+      { id: 1234571, name: 'Legacy label', email: 'legacy@example.test', is_user: true },
+    ] })).toEqual([
+      { membership_id: 1234567, id: 1234568, name: 'Synthetic label', email: 'member@example.test' },
+      { membership_id: 1234569, id: 1234570, name: 'Nested member', email: 'nested@example.test' },
+      { membership_id: 1234571, name: 'Legacy label', email: 'legacy@example.test' },
+    ]);
   });
 });
 

@@ -4,6 +4,7 @@ import { ListCatalogItemsInput } from '../../schemas/catalogItem.js';
 import { PaginationWithScopeOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
 import { toCatalogItemSummary } from '../../swsd/mappers/catalogItem.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
@@ -70,7 +71,7 @@ export function registerListCatalogItems(server: McpServer, ctx: ToolContext): v
           '/catalog_items.json',
           params,
         );
-        const raw = Array.isArray(body) ? body : [];
+        const raw = requireListArray(body);
         const items = raw
           .map(toCatalogItemSummary)
           .filter((i): i is NonNullable<typeof i> => i !== null);

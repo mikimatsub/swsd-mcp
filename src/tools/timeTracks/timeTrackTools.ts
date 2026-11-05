@@ -9,6 +9,7 @@ import { PaginationOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
 import { buildTimeTrackPayload, toTimeTrack } from '../../swsd/mappers/timeTrack.js';
 import { registerSafeSubresourceDelete } from '../shared/safeDelete.js';
 import { checkWriteMode } from '../shared/writeMode.js';
@@ -58,7 +59,7 @@ export function registerListTimeTracks(server: McpServer, ctx: ToolContext): voi
           collectionPath(object_type, id),
           { page, per_page },
         );
-        const rows = Array.isArray(body) ? body : [];
+        const rows = requireListArray(body);
         const timeTracks = rows.map(toTimeTrack).filter((x): x is NonNullable<typeof x> => x !== null);
         return structuredResult(
           { time_tracks: timeTracks, pagination },

@@ -37,7 +37,8 @@ const UserOutput = z.object({
 });
 
 const GroupMemberOutput = z.object({
-  id: z.number().int(),
+  membership_id: z.number().int().describe('Membership ID, used to remove this group membership.'),
+  id: z.number().int().optional().describe('User ID, only when explicitly supplied by SWSD.'),
   name: z.string(),
   email: z.string().optional(),
 });
@@ -154,13 +155,14 @@ export function registerGetGroup(server: McpServer, ctx: ToolContext): void {
     key: 'group',
     description:
       'Fetch one SWSD group (assignment team) by id, including its members ' +
-      '(id, name, email). Answers "who is on this team?". Use swsd_list_groups ' +
+      '(membership_id, name, and user id/email when available). Answers "who is on this team?". Use swsd_list_groups ' +
       'first to find the id.',
     output: GroupOutput,
     map: (raw) => {
-      const group = toGroupSummary(raw);
+      const body = raw && typeof raw === 'object' && 'group' in raw ? raw.group : raw;
+      const group = toGroupSummary(body);
       if (!group) return null;
-      const members = toGroupMembers(raw);
+      const members = toGroupMembers(body);
       return { ...group, member_count: members.length, members };
     },
   });

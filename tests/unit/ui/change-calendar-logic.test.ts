@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { conflictReasons, formatDay, formatTimeRange, formatWindow, groupDays, viewerTimeZone, zoneLabel } from '../../../src/ui/change-calendar/logic.js';
+import { conflictReasons, formatDay, formatTimeRange, formatWindow, groupDays, indexConflictReasons, viewerTimeZone, zoneLabel } from '../../../src/ui/change-calendar/logic.js';
 import { toCalendarItem } from '../../../src/swsd/mappers/changeCalendar.js';
 import fixture from '../mappers/fixtures/change-calendar-api.json';
 import type { CalendarConflict } from '../../../src/schemas/changeCalendar.js';
@@ -39,8 +39,11 @@ describe('change calendar widget logic', () => {
       { a: { kind: 'change', id: 1 }, b: { kind: 'release', id: 2 }, reasons: ['same group: Ops'], overlap_start: '', overlap_end: '' },
       { a: { kind: 'release', id: 1 }, b: { kind: 'change', id: 1 }, reasons: ['shared CI: DB', 'same group: Ops'], overlap_start: '', overlap_end: '' },
     ];
-    expect(conflictReasons({ kind: 'change', id: 1 }, conflicts)).toEqual(['same group: Ops', 'shared CI: DB']);
-    expect(conflictReasons({ kind: 'release', id: 2 }, conflicts)).toEqual(['same group: Ops']);
-    expect(conflictReasons({ kind: 'change', id: 2 }, conflicts)).toEqual([]);
+    const index = indexConflictReasons(conflicts);
+    expect(index).toBeInstanceOf(Map);
+    expect(index.size).toBe(3);
+    expect(conflictReasons({ kind: 'change', id: 1 }, index)).toEqual(['same group: Ops', 'shared CI: DB']);
+    expect(conflictReasons({ kind: 'release', id: 2 }, index)).toEqual(['same group: Ops']);
+    expect(conflictReasons({ kind: 'change', id: 2 }, index)).toEqual([]);
   });
 });

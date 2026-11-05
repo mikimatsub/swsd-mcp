@@ -6,6 +6,8 @@ import { PaginationWithScopeOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
+import { withTotalScope } from '../../swsd/pagination.js';
 import { toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { computeSlaRisk, type SlaRiskLevel } from '../../swsd/mappers/slaRisk.js';
 import { resolveCurrentUser } from '../../utils/resolveCurrentUser.js';
@@ -82,9 +84,9 @@ export function registerMyQueue(server: McpServer, ctx: ToolContext): void {
           page: input.page,
           per_page: input.per_page,
         };
-        if (input.states) params.state = input.states;
-        if (input.priorities) params.priority = input.priorities;
-        if (input.state_is_not) params.state_is_not = input.state_is_not;
+        if (input.states?.length) params.state = input.states;
+        if (input.priorities?.length) params.priority = input.priorities;
+        if (input.state_is_not?.length) params.state_is_not = input.state_is_not;
         if (input.updated_from) params.updated_at = ['greater_than', input.updated_from];
         if (input.assigned_to_group !== undefined) params.assigned_to = input.assigned_to_group;
 
@@ -93,7 +95,7 @@ export function registerMyQueue(server: McpServer, ctx: ToolContext): void {
         params.sort_order = 'ASC';
 
         const { body, pagination } = await ctx.client.get<unknown>('/incidents.json', params);
-        const raw = Array.isArray(body) ? body : [];
+        const raw = requireListArray(body);
         const candidates = raw
           .map(toIncidentSummary)
           .filter((x): x is NonNullable<typeof x> => x !== null);
@@ -122,19 +124,12 @@ export function registerMyQueue(server: McpServer, ctx: ToolContext): void {
         const applied_filters: Record<string, unknown> = {};
         if (resolvedEmail) applied_filters.assignee_email = resolvedEmail;
         if (input.assigned_to_group !== undefined) applied_filters.assigned_to_group = input.assigned_to_group;
-        if (input.states) applied_filters.states = input.states;
-        if (input.state_is_not) applied_filters.state_is_not = input.state_is_not;
-        if (input.priorities) applied_filters.priorities = input.priorities;
+        if (input.states?.length) applied_filters.states = input.states;
+        if (input.state_is_not?.length) applied_filters.state_is_not = input.state_is_not;
+        if (input.priorities?.length) applied_filters.priorities = input.priorities;
         if (input.updated_from) applied_filters.updated_from = input.updated_from;
-        if (input.sort_by) applied_filters.sort_by = input.sort_by;
 
         const hasAnyFilter = Object.keys(applied_filters).length > 0;
-        const total_scope: 'filtered' | 'tenant' | 'unknown' =
-          pagination.total === undefined
-            ? 'unknown'
-            : hasAnyFilter
-              ? 'filtered'
-              : 'tenant';
 
         const summary =
           `Queue: ${String(withRisk.length)} incident${withRisk.length === 1 ? '' : 's'} ` +
@@ -159,7 +154,7 @@ export function registerMyQueue(server: McpServer, ctx: ToolContext): void {
               minutes_to_breach: i.minutes_to_breach,
               risk: i.risk as SlaRiskLevel,
             })),
-            pagination: { ...pagination, total_scope },
+            pagination: withTotalScope(pagination, clientFilterApplied, hasAnyFilter, withRisk.length),
             applied_filters,
             assignee_email: resolvedEmail,
             scan: {

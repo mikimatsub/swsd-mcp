@@ -1,5 +1,11 @@
 import type { SwsdClient } from './client.js';
 import type { PaginationMeta } from './pagination.js';
+import { SwsdDecodeError } from './errors.js';
+
+export function requireListArray(body: unknown): unknown[] {
+  if (!Array.isArray(body)) throw new SwsdDecodeError();
+  return body;
+}
 
 /**
  * Fetch a list endpoint, defensively project each item via the mapper, drop
@@ -12,7 +18,7 @@ export async function fetchAndMap<T>(
   params: Record<string, unknown>,
 ): Promise<{ items: T[]; pagination: PaginationMeta }> {
   const { body, pagination } = await client.get<unknown>(path, params);
-  const arr = Array.isArray(body) ? body : [];
+  const arr = requireListArray(body);
   const items = arr
     .map(mapper)
     .filter((x): x is NonNullable<typeof x> => x !== null);

@@ -5,6 +5,7 @@ import {
   MAX_FILTER_ITEMS,
   MAX_LABEL_CHARS,
   RelativeTimeAliasInput,
+  RELATIVE_TIME_DESCRIPTION,
 } from './limits.js';
 
 export const SlaRiskInput = z.object({
@@ -34,7 +35,7 @@ export const SlaRiskInput = z.object({
     .describe('Client-side case-insensitive filter on assignee email (SWSD ignores it server-side).'),
   updated_within: RelativeTimeAliasInput
     .optional()
-    .describe('Convenience alias for updated_from. Accepts "Nh", "Nd", or "Nw".'),
+    .describe(RELATIVE_TIME_DESCRIPTION),
   updated_from: IsoDateOrDateTimeInput
     .optional()
     .describe('Filter to incidents updated on or after this ISO date or datetime.'),
@@ -69,7 +70,7 @@ export const SlaRiskInput = z.object({
     .min(1)
     .max(1000)
     .optional()
-    .describe('Cap total returned incidents across all pages. Useful for dashboards.'),
+    .describe('Cap returned incidents while scanning up to 10 pages from page (also bounded by page 10000). Stops when enough matches are found; ranks the scanned matches only. scan.truncated reports omitted matches or remaining pages. Without this option, scans one page.'),
 });
 
 export type SlaRiskInput = z.infer<typeof SlaRiskInput>;

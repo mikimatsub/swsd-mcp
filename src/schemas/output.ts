@@ -22,13 +22,13 @@ export const PaginationOutput = z.object({
 
 /**
  * total_scope discriminator on pagination blocks.
- * - "filtered" — filters were applied AND SWSD returned X-Total-Count, so
- *   the total is the post-filter count.
+ * - "upstream" — total counts candidates before local filtering.
+ * - "filtered" — total reflects server-side filters with no local filtering.
  * - "tenant"   — no filters applied AND SWSD returned X-Total-Count, so
  *   the total is the tenant-wide count.
  * - "unknown"  — SWSD did not return X-Total-Count.
  */
-export const TotalScope = z.enum(['filtered', 'tenant', 'unknown']);
+export const TotalScope = z.enum(['filtered', 'tenant', 'unknown', 'upstream']);
 
 /**
  * Extended pagination output that includes total_scope.
@@ -36,7 +36,10 @@ export const TotalScope = z.enum(['filtered', 'tenant', 'unknown']);
  */
 export const PaginationWithScopeOutput = PaginationOutput.extend({
   total_scope: TotalScope.describe(
-    "Whether `total` reflects the filtered-set size, the tenant-wide size, or is unknown. " +
-      "'filtered' = filter was applied AND total is present; 'tenant' = no filter AND total is present; 'unknown' = total absent.",
+    "Scope of the upstream `total`: 'upstream' = candidates before local filtering; " +
+      "'filtered' = server-filtered count with no local filtering; 'tenant' = unfiltered count; 'unknown' = total absent. Sorting and display options are not filters.",
+  ),
+  matched_total: z.number().int().nonnegative().nullable().optional().describe(
+    'Total matching records, or null when unknown. After local filtering, known only when all candidate pages were scanned from page 1. Independent of display caps.',
   ),
 });

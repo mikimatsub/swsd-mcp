@@ -7,7 +7,7 @@ import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
 import { toGenericRecordSummary } from '../../swsd/mappers/record.js';
 import { ListIncidentTasksInput } from '../../schemas/task.js';
-import { resolveIncidentRef } from '../../utils/idResolver.js';
+import { RECORD_REFERENCE_DESCRIPTION, resolveIncidentRef } from '../../utils/idResolver.js';
 import { checkWriteMode } from './writeMode.js';
 
 export const SafeDeleteInput = z.object({
@@ -35,7 +35,7 @@ export function registerSafeDelete(
       description:
         `DESTRUCTIVE — delete an SWSD ${kind}. ` +
         (resolveRef
-          ? 'Accepts an internal id (>=7 digits) or human-facing number (<=6 digits). '
+          ? RECORD_REFERENCE_DESCRIPTION
           : 'Requires the internal record id. ') +
         'First call without confirmation to preview the record. Ask the user to confirm, ' +
         'then re-call with confirm:true and confirm_id equal to the previewed internal id. ' +
