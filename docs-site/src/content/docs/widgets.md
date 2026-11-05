@@ -81,7 +81,7 @@ Bound to `swsd_get_solution`. Card layout: header (id, name, state, category), m
 
 Bound to both `swsd_list_incidents` and `swsd_list_my_incidents` (the latter auto-resolves the JWT user's email as `assignee_email`). Table columns: id, name, state, priority, assignee, updated_at. Sortable headers (click to toggle, ▲/▼ indicator + `aria-sort` on the active column). Wrapped in an `overflow-x: auto` container so the 6-column table scrolls instead of clipping at narrow viewports (<560px).
 
-Pagination chip in the footer shows `page X of Y matching your filters` (when `pagination.total_scope === "filtered"`) or `page X of Y tenant-wide` (when `"tenant"`), driven by the v2 `applied_filters` echo + `total_scope` discriminator.
+The title shows `Incidents (N of M)`, where M is `pagination.matched_total` when present, otherwise `pagination.total` when `pagination.total_scope` is `"filtered"` or `"tenant"`. When no reliable total exists (for example `total_scope === "upstream"` with client-side filters and unscanned pages, where `matched_total` is `null`), it shows `Incidents (N shown)`.
 
 ### `sla-risk`
 
