@@ -18,6 +18,10 @@ node tests/windows-plugin/check-stdio.mjs plugins/swsd/runtime/node_modules/swsd
 ```
 
 The WPF UI self-test never shows a window and saves only temporary settings.
+`check-ui-handlers.ps1` also runs `check-ps1-encoding.ps1`, which requires UTF-8
+BOMs on every shipped PowerShell script and rejects literal mojibake and implicit
+`Get-Content` encodings. The install check verifies copied BOMs and launches the
+installed UI using the exact saved Start menu arguments plus `-ValidateUi`.
 All UI Validate modes replace Credential Manager with a guarded in-memory fixture.
 Handler validation exercises real WPF events and the DispatcherTimer worker loop;
 clipboard, network, Node installation, and runtime installation use test doubles.
@@ -46,6 +50,13 @@ PerMonitorV2 awareness and actual WPF visual DPI, then automatically closes.
 messages in both directions. Foreground availability is reported separately: it
 may be unavailable in a headless desktop. `-WindowTestSeconds 1..15` controls the
 hold after probing. `-CheckOnly` retains its seven-field JSON status contract.
+
+For an open Appearance dropdown, use `-ValidateWindow -PreviewState appearance
+-PreviewTheme dracula -ScreenshotPath <temporary-path>.png` (or `one-light`).
+The preview opens the real popup after the window loads and the theme is applied;
+the PNG includes its separate WPF visual. This state requires `-ValidateWindow`.
+Validation checks Unicode control text against numeric code points, including the
+check mark, middle dot, token bullets, caption symbols, and token-help arrow.
 
 Capture all six screens in both themes without a human handoff:
 

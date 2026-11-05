@@ -32,7 +32,8 @@ const stopServer = async () => {
   server = undefined;
 };
 try {
-  const common = (await readFile(join(root, 'scripts/Common.ps1'), 'utf8'))
+  const stripBom = (text) => text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+  const common = stripBom(await readFile(join(root, 'scripts/Common.ps1'), 'utf8'))
     .replace("$script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'swsd-mcp'", `$script:SwsdHome = '${quotePs(temporary)}'`)
     .replace('return Join-Path $script:SwsdHome "runtime\\$version\\node_modules\\swsd-mcp\\dist\\cli.js"', `return '${quotePs(join(runtime, 'cli.js'))}'`);
   assert.ok(common.includes(`return '${quotePs(join(runtime, 'cli.js'))}'`), 'Launcher fixture must redirect the active entry point');

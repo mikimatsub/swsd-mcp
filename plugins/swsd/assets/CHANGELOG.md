@@ -45,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Windows PowerShell now reads the app as UTF-8, keeping Appearance text,
+  check marks, and other symbols readable on every Windows locale.
 - Docs site and README now match the current tools, profiles, configuration,
   widgets, Windows setup, and connections.
 - Custom prompts and widgets only appear when all of their tools are available.

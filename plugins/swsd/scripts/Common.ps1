@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # Named colors are transcribed from T-Tui src/themes.rs; keep source colors intact.
@@ -359,7 +359,7 @@ function Get-SwsdSettings {
     $path = Join-Path $script:SwsdHome 'settings.json'
     $settings = @{ baseUrl = 'https://api.samanage.com'; profile = 'agent'; profileFile = $null; profileError = $null; theme = 'system' }
     if (Test-Path -LiteralPath $path) {
-        $saved = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+        $saved = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($saved.baseUrl -notin @('https://api.samanage.com', 'https://apieu.samanage.com')) {
             throw 'Invalid SWSD region in settings. Open SWSD setup and save the correct region.'
         }
@@ -439,7 +439,7 @@ function Get-SwsdEntryPoint {
 function Get-SwsdActiveVersion {
     $path = Join-Path $script:SwsdHome 'runtime\active.txt'
     if (Test-Path -LiteralPath $path -PathType Leaf) {
-        $value = (Get-Content -LiteralPath $path -Raw).Trim()
+        $value = (Get-Content -LiteralPath $path -Raw -Encoding UTF8).Trim()
         if ($value -match '^\d+\.\d+\.\d+$') { return $value }
     }
     return $script:SwsdPackageVersion
@@ -448,7 +448,7 @@ function Get-SwsdActiveVersion {
 function Set-SwsdActiveVersion([string]$Version) {
     if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Tool installation failed: The requested version is invalid.' }
     $runtime = Join-Path $script:SwsdHome "runtime\$Version"
-    $pkg = Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
+    $pkg = Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($pkg.version -ne $Version -or -not (Test-Path -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\dist\cli.js') -PathType Leaf)) { throw 'The SWSD server installation is incomplete.' }
     $temporary = Join-Path $script:SwsdHome ('runtime\active-' + [guid]::NewGuid().ToString('N') + '.tmp')
     try {
@@ -528,7 +528,7 @@ function Get-SwsdInstalledVersion {
     $packageJson = Join-Path $script:SwsdHome "runtime\$version\node_modules\swsd-mcp\package.json"
     if (-not (Test-Path -LiteralPath $packageJson)) { return $null }
     try {
-        $pkg = Get-Content -LiteralPath $packageJson -Raw | ConvertFrom-Json
+        $pkg = Get-Content -LiteralPath $packageJson -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($pkg.version -eq $version) { return $pkg.version }
         return $null
     } catch { return $null }
@@ -652,7 +652,7 @@ function Get-SwsdStatus {
     if ($toolsInstalled) {
         try {
             $manifestPath = Join-Path (Split-Path (Split-Path $entryPoint)) 'package.json'
-            $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+            $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
             $installedVersion = [string]$manifest.version
             $toolsInstalled = ($installedVersion -eq (Get-SwsdActiveVersion))
         } catch { $toolsInstalled = $false }
@@ -664,7 +664,7 @@ function Get-SwsdStatus {
                 Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'node_modules\swsd-mcp\dist\cli.js') -PathType Leaf } |
                 Select-Object -First 1
             if ($other) {
-                $otherPkg = Get-Content -LiteralPath (Join-Path $other.FullName 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
+                $otherPkg = Get-Content -LiteralPath (Join-Path $other.FullName 'node_modules\swsd-mcp\package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
                 if ([string]$otherPkg.version -match '^\d+\.\d+\.\d+$') { $installedVersion = [string]$otherPkg.version }
             }
         } catch {}
@@ -857,7 +857,7 @@ function Update-SwsdRuntime {
     try {
         Add-Type -AssemblyName System.Web.Extensions
         $parser = New-Object Web.Script.Serialization.JavaScriptSerializer
-        $lock = $parser.DeserializeObject((Get-Content -LiteralPath (Join-Path $stage 'package-lock.json') -Raw))
+        $lock = $parser.DeserializeObject((Get-Content -LiteralPath (Join-Path $stage 'package-lock.json') -Raw -Encoding UTF8))
         $installed = $lock['packages']['node_modules/swsd-mcp']
         if ($lock['packages']['']['dependencies']['swsd-mcp'] -ne $latest -or $installed['version'] -ne $latest -or $installed['integrity'] -cne $integrity) { throw 'invalid package' }
         foreach ($key in $lock['packages'].Keys) {
@@ -868,7 +868,7 @@ function Update-SwsdRuntime {
     $lockHash=(Get-FileHash -LiteralPath (Join-Path $stage 'package-lock.json') -Algorithm SHA256).Hash
     $null = Invoke-SwsdNpm -Arguments 'ci --ignore-scripts --strict-peer-deps --no-audit --no-fund' -WorkingDirectory $stage
     try {
-        $pkg = Get-Content -LiteralPath (Join-Path $stage 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
+        $pkg = Get-Content -LiteralPath (Join-Path $stage 'node_modules\swsd-mcp\package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($pkg.version -ne $latest -or $lockHash -ne (Get-FileHash -LiteralPath (Join-Path $stage 'package-lock.json') -Algorithm SHA256).Hash -or
             -not (Test-Path -LiteralPath (Join-Path $stage 'node_modules\swsd-mcp\dist\cli.js') -PathType Leaf)) { throw 'invalid installation' }
     } catch { throw 'Tool installation failed: The installed tools did not pass version and integrity checks. Your previous tools remain available.' }
@@ -894,11 +894,11 @@ function Install-SwsdTools {
     $npmCli = Join-Path (Split-Path $node) 'node_modules\npm\bin\npm-cli.js'
     if (-not (Test-Path -LiteralPath $npmCli)) { throw 'npm is missing from this Node.js installation. Ask IT to repair Node.js.' }
     # Reject a stale or mismatched recipe before changing the existing installation.
-    $recipe = Get-Content -LiteralPath (Join-Path $SourceRoot 'runtime\package.json') -Raw | ConvertFrom-Json
+    $recipe = Get-Content -LiteralPath (Join-Path $SourceRoot 'runtime\package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     # Windows PowerShell 5.1's ConvertFrom-Json cannot read npm's empty root key.
     Add-Type -AssemblyName System.Web.Extensions
     $parser = New-Object Web.Script.Serialization.JavaScriptSerializer
-    $lock = $parser.DeserializeObject((Get-Content -LiteralPath (Join-Path $SourceRoot 'runtime\package-lock.json') -Raw))
+    $lock = $parser.DeserializeObject((Get-Content -LiteralPath (Join-Path $SourceRoot 'runtime\package-lock.json') -Raw -Encoding UTF8))
     if ($recipe.dependencies.'swsd-mcp' -ne $script:SwsdPackageVersion -or
         $lock['packages']['']['dependencies']['swsd-mcp'] -ne $script:SwsdPackageVersion -or
         $lock['packages']['node_modules/swsd-mcp']['version'] -ne $script:SwsdPackageVersion) {
@@ -907,7 +907,7 @@ function Install-SwsdTools {
     $runtime = Join-Path $script:SwsdHome "runtime\$script:SwsdPackageVersion"
     $entryPoint = Join-Path $runtime 'node_modules\swsd-mcp\dist\cli.js'
     $installedVersion = $null
-    try { $installedVersion = (Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json).version } catch {}
+    try { $installedVersion = (Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version } catch {}
     $skipNpmInstall = (-not $Force) -and
         ($installedVersion -eq $script:SwsdPackageVersion) -and
         (Test-Path -LiteralPath $entryPoint -PathType Leaf)
@@ -945,7 +945,7 @@ function Install-SwsdTools {
             if ($process.ExitCode -ne 0) { throw 'Tool installation failed. Ask IT to check access to registry.npmjs.org and npm proxy configuration.' }
         } finally { $process.Dispose() }
         if (-not (Test-Path -LiteralPath $entryPoint)) { throw 'The SWSD server installation is incomplete.' }
-        $installed = Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
+        $installed = Get-Content -LiteralPath (Join-Path $runtime 'node_modules\swsd-mcp\package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($installed.version -ne $script:SwsdPackageVersion) { throw 'The installed SWSD server version does not match this setup version.' }
     }
     Set-SwsdActiveVersion $script:SwsdPackageVersion

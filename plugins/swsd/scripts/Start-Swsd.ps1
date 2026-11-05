@@ -1,4 +1,4 @@
-# Runs inside the plugin's STDIO process. Stdout is reserved for MCP messages.
+﻿# Runs inside the plugin's STDIO process. Stdout is reserved for MCP messages.
 $ErrorActionPreference = 'Stop'
 try {
     . (Join-Path $PSScriptRoot 'Common.ps1')

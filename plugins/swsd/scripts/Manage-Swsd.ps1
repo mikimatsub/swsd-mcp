@@ -1,5 +1,6 @@
-﻿param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [switch]$ValidateDpiChanges, [ValidateRange(1,15)][int]$WindowTestSeconds = 2, [ValidateSet('ready','firstrun','jwt-help','error','tools','tool-detail','profile-builder','custom-selected','import-error','whats-new')][string]$PreviewState = 'ready', [string]$ScreenshotPath, [string]$PreviewTheme)
+﻿param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [switch]$ValidateDpiChanges, [ValidateRange(1,15)][int]$WindowTestSeconds = 2, [ValidateSet('ready','appearance','firstrun','jwt-help','error','tools','tool-detail','profile-builder','custom-selected','import-error','whats-new')][string]$PreviewState = 'ready', [string]$ScreenshotPath, [string]$PreviewTheme)
 $ErrorActionPreference = 'Stop'
+if ($PreviewState -eq 'appearance' -and -not $ValidateWindow) {throw 'Appearance dropdown preview requires the isolated ValidateWindow mode.'}
 if ($PreviewTheme -and -not ($ValidateUi -or $ValidateWindow -or $ValidateHandlers -or $ValidateDpiChanges)) {throw 'PreviewTheme requires an isolated UI validation mode.'}
 if ($ValidateUi -or $ValidateWindow -or $ValidateHandlers -or $ValidateDpiChanges) {
     # Handler checks exercise credential flows without depending on a signed-in desktop.
@@ -212,10 +213,31 @@ namespace SwsdDesktop {
       RECT bounds; GetWindowRect(window, out bounds);
       SendMessage(window, 0x02E0, new IntPtr(dpi | (dpi << 16)), ref bounds);
     }
-    public static void Capture(FrameworkElement root, string path) {
+    public static void Capture(FrameworkElement root, string path) { Capture(root, path, null); }
+    public static void Capture(FrameworkElement root, string path, FrameworkElement popup) {
       root.UpdateLayout();
       var target = new RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
       target.Render(root);
+      // WPF popups have their own visual/HWND and are absent from Render(root).
+      // Compose only this app's popup; never capture the desktop framebuffer.
+      if (popup != null) {
+        popup.UpdateLayout();
+        var overlay = new RenderTargetBitmap((int)Math.Ceiling(popup.ActualWidth), (int)Math.Ceiling(popup.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+        overlay.Render(popup);
+        Point origin = root.PointToScreen(new Point()), position = popup.PointToScreen(new Point());
+        var dpi = VisualTreeHelper.GetDpi(root);
+        double x = (position.X-origin.X)/dpi.DpiScaleX, y = (position.Y-origin.Y)/dpi.DpiScaleY;
+        double left = Math.Min(0, x), top = Math.Min(0, y);
+        double width = Math.Max(root.ActualWidth, x+popup.ActualWidth)-left;
+        double height = Math.Max(root.ActualHeight, y+popup.ActualHeight)-top;
+        var visual = new DrawingVisual();
+        using (var drawing = visual.RenderOpen()) {
+          drawing.DrawImage(target, new Rect(-left, -top, root.ActualWidth, root.ActualHeight));
+          drawing.DrawImage(overlay, new Rect(x-left, y-top, popup.ActualWidth, popup.ActualHeight));
+        }
+        target = new RenderTargetBitmap((int)Math.Ceiling(width), (int)Math.Ceiling(height), 96, 96, PixelFormats.Pbgra32);
+        target.Render(visual);
+      }
       var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(target));
       using (var stream = File.Create(path)) encoder.Save(stream);
     }
@@ -369,7 +391,7 @@ $xaml = @"
    <Border Style="{StaticResource CardStyle}"><StackPanel>$updateXaml $diagnosticsXaml $repairXaml $appearanceXaml</StackPanel></Border>
    <StackPanel Name="credentialActions" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,-12"><Button Name="remove" Content="Remove saved JSON Web Token" Style="{StaticResource LinkButton}" Height="24" FontSize="11.5"/></StackPanel>
    <StackPanel Name="actionDetails" Margin="0,8,0,0"><ProgressBar Name="progressBar" Height="3" IsIndeterminate="True" Foreground="{DynamicResource AccentForeground}" Visibility="Collapsed" AutomationProperties.Name="Progress"/><StackPanel Orientation="Horizontal"><Button Name="showDetails" Content="Show details" Style="{StaticResource LinkButton}" Visibility="Collapsed"/><Button Name="nodeInstallButton" Content="Install Node.js" Style="{StaticResource LinkButton}" Visibility="Collapsed" Margin="12,0,0,0"/></StackPanel><TextBlock Name="errorDetails" TextWrapping="Wrap" Style="{StaticResource Description}" Visibility="Collapsed"/></StackPanel>
-   <Grid Margin="2,12,2,0"><TextBlock Text="Your JSON Web Token stays on this PC and is only sent to SWSD." FontSize="12" Foreground="{DynamicResource Muted}"/><Button Name="findToken" Content="Where do I find my token? ↗" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" Height="20" FontSize="12"/></Grid>
+   <Grid Margin="2,12,2,0"><Button Name="findToken" Content="Where do I find my token? ↗" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" Height="20" FontSize="12"/></Grid>
   </StackPanel>
   <StackPanel Name="toolsPage" Visibility="Collapsed">
    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Grid><TextBox Name="search" Height="36" Padding="36,7,60,7" AutomationProperties.Name="Search tools"/><TextBlock Text="⌕" FontSize="20" Foreground="{DynamicResource Muted}" Margin="12,0,0,2" VerticalAlignment="Center" IsHitTestVisible="False"/><TextBlock Name="searchPlaceholder" Text="Search tools" Foreground="{DynamicResource Muted}" Margin="36,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"/><TextBlock Text="Ctrl+F" FontSize="11" Margin="0,0,12,0" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" IsHitTestVisible="False"/></Grid><ComboBox Name="toolsProfile" Grid.Column="2" Height="36" AutomationProperties.Name="Tools profile"/></Grid>
@@ -1137,6 +1159,25 @@ function Get-SwsdControlText($Root) {
         foreach ($child in [Windows.LogicalTreeHelper]::GetChildren($Root)) { Get-SwsdControlText $child }
     }
 }
+function Assert-SwsdUiEncoding {
+    # Numeric expectations survive even if PS 5.1 misdecodes this script itself.
+    foreach ($pair in @(@($tokenVerified.Text,0x2713),@($minimize.Content,0x2014),@($maximize.Content,0x25a1),@($closeWindow.Content,0x00d7))) {
+        $actual=[string]$pair[0]
+        $codes=@($actual.ToCharArray() | ForEach-Object {'U+{0:X4}' -f [int]$_}) -join ' '
+        Assert-Swsd ($actual -ceq [string][char]$pair[1]) ('UI UTF-8 decoding failed: expected U+{0:X4}, got {1}.' -f $pair[1],$codes)
+    }
+    Assert-Swsd ([string]$findToken.Content -ceq ('Where do I find my token? '+[char]0x2197)) 'Token help link must retain its Unicode arrow.'
+    $texts=@(Get-SwsdControlText $form)
+    foreach ($codes in @(@(0xe2,0x20ac),@(0xc2,0xb7),@(0xe2,0x153),@(0xe2,0x2013,0xa1),@(0xc3,0x2014),@(0xe2,0x2020))) {
+        $marker=-join @($codes | ForEach-Object {[char]$_})
+        Assert-Swsd (@($texts | Where-Object {$_.Contains($marker)}).Count -eq 0) 'UI control text contains mojibake.'
+    }
+    Assert-Swsd (-not ($texts -contains 'Your JSON Web Token stays on this PC and is only sent to SWSD.')) 'The old Home footer must stay removed.'
+    if ($PreviewState -in @('ready','appearance')) {
+        Assert-Swsd ($status.Text -ceq ([string][char]0x2713+'  Connected as Alex Rivera '+[char]0xb7+' Acme IT (US)')) 'Preview status must retain its check mark and middle dot.'
+        Assert-Swsd ($tokenPlaceholder.Text -ceq ([string][char]0x2022)*8) 'Preview token mask must contain eight Unicode bullets.'
+    }
+}
 function Assert-SwsdProfileLabels {
     $texts = @($homePage,$toolsPage | ForEach-Object {Get-SwsdControlText $_})
     Assert-Swsd (@($texts | Where-Object {$_ -cmatch '\bFull\b' -or $_ -match '^[RED]\s*·'}).Count -eq 0) 'Control text must use visible profile names and plain Read/Edit/Delete badges.'
@@ -1177,6 +1218,7 @@ function Test-SwsdAppearanceControls {
     Assert-Swsd ($script:SwsdHandlerErrors.Count -eq 0) 'Appearance raised a handler error.'
 }
 function Test-SwsdUiControls {
+    Assert-Swsd (-not $appearance.IsDropDownOpen) 'Appearance must stay closed on normal startup.'
     Assert-Swsd ($tokenBox -is [Windows.Controls.PasswordBox]) 'JSON Web Token field must use PasswordBox.'
     Assert-Swsd ($profile.Items.Count -eq $script:SwsdPickerProfiles.Count -and $profile.Items.Count -ge 4 -and $profile.SelectedItem -eq 'Agent' -and -not ($profile.Items -contains 'Full')) 'Visible profiles (no Full) and Agent default are required.'
     Assert-Swsd ([object]::ReferenceEquals($profile.ItemsSource,$toolsProfile.ItemsSource)) 'Profile pickers must share their data source.'
@@ -1299,6 +1341,7 @@ function Test-SwsdUiControls {
     # window, changing display settings, or accessing the desktop framebuffer.
     foreach ($state in @('ready','tools','profile-builder','custom-selected','import-error','whats-new')) {
         Set-SwsdPreviewFixture $state
+        if ($state -eq 'ready') {Assert-SwsdUiEncoding}
         Wait-SwsdDispatcher 100
         $appRoot.Measure([Windows.Size]::new(1000,1000)); $appRoot.Arrange([Windows.Rect]::new(0,0,1000,1000)); $appRoot.UpdateLayout()
         Wait-SwsdDispatcher 50
@@ -1347,14 +1390,14 @@ function Set-SwsdPreviewFixture([string]$PreviewState) {
         $script:SwsdVerified=$true; $script:SwsdIdentity='Alex Rivera · Acme IT'
         Set-SwsdStatus -Kind success -Text '✓  Connected as Alex Rivera · Acme IT (US)'
     }
-    if ($PreviewState -in @('ready','jwt-help','tools','tool-detail')) {$script:SwsdLatestVersion=([version]$script:SwsdPackageVersion).Major.ToString()+'.'+([version]$script:SwsdPackageVersion).Minor+'.'+(([version]$script:SwsdPackageVersion).Build+1)}
+    if ($PreviewState -in @('ready','appearance','jwt-help','tools','tool-detail')) {$script:SwsdLatestVersion=([version]$script:SwsdPackageVersion).Major.ToString()+'.'+([version]$script:SwsdPackageVersion).Minor+'.'+(([version]$script:SwsdPackageVersion).Build+1)}
     if ($PreviewState -eq 'error') {
         $script:SwsdVerified=$false; $script:SwsdTokenError=$true
         $tokenBox.Password='synthetic'+[guid]::NewGuid().ToString('N')
         Set-SwsdStatus -Kind error -Text 'SolarWinds rejected this token. Check that you copied the complete JSON Web Token.'
     }
     Update-SwsdDashboard
-    if ($PreviewState -eq 'ready') {
+    if ($PreviewState -in @('ready','appearance')) {
         Assert-Swsd ($checkUpdates.Content -eq 'Update' -and $checkUpdates.Style -eq $form.Resources['PrimaryButton']) 'Ready preview must show the primary Update button.'
         Assert-Swsd ($updatesDescription.Text -eq "Version $($script:SwsdLatestVersion) is available") 'Ready preview must show the clean update description.'
     }
@@ -1537,9 +1580,10 @@ if ($ValidateUi) {
     Write-Output 'PASS: actual WPF events under StrictMode; isolated credential save/test/remove, failure/rollback and region invalidation; mocked clipboard diagnostics/prompt; redaction; background install/update/Node failure/retry, responsive timer, duplicate and close guards; profile persistence; friendly error recovery.'
 } elseif ($ValidateWindow) {
     Set-SwsdPreviewFixture $PreviewState
+    Assert-SwsdUiEncoding
     Set-SwsdBusy $true; $progressBar.Visibility='Collapsed'; $appRoot.IsHitTestVisible=$false
     if ($ScreenshotPath) {
-        $form.Height=switch ($PreviewState) {'jwt-help' {1350} 'tools' {1400} 'tool-detail' {1100} default {1000}}
+        $form.Height=switch ($PreviewState) {'appearance' {1350} 'jwt-help' {1350} 'tools' {1400} 'tool-detail' {1100} default {1000}}
     }
     $form.MinWidth=0; $form.MinHeight=0
     $script:SwsdWindowResults=New-Object 'System.Collections.Generic.List[object]'
@@ -1573,6 +1617,7 @@ if ($ValidateUi) {
             Set-SwsdPreviewFixture $PreviewState
             $form.UpdateLayout()
         }
+        Assert-SwsdUiEncoding
         $failures=@($script:SwsdHandlerErrors)
         $awareness=[SwsdDpiBootstrap]::WindowAwareness($script:SwsdHandle)
         if ($awareness -ne 'PerMonitorV2') {$failures+='Window did not inherit PerMonitorV2 awareness.'}
@@ -1606,13 +1651,28 @@ if ($ValidateUi) {
             themeId=$script:SwsdThemeId; resolvedThemeId=$script:SwsdResolvedThemeId; darkCaption=$script:SwsdDarkMode; canvasColor=$form.Resources['Canvas'].Color.ToString()
             liveThemeSwitches=$liveThemeSwitches
             updateButton=[string]$checkUpdates.Content; updateDescription=$updatesDescription.Text; notInProfileHeader=[string]$otherTools.Header
+            statusText=$status.Text; tokenMask=$tokenPlaceholder.Text; verifiedGlyph=$tokenVerified.Text; tokenHelpText=[string]$findToken.Content
+            captionGlyphs=@([string]$minimize.Content,[string]$maximize.Content,[string]$closeWindow.Content)
+            appearanceDropDownOpen=$false; appearancePopupOpen=$false
+        }
+        $popupChild=$null
+        if ($PreviewState -eq 'appearance') {
+            # Open the real themed popup after Loaded/layout, with user input blocked.
+            $appearance.IsEnabled=$true; $appearance.IsDropDownOpen=$true
+            Wait-SwsdDispatcher 150; $form.UpdateLayout()
+            $popup=$appearance.Template.FindName('PART_Popup',$appearance)
+            Assert-Swsd ($appearance.IsDropDownOpen -and $popup.IsOpen -and $popup.Child.IsVisible) 'Appearance preview must show the actual dropdown.'
+            $popupChild=$popup.Child
+            Assert-Swsd ($popupChild.ActualWidth -gt 0 -and $popupChild.ActualHeight -gt 0) 'Appearance popup must be laid out before capture.'
+            $result.appearanceDropDownOpen=$appearance.IsDropDownOpen; $result.appearancePopupOpen=$popup.IsOpen
+            $result.appearancePopupWidth=$popupChild.ActualWidth; $result.appearancePopupHeight=$popupChild.ActualHeight
         }
         $script:SwsdWindowResults.Add($result)
         if ($ScreenshotPath -and $script:SwsdDpiStep -eq 'initial') {
             # Render the normal enabled appearance; input remains blocked at the root.
             # Network/install/clipboard operations also fail closed in this fixture.
             Set-SwsdBusy $false
-            try {[SwsdDesktop.WpfDpi]::Capture($appRoot,[IO.Path]::GetFullPath($ScreenshotPath))}
+            try {[SwsdDesktop.WpfDpi]::Capture($appRoot,[IO.Path]::GetFullPath($ScreenshotPath),$popupChild)}
             finally {Set-SwsdBusy $true; $progressBar.Visibility='Collapsed'}
         }
         if ($script:SwsdDpiSteps.Count -gt 0) {
