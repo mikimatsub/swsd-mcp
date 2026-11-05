@@ -10,14 +10,18 @@ namespace SwsdDesktop {
 }
 '@
 $root = (Resolve-Path (Join-Path $PSScriptRoot '../../plugins/swsd')).Path
-. (Join-Path $root 'scripts/Common.ps1')
 $temporary = Join-Path ([IO.Path]::GetTempPath()) ('swsd-install-test-' + [guid]::NewGuid().ToString('N'))
-$script:SwsdHome = Join-Path $temporary 'home'
+$originalLocalAppData = $env:LOCALAPPDATA
+$originalModulePath = $env:PSModulePath
+$env:LOCALAPPDATA = Join-Path $temporary 'local-app-data'
 $shortcuts = Join-Path $temporary 'shortcuts'
 try {
+    . (Join-Path $root 'scripts/Common.ps1')
+    # GetFolderPath('LocalApplicationData') does not follow the process env override.
+    $script:SwsdHome = Join-Path $env:LOCALAPPDATA 'swsd-mcp'
     New-Item -ItemType Directory -Path $shortcuts -Force | Out-Null
-    $manifest = Get-Content -LiteralPath (Join-Path $root '.codex-plugin/plugin.json') -Raw | ConvertFrom-Json
-    $mcp = Get-Content -LiteralPath (Join-Path $root '.mcp.json') -Raw | ConvertFrom-Json
+    $manifest = Get-Content -LiteralPath (Join-Path $root '.codex-plugin/plugin.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $mcp = Get-Content -LiteralPath (Join-Path $root '.mcp.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($manifest.version -ne $script:SwsdClientVersion) { throw 'Plugin and client versions differ.' }
     if ($mcp.mcpServers.swsd.args[-1] -notlike "*client/$script:SwsdClientVersion/Start-Swsd.ps1*") { throw 'MCP manifest points to a different client version.' }
 
@@ -35,10 +39,12 @@ try {
 
     Install-SwsdTools -SourceRoot $root -ShortcutDirectory $shortcuts
     $client = Join-Path $script:SwsdHome "client/$script:SwsdClientVersion"
-    $package = Get-Content -LiteralPath (Join-Path $script:SwsdHome "runtime/$script:SwsdPackageVersion/node_modules/swsd-mcp/package.json") -Raw | ConvertFrom-Json
+    $package = Get-Content -LiteralPath (Join-Path $script:SwsdHome "runtime/$script:SwsdPackageVersion/node_modules/swsd-mcp/package.json") -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($package.version -ne $script:SwsdPackageVersion -or -not (Test-Path -LiteralPath (Get-SwsdEntryPoint))) { throw 'Pinned server was not installed.' }
     foreach ($name in @('Common.ps1','Manage-Swsd.ps1','Start-Swsd.ps1')) {
         if ((Get-FileHash -LiteralPath (Join-Path $root "scripts/$name")).Hash -ne (Get-FileHash -LiteralPath (Join-Path $client $name)).Hash) { throw "Installed $name differs from source." }
+        $bytes = [IO.File]::ReadAllBytes((Join-Path $client $name))
+        if ($bytes.Length -lt 3 -or $bytes[0] -ne 0xef -or $bytes[1] -ne 0xbb -or $bytes[2] -ne 0xbf) { throw "Installed $name lost its UTF-8 BOM." }
     }
     foreach ($name in @('package.json','package-lock.json')) {
         if ((Get-FileHash -LiteralPath (Join-Path $root "runtime/$name")).Hash -ne (Get-FileHash -LiteralPath (Join-Path $client "runtime/$name")).Hash) { throw "Repair recipe $name differs from source." }
@@ -64,10 +70,26 @@ try {
     Install-SwsdTools -SourceRoot $repair -ShortcutDirectory $shortcuts
     if ((Get-FileHash -LiteralPath (Join-Path $script:SwsdHome 'settings.json')).Hash -ne $settingsHash) { throw 'Repair changed saved settings.' }
     $env:PSModulePath=$null
-    $uiOutput=& powershell.exe -NoProfile -NonInteractive -STA -File (Join-Path $client 'Manage-Swsd.ps1') -ValidateUi
-    if ($LASTEXITCODE -ne 0 -or -not ($uiOutput -match '^PASS:')) { throw 'Installed WPF client could not load its retained assets and controls.' }
+    # Preserve the exact saved shortcut arguments; append only the isolated test switch.
+    $start = New-Object Diagnostics.ProcessStartInfo
+    $start.FileName = $shortcut.TargetPath
+    $start.Arguments = $shortcut.Arguments + ' -ValidateUi'
+    $start.UseShellExecute = $false; $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
+    $process = New-Object Diagnostics.Process
+    $process.StartInfo = $start
+    try {
+        [void]$process.Start()
+        $stdout = $process.StandardOutput.ReadToEndAsync(); $stderr = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit(120000)) { $process.Kill(); throw 'Installed WPF validation timed out.' }
+        $uiOutput = $stdout.GetAwaiter().GetResult(); $uiErrors = $stderr.GetAwaiter().GetResult()
+        if ($process.ExitCode -ne 0 -or $uiOutput -notmatch '(?m)^PASS:') { throw "Installed WPF validation failed: $uiErrors" }
+        Write-Output $uiOutput.Trim()
+    } finally { $process.Dispose() }
     Write-Output "PASS: isolated install and repair preserve settings, install server $script:SwsdPackageVersion and client $script:SwsdClientVersion, retain exact repair files and create the expected shortcut without credential access or policy overrides."
 } finally {
+    $env:LOCALAPPDATA = $originalLocalAppData
+    $env:PSModulePath = $originalModulePath
     $resolved = [IO.Path]::GetFullPath($temporary)
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
     if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or

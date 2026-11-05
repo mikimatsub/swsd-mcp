@@ -13,7 +13,7 @@ try {
     Save-SwsdSettings -BaseUrl 'https://api.samanage.com' -Profile agent -Theme unknown-theme
     if ((Get-SwsdSettings).theme -ne 'system') {throw 'Unknown theme saves must fall back to Match Windows.'}
     $path=Join-Path $script:SwsdHome 'settings.json'
-    $value=Get-Content $path -Raw | ConvertFrom-Json
+    $value=Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
     $value.theme='future-theme'; $value | ConvertTo-Json | Set-Content $path -Encoding UTF8
     if ((Get-SwsdSettings).theme -ne 'system') {throw 'Unknown stored themes must fall back to Match Windows.'}
     $value.PSObject.Properties.Remove('theme'); $value | ConvertTo-Json | Set-Content $path -Encoding UTF8
@@ -43,10 +43,10 @@ foreach ($profile in @('triage','agent','knowledge','operations','full','custom'
 }
 if ((New-SwsdIssueUrl -Kind feature -AppVersion '3.1.0' -ServerVersion '3.2.0' -WindowsVersion '10.0.26100' -Profile custom) -notlike '*template=feature_request.yml*') {throw 'Wrong feature template.'}
 foreach ($name in @('Manage-Swsd.ps1','Common.ps1')) {
-    $source=Get-Content (Join-Path $PSScriptRoot "../../plugins/swsd/scripts/$name") -Raw
+    $source=Get-Content (Join-Path $PSScriptRoot "../../plugins/swsd/scripts/$name") -Raw -Encoding UTF8
     if ($source -match ('secu'+'rely')) {throw 'Remove prohibited credential copy.'}
 }
 $notes=@(Get-SwsdReleaseNotes)
 if (-not @($notes | Where-Object {$_.kind -eq 'version' -and $_.text -eq 'Unreleased'}).Count -or -not @($notes | Where-Object {$_.kind -eq 'section' -and $_.text -eq 'Added'}).Count) {throw 'Bundled Keep a Changelog rendering failed.'}
-if ((Get-Content (Join-Path $PSScriptRoot '../../CHANGELOG.md') -Raw) -cne (Get-Content (Join-Path $PSScriptRoot '../../plugins/swsd/assets/CHANGELOG.md') -Raw)) {throw 'Bundled release notes must match CHANGELOG.md.'}
+if ((Get-FileHash -LiteralPath (Join-Path $PSScriptRoot '../../CHANGELOG.md')).Hash -ne (Get-FileHash -LiteralPath (Join-Path $PSScriptRoot '../../plugins/swsd/assets/CHANGELOG.md')).Hash) {throw 'Bundled release notes must match CHANGELOG.md byte-for-byte.'}
 Write-Output 'PASS: allowlisted issue prefills exclude secrets and paths; credential copy; bundled offline changelog.'

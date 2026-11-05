@@ -8,5 +8,8 @@ charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
+[plugins/swsd/**/*.ps1]
+charset = utf-8-bom
+
 [*.md]
 trim_trailing_whitespace = false
