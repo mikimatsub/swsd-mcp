@@ -53,8 +53,8 @@ Profiles control which tools are registered at startup. The choice is made once 
 | `triage` | Read-heavy first-line support workflow + commenting + read-only task/problem visibility | 21 |
 | `agent` | Full ticket-handler workflow + KB lookups + custom-field introspection + service-catalog + tasks + problems + work logs/attachments (default) | 51 |
 | `knowledge` | KB-author workflow + incident reads + custom-field introspection | 17 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 138 |
-| `full` | Every tool registered | 140 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context | 143 |
+| `full` | Every tool registered | 145 |
 
 ### When to pick which
 
