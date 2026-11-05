@@ -10,5 +10,6 @@ export const UI_TOOLS = [
   'audit-timeline',
   'catalog-item-form',
   'sla-risk',
+  'ticket-stats',
   'change-calendar',
 ];

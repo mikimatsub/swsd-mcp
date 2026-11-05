@@ -246,11 +246,11 @@ After deploying the HTTP server (above), you import a Swagger 2.0 connector spec
 
 Per-profile Swagger files live in [`copilot-studio/`](https://github.com/mikimatsub/swsd-mcp/tree/main/copilot-studio) on GitHub:
 
-- `triage.swagger.yaml` (18 tools)
-- `agent.swagger.yaml` (47 tools, default)
+- `triage.swagger.yaml` (19 tools)
+- `agent.swagger.yaml` (48 tools, default)
 - `knowledge.swagger.yaml` (17 tools)
-- `operations.swagger.yaml` (112 tools)
-- `full.swagger.yaml` (114 tools)
+- `operations.swagger.yaml` (113 tools)
+- `full.swagger.yaml` (115 tools)
 
 ### Import steps
 

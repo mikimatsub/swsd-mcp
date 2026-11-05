@@ -40,6 +40,7 @@ const ALLOWED_UI_NAMES = new Set<string>([
   'audit-timeline',
   'catalog-item-form',
   'sla-risk',
+  'ticket-stats',
   'change-calendar',
 ]);
 
