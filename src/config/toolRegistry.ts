@@ -160,6 +160,13 @@ import { registerDeleteProblem } from '../tools/problems/deleteProblem.js';
 import { registerDeleteChange } from '../tools/records/deleteChange.js';
 import { registerDeleteRelease } from '../tools/records/deleteRelease.js';
 import { registerDeleteSolution } from '../tools/solutions/deleteSolution.js';
+import {
+  registerListHardwareWarranties,
+  registerAddHardwareWarranty,
+  registerUpdateHardwareWarranty,
+  registerDeleteHardwareWarranty,
+  registerAddContractItem,
+} from '../tools/records/assetSubresources.js';
 import { registerChangeCalendar } from '../tools/records/changeCalendar.js';
 
 export interface ToolContext {
@@ -287,6 +294,12 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_delete_change_catalog: registerDeleteChangeCatalog,
   swsd_list_change_catalogs: registerListChangeCatalogs,
   swsd_get_change_catalog: registerGetChangeCatalog,
+
+  swsd_list_hardware_warranties: registerListHardwareWarranties,
+  swsd_add_hardware_warranty: registerAddHardwareWarranty,
+  swsd_update_hardware_warranty: registerUpdateHardwareWarranty,
+  swsd_delete_hardware_warranty: registerDeleteHardwareWarranty,
+  swsd_add_contract_item: registerAddContractItem,
 
   swsd_create_hardware_asset: registerCreateHardwareAsset,
   swsd_update_hardware_asset: registerUpdateHardwareAsset,

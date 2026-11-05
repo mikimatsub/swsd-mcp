@@ -249,8 +249,8 @@ Per-profile Swagger files live in [`copilot-studio/`](https://github.com/mikimat
 - `triage.swagger.yaml` (21 tools)
 - `agent.swagger.yaml` (51 tools, default)
 - `knowledge.swagger.yaml` (17 tools)
-- `operations.swagger.yaml` (138 tools)
-- `full.swagger.yaml` (140 tools)
+- `operations.swagger.yaml` (143 tools)
+- `full.swagger.yaml` (145 tools)
 
 ### Import steps
 
