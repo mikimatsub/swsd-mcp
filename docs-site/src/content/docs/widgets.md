@@ -13,13 +13,14 @@ All widgets are self-contained. No external network access, no third-party scrip
 |---|---|---|
 | [`incident-detail`](#incident-detail) | `swsd_get_incident` | Single-incident card with description, due date, SLA, resolution, custom fields. |
 | [`solution-detail`](#solution-detail) | `swsd_get_solution` | Single-solution card with full sanitized HTML body, attachments, audits, statistics. |
-| [`incident-list`](#incident-list) | `swsd_list_incidents`, `swsd_list_my_incidents` | Sortable, filterable, scrollable table of incidents. |
+| [`incident-list`](#incident-list) | `swsd_list_incidents`, `swsd_list_my_incidents`, `swsd_my_queue` | Sortable, filterable, scrollable table of incidents. |
 | [`sla-risk`](#sla-risk) | `swsd_sla_risk` | Risk-count chips + color-coded table with due countdowns. |
 | [`comment-thread`](#comment-thread) | `swsd_list_incident_comments` | Vertical comment thread with author chips, timestamps, public/private badges. |
 | [`audit-timeline`](#audit-timeline) | `swsd_get_record_audits` | Vertical audit-log timeline grouped by day with action chips and field diffs. |
 | [`catalog-item-form`](#catalog-item-form) | `swsd_get_catalog_item` | Renders catalog variables as a form; submits via `swsd_create_service_request`. |
 | [`custom-fields`](#custom-fields) | `swsd_describe_custom_fields` | Searchable explorer with scope/module filters and per-field detail panel. |
 | [`change-calendar`](#change-calendar) | `swsd_change_calendar` | Local-time day sections for changes/releases, with shared-CI/group conflict badges. |
+| [`ticket-stats`](#ticket-stats) | `swsd_ticket_stats` | Summary tiles, median resolution time, and state/priority/assignee/category breakdowns. |
 
 ## How widgets are loaded
 
@@ -41,6 +42,10 @@ All nine widgets handle `isError: true` tool results. Instead of an infinite "Lo
 ## Per-widget detail
 
 ### `change-calendar`
+
+![change-calendar widget rendered with Acme Corp example data, dark theme](/widgets/change-calendar-dark.png)
+
+*Light theme: [`change-calendar-light.png`](/widgets/change-calendar-light.png)*
 
 Bound to `swsd_change_calendar` in Agent, Operations and Full, with resource URI `ui://swsd/change-calendar.html`. The header shows the selected window as a friendly date range (for example “Nov 10 – Nov 12 · times in EST”) and Changes, Releases and Conflicts totals (conflicting pairs). Day sections use each item's start date in the viewer's timezone. Rows show a fixed-width time column, a blue Change or purple Release pill, the linked name (wrapping to two lines) with a muted state · group · assignee line beneath it, and a fixed Conflict badge column so rows line up. Red left borders and Conflict badges identify overlapping work; the badge tooltip lists shared CIs and groups.
 
@@ -80,7 +85,19 @@ Pagination chip in the footer shows `page X of Y matching your filters` (when `p
 
 ### `sla-risk`
 
+![sla-risk widget rendered with Acme Corp example data, dark theme](/widgets/sla-risk-dark.png)
+
+*Light theme: [`sla-risk-light.png`](/widgets/sla-risk-light.png)*
+
 Bound to `swsd_sla_risk`. Header with color-coded risk-count chips (breached/critical/warning/ok/no due date) and a table of incidents sorted by risk priority. Each row shows the incident number/name (linked), a color-coded risk pill, human-readable due countdown ("Overdue by 3h 12m" / "Due in 45m"), priority, and assignee. Long names truncate with the full text available on hover. The layout sizes to its content and adapts to narrow hosts: below 640px the Priority and Assignee columns drop, and below 440px the number column folds into the name cell with the chips wrapping under the title. Risk colors: red for breached, orange for critical, amber for warning, green for ok, gray for no due date. Follows host light/dark theme via CSS custom properties and `color-scheme`.
+
+### `ticket-stats`
+
+![ticket-stats widget rendered with Acme Corp example data, dark theme](/widgets/ticket-stats-dark.png)
+
+*Light theme: [`ticket-stats-light.png`](/widgets/ticket-stats-light.png)*
+
+Bound to `swsd_ticket_stats`. Summary tiles show total scanned, open, created, resolved, breached and unassigned counts, followed by the median resolution time. A notice appears when the scan stops before all pages are read. Breakdown tables list state, priority, the top 10 assignees and the top 10 categories with a share bar. Follows host light/dark theme.
 
 ### `comment-thread`
 

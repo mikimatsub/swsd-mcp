@@ -54,7 +54,7 @@ The token is hashed (never stored as a key) for memory safety. `/healthz` is del
 
 The `/mcp` endpoint validates the `Origin` header against an allowlist (`SWSD_ALLOWED_ORIGINS`). This is the documented mitigation for DNS rebinding attacks where a malicious website tricks a browser into sending requests to a localhost MCP server.
 
-Empty allowlist = no Origin restriction (acceptable behind a trusted reverse proxy that filters).
+Empty allowlist = only loopback origins are accepted. Requests without an `Origin` header are unaffected.
 
 ### Request timeouts
 
