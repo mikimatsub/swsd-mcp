@@ -50,6 +50,8 @@ jobs:
 
       - name: Validate diagnostics redaction and isolated credential presence
         run: powershell.exe -NoProfile -NonInteractive -STA -File tests/windows-plugin/check-diagnostics.ps1
+      - name: Windows plugin DPI
+        run: powershell.exe -NoProfile -NonInteractive -STA -File tests/windows-plugin/check-dpi.ps1
 
       - name: Validate setup controls without opening a window
         run: powershell.exe -NoProfile -NonInteractive -STA -File plugins/swsd/scripts/Manage-Swsd.ps1 -ValidateUi

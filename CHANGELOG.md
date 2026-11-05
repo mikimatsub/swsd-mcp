@@ -18,8 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation: the README widgets section now lists all ten widgets,
   including `ticket-stats` and `swsd_my_queue`; the widgets reference describes
   the incident-list title total (`matched_total`/`total_scope`) instead of a
-  footer chip; the 3.2.0 entry now states that the Windows settings app is
-  system-DPI-aware rather than PerMonitorV2.
+  footer chip. The 3.2.0 entry describes its system-DPI-aware implementation;
+  the Windows settings app now supports PerMonitorV2 as described below.
+- Windows settings: enable PerMonitorV2 before creating windows, with per-monitor
+  and system-aware fallbacks on older Windows. Moving between monitors reapplies
+  the suggested window bounds and rescales fonts, icons, spacing, inputs, buttons,
+  and fixed dashboard cells without cumulative rounding. Measure the dashboard's
+  full card width and use one column when needed, fixing overflow at 125% scaling.
+  DPI diagnostics and light/dark layout checks retain the `SWSD_UI_SCALE` test hook.
 
 ## [3.2.0] - 2026-11-04
 
