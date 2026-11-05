@@ -100,6 +100,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   iframe, preserving cached render targets and interactive controls.
 - `swsd_sla_risk_review` accepts a numeric group ID directly, so group-scoped
   reviews work in every supported profile without a group lookup tool.
+- HTTP-selected CLI launches now propagate the transport mode, and HTTP always
+  rejects local `file_path` attachments before accessing the filesystem.
+- Invalid SWSD tokens fail before fetch; credentials are redacted from errors,
+  nested tool content and structured results, and custom-field dump diagnostics.
+- `SWSD_BASE_URL` now requires HTTPS and rejects embedded URL credentials.
+- HTTP rate limits use the same normalized token as authentication, preventing
+  quota bypass through Bearer casing or ignored Authorization headers.
+- HTTP rejects non-loopback Origins by default and supports optional exact Host
+  validation through `SWSD_ALLOWED_HOSTS`, without changing the listen address.
+  Hosted deployments that serve browser-based clients must list those origins in
+  `SWSD_ALLOWED_ORIGINS`. Requests without an Origin header are unaffected.
+- HTTP parser and unexpected errors return bounded generic JSON, with safe
+  metadata-only logging; authentication and rate limiting run before JSON parsing.
+- Outbound retries are limited to GET; HEAD now makes only one attempt.
 - Widgets now follow the host's light or dark theme. The UI build had been lowering
   CSS `light-dark()` to the OS color-scheme preference, so eight widgets ignored
   the host theme. The incident list also keeps numbers and words whole in narrow
