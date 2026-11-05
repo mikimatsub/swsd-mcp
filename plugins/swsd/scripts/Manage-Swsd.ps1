@@ -1,4 +1,4 @@
-param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [switch]$ValidateDpiChanges, [ValidateRange(1,15)][int]$WindowTestSeconds = 2, [ValidateSet('ready','firstrun','jwt-help','error','tools','tool-detail','profile-builder','custom-selected','import-error','whats-new')][string]$PreviewState = 'ready', [string]$ScreenshotPath)
+﻿param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [switch]$ValidateDpiChanges, [ValidateRange(1,15)][int]$WindowTestSeconds = 2, [ValidateSet('ready','firstrun','jwt-help','error','tools','tool-detail','profile-builder','custom-selected','import-error','whats-new')][string]$PreviewState = 'ready', [string]$ScreenshotPath)
 $ErrorActionPreference = 'Stop'
 if ($ValidateUi -or $ValidateWindow -or $ValidateHandlers -or $ValidateDpiChanges) {
     # Handler checks exercise credential flows without depending on a signed-in desktop.
