@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 115 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 132 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **115 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **132 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
@@ -21,6 +21,9 @@ Nine interactive UI bundles ship with read tools using the [MCP Apps capability]
 | `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips, timestamps, public/private badges, sanitized HTML bodies |
 | `swsd_get_record_audits` | `audit-timeline` | Vertical timeline grouped by day with action chips and field-level diffs |
 | `swsd_get_catalog_item` | `catalog-item-form` | Renders catalog variables as a form; submits via `swsd_create_service_request` (calls back into the server through `app.callServerTool`) |
+| `swsd_create_catalog_item` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_catalog_item` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_catalog_item` | W |   |   |   | ✓ | ✓ |
 | `swsd_describe_custom_fields` | `custom-fields` | Searchable explorer with scope/module filters |
 
 HTML content (solution bodies, incident descriptions, comment bodies, catalog helptext) is sanitized client-side via DOMPurify before insertion: no external network access, no third-party scripts. Tools with a UI bundle are marked **UI** in the Type column below.
@@ -267,16 +270,30 @@ These read tools expose asset and CMDB context without adding asset mutation ris
 
 ---
 
-## Procurement & Risk (7)
+## Procurement & Risk (21)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_contracts` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_contract` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_contract` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_contract` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_contract` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_purchase_orders` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_purchase_order` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_purchase_order` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_purchase_order` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_purchase_order` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_vendors` | R |   |   |   | ✓ | ✓ |
 | `swsd_get_vendor` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_vendor` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_vendor` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_vendor` | W |   |   |   | ✓ | ✓ |
+| `swsd_list_change_catalogs` | R |   |   |   | ✓ | ✓ |
+| `swsd_get_change_catalog` | R |   |   |   | ✓ | ✓ |
+| `swsd_create_change_catalog` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_change_catalog` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_change_catalog` | W |   |   |   | ✓ | ✓ |
 | `swsd_list_risks` | R |   |   |   | ✓ | ✓ |
 
 Procurement context helps agents answer warranty, vendor, and purchase-history questions without opening a separate system.
