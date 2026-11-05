@@ -3,7 +3,7 @@ import { buildHeaders } from './headers.js';
 import { serializeQuery } from './query.js';
 import { extractPagination, type PaginationMeta } from './pagination.js';
 import { SwsdHttpError, SwsdNetworkError } from './errors.js';
-import { redactSecrets } from '../utils/secrets.js';
+import { redactValue } from '../utils/secrets.js';
 
 export interface SwsdGetResult<T> {
   body: T;
@@ -125,7 +125,7 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
     if (!res.ok) {
       throw new SwsdHttpError(res.status, body, res.headers.get('retry-after') ?? undefined, token);
     }
-    return { body: redactSecrets(body, token), headers: res.headers, status: res.status };
+    return { body: redactValue(body, token), headers: res.headers, status: res.status };
   }
 
   return {

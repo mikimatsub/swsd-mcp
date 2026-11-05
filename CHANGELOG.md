@@ -103,6 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   quota bypass through Bearer casing or ignored Authorization headers.
 - HTTP rejects non-loopback Origins by default and supports optional exact Host
   validation through `SWSD_ALLOWED_HOSTS`, without changing the listen address.
+  Hosted deployments that serve browser-based clients must list those origins in
+  `SWSD_ALLOWED_ORIGINS`. Requests without an Origin header are unaffected.
 - HTTP parser and unexpected errors return bounded generic JSON, with safe
   metadata-only logging; authentication and rate limiting run before JSON parsing.
 - Outbound retries are limited to GET; HEAD now makes only one attempt.

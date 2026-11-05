@@ -67,8 +67,10 @@ describe('credential redaction', () => {
   });
 
   it('sanitizes structuredResult credential fields before protocol output', () => {
-    expect(structuredResult({ nested: [{ Authorization: 'SYNTHETIC_AUTH' }] }, 'Bearer SYNTHETIC_OTHER'))
-      .toEqual({ content: [{ type: 'text', text: 'Bearer [REDACTED]' }], structuredContent: { nested: [{ Authorization: '[REDACTED]' }] } });
+    // Summary text is built from ticket data; the active token is removed at the
+    // transport boundary, and free text is otherwise left intact.
+    expect(structuredResult({ nested: [{ Authorization: 'SYNTHETIC_AUTH' }] }, 'Ticket summary'))
+      .toEqual({ content: [{ type: 'text', text: 'Ticket summary' }], structuredContent: { nested: [{ Authorization: '[REDACTED]' }] } });
   });
 
   it('redacts unexpected errors and both result forms per transport without changing RPC ids', async () => {
@@ -85,5 +87,21 @@ describe('credential redaction', () => {
       expect(JSON.stringify(send.mock.calls.slice(1))).not.toContain(token);
       expect(result.structuredContent?.echo).toBe(token);
     }
+  });
+});
+
+describe('successful data redaction keeps ticket content intact', () => {
+  it('does not mangle free text that mentions passwords or bearer', async () => {
+    const { redactValue } = await import('../../src/utils/secrets.js');
+    const record = {
+      id: 1234567,
+      description: 'Password: reset needed for jane@example.test\nBearer of bad news',
+      token: 'SYNTHETIC_TOKEN',
+      note: 'contains SYNTHETIC_TOKEN inline',
+    };
+    const out = redactValue(record, 'SYNTHETIC_TOKEN');
+    expect(out.description).toBe(record.description);
+    expect(out.token).toBe('[REDACTED]');
+    expect(out.note).toBe('contains [REDACTED] inline');
   });
 });

@@ -49,6 +49,24 @@ export function redactSecrets<T>(value: T, token?: string): T {
   return value;
 }
 
+/**
+ * Redaction for successful data (ticket records, summaries). Only removes the
+ * active token and values under credential-named keys. It deliberately skips
+ * the free-text heuristics in redactText, which would mangle legitimate ticket
+ * content such as "Password: reset needed" in a description.
+ */
+export function redactValue<T>(value: T, token?: string): T {
+  if (typeof value === 'string') return (token ? value.split(token).join(REDACTED) : value) as T;
+  if (Array.isArray(value)) return value.map((item: unknown) => redactValue(item, token)) as T;
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+      token ? key.split(token).join(REDACTED) : key,
+      SENSITIVE_KEY.test(key) ? REDACTED : redactValue(item, token),
+    ])) as T;
+  }
+  return value;
+}
+
 /** Final request-scoped boundary, including SDK errors and both MCP result forms. */
 export function redactTransport(transport: Transport, token: string): Transport {
   const send = transport.send.bind(transport);
@@ -57,7 +75,12 @@ export function redactTransport(transport: Transport, token: string): Transport 
       return send({ ...message, error: redactSecrets(message.error, token) }, options);
     }
     if ('result' in message && ('content' in message.result || 'structuredContent' in message.result)) {
-      return send({ ...message, result: redactSecrets(message.result, token) }, options);
+      // Error results get the full heuristics; successful data only loses the
+      // token and credential-named keys.
+      const result = message.result.isError === true
+        ? redactSecrets(message.result, token)
+        : redactValue(message.result, token);
+      return send({ ...message, result }, options);
     }
     return send(message, options);
   };
