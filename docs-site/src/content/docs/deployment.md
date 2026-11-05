@@ -63,6 +63,8 @@ Image tags:
 
 - `:latest`: the latest main-branch commit
 - `:sha-XXXXXXX`: pinned to a specific commit (recommended for production)
+- `:X.Y.Z`: a release tag build (from 3.2.1 onward)
+- `:X.Y`: the newest release tag build in that minor line (from 3.2.1 onward)
 
 Browse all tags at [GitHub Packages](https://github.com/mikimatsub/swsd-mcp/pkgs/container/swsd-mcp).
 

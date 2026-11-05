@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.2.0`.
+- Release tag pushes now publish the container image with `X.Y.Z` and `X.Y`
+  tags and a matching `org.opencontainers.image.version` label.
 
 ### Fixed
 
