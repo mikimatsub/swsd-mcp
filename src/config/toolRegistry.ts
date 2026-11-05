@@ -22,10 +22,14 @@ import { registerLinkSolutionToIncident } from '../tools/incidents/linkSolutionT
 
 import { registerListIncidentComments } from '../tools/comments/listIncidentComments.js';
 import { registerAddIncidentComment } from '../tools/comments/addIncidentComment.js';
+import { registerListRecordComments } from '../tools/comments/listRecordComments.js';
+import { registerAddRecordComment } from '../tools/comments/addRecordComment.js';
 import { registerUpdateComment } from '../tools/comments/updateComment.js';
 
 import { registerListIncidentTasks } from '../tools/tasks/listIncidentTasks.js';
 import { registerCreateIncidentTask } from '../tools/tasks/createIncidentTask.js';
+import { registerListRecordTasks } from '../tools/tasks/listRecordTasks.js';
+import { registerCreateRecordTask } from '../tools/tasks/createRecordTask.js';
 import { registerUpdateTaskState } from '../tools/tasks/updateTaskState.js';
 
 import { registerListProblems } from '../tools/problems/listProblems.js';
@@ -186,10 +190,14 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_list_incident_comments: registerListIncidentComments,
   swsd_add_incident_comment: registerAddIncidentComment,
   swsd_update_comment: registerUpdateComment,
+  swsd_list_record_comments: registerListRecordComments,
+  swsd_add_record_comment: registerAddRecordComment,
 
   swsd_list_incident_tasks: registerListIncidentTasks,
   swsd_create_incident_task: registerCreateIncidentTask,
   swsd_update_task_state: registerUpdateTaskState,
+  swsd_list_record_tasks: registerListRecordTasks,
+  swsd_create_record_task: registerCreateRecordTask,
 
   swsd_list_problems: registerListProblems,
   swsd_get_problem: registerGetProblem,
