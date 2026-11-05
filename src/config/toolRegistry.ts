@@ -23,10 +23,13 @@ import { registerLinkSolutionToIncident } from '../tools/incidents/linkSolutionT
 import { registerListIncidentComments } from '../tools/comments/listIncidentComments.js';
 import { registerAddIncidentComment } from '../tools/comments/addIncidentComment.js';
 import { registerUpdateComment } from '../tools/comments/updateComment.js';
+import { registerDeleteComment } from '../tools/comments/deleteComment.js';
 
 import { registerListIncidentTasks } from '../tools/tasks/listIncidentTasks.js';
 import { registerCreateIncidentTask } from '../tools/tasks/createIncidentTask.js';
 import { registerUpdateTaskState } from '../tools/tasks/updateTaskState.js';
+import { registerUpdateTask } from '../tools/tasks/updateTask.js';
+import { registerDeleteTask } from '../tools/tasks/deleteTask.js';
 
 import { registerListProblems } from '../tools/problems/listProblems.js';
 import { registerGetProblem } from '../tools/problems/getProblem.js';
@@ -145,6 +148,7 @@ import {
   registerListTimeTracks,
   registerLogTime,
   registerUpdateTimeTrack,
+  registerDeleteTimeTrack,
 } from '../tools/timeTracks/timeTrackTools.js';
 import { registerUploadAttachment } from '../tools/attachments/uploadAttachment.js';
 import { registerDeleteIncident } from '../tools/incidents/deleteIncident.js';
@@ -186,10 +190,13 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_list_incident_comments: registerListIncidentComments,
   swsd_add_incident_comment: registerAddIncidentComment,
   swsd_update_comment: registerUpdateComment,
+  swsd_delete_comment: registerDeleteComment,
 
   swsd_list_incident_tasks: registerListIncidentTasks,
   swsd_create_incident_task: registerCreateIncidentTask,
   swsd_update_task_state: registerUpdateTaskState,
+  swsd_update_task: registerUpdateTask,
+  swsd_delete_task: registerDeleteTask,
 
   swsd_list_problems: registerListProblems,
   swsd_get_problem: registerGetProblem,
@@ -310,6 +317,7 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_list_time_tracks: registerListTimeTracks,
   swsd_log_time: registerLogTime,
   swsd_update_time_track: registerUpdateTimeTrack,
+  swsd_delete_time_track: registerDeleteTimeTrack,
   swsd_upload_attachment: registerUploadAttachment,
 };
 
