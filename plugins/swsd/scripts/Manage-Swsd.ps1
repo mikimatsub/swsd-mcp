@@ -773,7 +773,7 @@ function Measure-SwsdGridText([string[]]$Texts, [Drawing.Font]$Font, [int]$Paddi
 }
 function Update-SwsdDashboardMetrics([Drawing.Font]$ValueFont, [Drawing.Font]$ChipFont) {
 $script:dashboardIconWidth = ScalePx 32
-$script:dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'Tools', 'Token', 'Region', 'Profile', 'Updates') $ValueFont 8
+$script:dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'SWSD tools', 'Token', 'Region', 'Profile', 'Updates') $ValueFont 8
 $script:dashboardValueWidth = [Math]::Max((ScalePx 144), (Measure-SwsdGridText (@('Not installed', 'Unavailable', ('swsd-mcp ' + $script:SwsdPackageVersion)) + @($script:SwsdProfiles | ForEach-Object { $_.name })) $ValueFont 8))
 $script:dashboardChipWidth = Measure-SwsdGridText $dashboardChipTexts $ChipFont 16
 # A chip is exactly one measured line plus 4 logical pixels above and below.
@@ -853,7 +853,7 @@ function New-StatusRow([string]$AccessibleName, [string]$IconGlyph, [string]$Lab
 }
 
 $srNode = New-StatusRow 'Node.js' (Get-SwsdIconGlyph 'Node') 'Node.js'
-$srTools = New-StatusRow 'Tools installed' (Get-SwsdIconGlyph 'Tools') 'Tools'
+$srTools = New-StatusRow 'SolarWinds Service Desk tools installed' (Get-SwsdIconGlyph 'Tools') 'SWSD tools'
 $srToken = New-StatusRow 'Token saved' (Get-SwsdIconGlyph 'Key') 'Token'
 $srRegion = New-StatusRow 'Region' (Get-SwsdIconGlyph 'Region') 'Region'
 $srProfile = New-StatusRow 'Profile' (Get-SwsdIconGlyph 'Profile') 'Profile'
