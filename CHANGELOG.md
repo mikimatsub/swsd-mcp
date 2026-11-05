@@ -94,6 +94,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Windows plugin: Repair from the manager window now always reinstalls, the
+  up-to-date shortcut also checks the installed lockfile, and a timed-out update
+  check no longer leaves npm running.
 - MCP Registry profile descriptions now match the tool counts in `PROFILE_TOOLS`,
   with an offline metadata regression check to prevent drift.
 - Widgets recover from errors when a later successful result arrives in the same
