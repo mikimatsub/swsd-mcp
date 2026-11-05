@@ -89,4 +89,22 @@ describe('applyDateAlias', () => {
     // Unparseable alias: keep input as-is (don't touch updated_from)
     expect(result).toEqual(input);
   });
+
+  describe('planUpdatedFrom', () => {
+    it('passes date-only values through', async () => {
+      const { planUpdatedFrom } = await import('../../../src/utils/dateAliases.js');
+      expect(planUpdatedFrom('2026-11-01')).toEqual({ upstream: '2026-11-01' });
+      expect(planUpdatedFrom(undefined)).toEqual({});
+    });
+    it('widens timestamps to the previous date and keeps the exact cutoff', async () => {
+      const { planUpdatedFrom, passesUpdatedCutoff } = await import('../../../src/utils/dateAliases.js');
+      const plan = planUpdatedFrom('2026-11-04T00:30:00Z');
+      expect(plan).toEqual({ upstream: '2026-11-03', cutoffMs: Date.parse('2026-11-04T00:30:00Z') });
+      expect(passesUpdatedCutoff('2026-11-04T00:30:00Z', plan.cutoffMs)).toBe(true);
+      expect(passesUpdatedCutoff('2026-11-03T20:29:00-04:00', plan.cutoffMs)).toBe(false);
+      expect(passesUpdatedCutoff(undefined, plan.cutoffMs)).toBe(false);
+      expect(passesUpdatedCutoff(undefined, undefined)).toBe(true);
+    });
+  });
 });
+

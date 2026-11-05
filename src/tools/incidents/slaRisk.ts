@@ -14,7 +14,7 @@ import { withTotalScope, type PaginationMeta } from '../../swsd/pagination.js';
 import { toIncidentDetail, toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { computeSlaRisk, sortByRisk } from '../../swsd/mappers/slaRisk.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
-import { applyDateAlias } from '../../utils/dateAliases.js';
+import { applyDateAlias, passesUpdatedCutoff, planUpdatedFrom } from '../../utils/dateAliases.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 const UI_RESOURCE_URI = 'ui://swsd/sla-risk.html';
@@ -88,12 +88,13 @@ export function registerSlaRisk(server: McpServer, ctx: ToolContext): void {
         if (input.priorities?.length) params.priority = input.priorities;
         if (input.assigned_to_group !== undefined) params.assigned_to = input.assigned_to_group;
         if (input.state_is_not?.length) params.state_is_not = input.state_is_not;
-        if (input.updated_from) params.updated_at = ['greater_than', input.updated_from];
+        const updatedPlan = planUpdatedFrom(input.updated_from);
+        if (updatedPlan.upstream) params.updated_at = ['greater_than', updatedPlan.upstream];
 
         const assigneeLower = input.assignee_email?.toLowerCase();
         const atRiskHours = input.at_risk_within_hours ?? 24;
         const includeNoDue = input.include_no_due_date ?? false;
-        const clientFilterApplied = assigneeLower !== undefined || !includeNoDue;
+        const clientFilterApplied = assigneeLower !== undefined || !includeNoDue || updatedPlan.cutoffMs !== undefined;
         const kept: Array<NonNullable<ReturnType<typeof toIncidentSummary>> & ReturnType<typeof computeSlaRisk>> = [];
         const seen = new Set<number>();
         let pagination: PaginationMeta;
@@ -111,6 +112,7 @@ export function registerSlaRisk(server: McpServer, ctx: ToolContext): void {
             if (!inc || seen.has(inc.id)) continue;
             seen.add(inc.id);
             if (assigneeLower !== undefined && inc.assignee_email?.toLowerCase() !== assigneeLower) continue;
+            if (!passesUpdatedCutoff(inc.updated_at, updatedPlan.cutoffMs)) continue;
             const detail = toIncidentDetail(row);
             const risk = computeSlaRisk(inc.due_at, detail?.sla_violations ?? [], atRiskHours, now);
             if (includeNoDue || risk.risk !== 'no_due_date') kept.push({ ...inc, ...risk });
