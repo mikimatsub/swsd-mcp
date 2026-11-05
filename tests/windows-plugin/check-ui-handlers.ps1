@@ -6,3 +6,4 @@ $output = & powershell.exe -NoProfile -NonInteractive -STA -File $script -Valida
 $output | ForEach-Object { Write-Output $_ }
 if ($LASTEXITCODE -ne 0 -or -not ($output -match '^PASS:')) { throw 'UI handler check failed.' }
 & (Join-Path $PSScriptRoot 'check-companion.ps1')
+& (Join-Path $PSScriptRoot 'check-theme-contrast.ps1')

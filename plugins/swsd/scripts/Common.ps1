@@ -1,5 +1,124 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Named colors are transcribed from T-Tui src/themes.rs; keep source colors intact.
+# Order is also the Appearance picker order. IDs remain stable independently of names.
+$script:SwsdThemes = [ordered]@{
+    system = @{ name='Match Windows' }
+    light = @{ name='Light'; colors=@('#f3f3f4','#fcfcfd','#1a1a1e','#5c5f66','#e4e4e8','#0067c0','#ffffff','#eaf2fb','#107c10','#c42b1c') }
+    dark = @{ name='Dark'; colors=@('#1d1d20','#28282d','#f5f5f7','#a3a3ad','#3c3c43','#5fc8ff','#3a3e48','#2d3a44','#7ad46e','#ff99a4') }
+    'dracula' = @{ name='Dracula'; colors=@('#282a36','#21222c','#f8f8f2','#a0a9cf','#44475a','#bd93f9','#44475a','#373047','#50fa7b','#ff5555') }
+    'catppuccin-mocha' = @{ name='Catppuccin Mocha'; colors=@('#1e1e2e','#181825','#cdd6f4','#a6adc8','#45475a','#cba6f7','#313244','#38304b','#a6e3a1','#f38ba8') }
+    'catppuccin-macchiato' = @{ name='Catppuccin Macchiato'; colors=@('#24273a','#1e2030','#cad3f5','#a5adcb','#494d64','#c6a0f6','#363a4f','#3b3451','#a6da95','#ed8796') }
+    'catppuccin-frappe' = @{ name='Catppuccin Frappe'; colors=@('#303446','#292c3c','#c6d0f5','#a5adce','#51576d','#ca9ee6','#414559','#48405b','#a6d189','#e78284') }
+    'catppuccin-latte' = @{ name='Catppuccin Latte'; colors=@('#eff1f5','#e6e9ef','#4c4f69','#626880','#bcc0cc','#8839ef','#dce0e8','#e1d6f1','#407900','#d20f39') }
+    'nord' = @{ name='Nord'; colors=@('#2e3440','#272c36','#eceff4','#b0baca','#4c566a','#88c0d0','#3b4252','#384956','#a3be8c','#bf616a') }
+    'gruvbox' = @{ name='Gruvbox Dark'; colors=@('#282828','#1d2021','#ebdbb2','#bdae93','#504945','#fabd2f','#3c3836','#49402f','#b8bb26','#fb4934') }
+    'gruvbox-light' = @{ name='Gruvbox Light'; colors=@('#fbf1c7','#f2e5bc','#3c3836','#665c54','#bdae93','#9d0006','#ebdbb2','#e4d5b1','#586400','#af3a03') }
+    'tokyo-night' = @{ name='Tokyo Night'; colors=@('#1a1b26','#16161e','#c0caf5','#9aa5ce','#414868','#7aa2f7','#292e42','#263651','#9ece6a','#f7768e') }
+    'tokyo-storm' = @{ name='Tokyo Night Storm'; colors=@('#24283b','#1f2335','#c0caf5','#a9b1d6','#414868','#bb9af7','#343b58','#3c3456','#9ece6a','#f7768e') }
+    'tokyo-day' = @{ name='Tokyo Night Day'; colors=@('#e1e2e7','#d5d6db','#343b58','#565f89','#a1a6c5','#2e7de9','#c4c8da','#c2d3eb','#336c2c','#b52b50') }
+    'one-dark' = @{ name='One Dark'; colors=@('#282c34','#21252b','#abb2bf','#9da5b4','#4b5263','#61afef','#3e4451','#303f50','#98c379','#e06c75') }
+    'one-light' = @{ name='One Light'; colors=@('#fafafa','#f0f0f0','#383a42','#696c77','#c6c7cc','#4078f2','#e2e5ed','#dde7f7','#507a14','#e45649') }
+    'solarized-dark' = @{ name='Solarized Dark'; colors=@('#002b36','#073642','#93a1a1','#839496','#586e75','#2aa198','#134753','#0b4547','#99a900','#dc322f') }
+    'solarized-light' = @{ name='Solarized Light'; colors=@('#fdf6e3','#eee8d5','#586e75','#657b83','#93a1a1','#087f87','#e0ddca','#d8e4d8','#687900','#dc322f') }
+    'rose-pine' = @{ name=('Ros'+[char]0xe9+' Pine'); colors=@('#191724','#1f1d2e','#e0def4','#aaa5c3','#403d52','#c4a7e7','#403d52','#383149','#9ccfd8','#eb6f92') }
+    'rose-pine-moon' = @{ name=('Ros'+[char]0xe9+' Pine Moon'); colors=@('#232136','#2a273f','#e0def4','#aaa5c3','#44415a','#ea9a97','#44415a','#483549','#9ccfd8','#eb6f92') }
+    'rose-pine-dawn' = @{ name=('Ros'+[char]0xe9+' Pine Dawn'); colors=@('#faf4ed','#fffaf3','#575279','#797593','#cecacd','#907aa9','#f2e9e1','#ece1eb','#286983','#b4637a') }
+    'monokai' = @{ name='Monokai'; colors=@('#272822','#1e1f1c','#f8f8f2','#b0ad9e','#49483e','#f92672','#49483e','#47313c','#a6e22e','#fd971f') }
+    'material-ocean' = @{ name='Material Ocean'; colors=@('#0f111a','#090b10','#eeffff','#8f9bb3','#3b4256','#82aaff','#292d3e','#22304a','#c3e88d','#f07178') }
+    'github-dark' = @{ name='GitHub Dark'; colors=@('#0d1117','#161b22','#e6edf3','#8b949e','#30363d','#79c0ff','#21262d','#1c3049','#7ee787','#ff7b72') }
+    'github-light' = @{ name='GitHub Light'; colors=@('#ffffff','#f6f8fa','#1f2328','#59636e','#d0d7de','#0969da','#ddf4ff','#ddeeff','#1a7f37','#cf222e') }
+}
+$script:SwsdThemePalettes = @{}
+
+function Resolve-SwsdThemeId([string]$Id) {
+    if ($Id -and $script:SwsdThemes.Contains($Id.ToLowerInvariant())) { return $Id.ToLowerInvariant() }
+    return 'system'
+}
+
+function Get-SwsdColorLuminance([string]$Color) {
+    # WCAG 2.2 sRGB relative luminance (opaque colors).
+    $sum=0.0; $weights=@(0.2126,0.7152,0.0722)
+    for ($i=0; $i -lt 3; $i++) {
+        $c=[Convert]::ToInt32($Color.Substring(1+2*$i,2),16)/255.0
+        $linear=if ($c -le 0.04045) {$c/12.92} else {[Math]::Pow(($c+0.055)/1.055,2.4)}
+        $sum+=$linear*$weights[$i]
+    }
+    return $sum
+}
+function Get-SwsdColorContrast([string]$First,[string]$Second) {
+    $a=Get-SwsdColorLuminance $First; $b=Get-SwsdColorLuminance $Second
+    return ([Math]::Max($a,$b)+0.05)/([Math]::Min($a,$b)+0.05)
+}
+function Mix-SwsdColor([string]$From,[string]$To,[double]$Amount) {
+    $parts=for ($i=0; $i -lt 3; $i++) {
+        $a=[Convert]::ToInt32($From.Substring(1+2*$i,2),16)
+        $b=[Convert]::ToInt32($To.Substring(1+2*$i,2),16)
+        ([int][Math]::Round($a+($b-$a)*$Amount)).ToString('x2')
+    }
+    return '#'+($parts -join '')
+}
+function Get-SwsdReadableColor([string]$Color,[string[]]$Backgrounds,[double]$Minimum=4.5) {
+    # Keep the source hue when possible. Move only derived text/border shades.
+    $endpoint='#000000'; $best=0.0
+    foreach ($candidate in @('#000000','#ffffff')) {
+        $worst=21.0
+        foreach ($bg in $Backgrounds) {$worst=[Math]::Min($worst,(Get-SwsdColorContrast $candidate $bg))}
+        if ($worst -gt $best) {$endpoint=$candidate; $best=$worst}
+    }
+    for ($step=0; $step -le 100; $step++) {
+        $shade=Mix-SwsdColor $Color $endpoint ($step/100.0)
+        $passes=$true
+        foreach ($bg in $Backgrounds) {if ((Get-SwsdColorContrast $shade $bg) -lt $Minimum) {$passes=$false; break}}
+        if ($passes) {return $shade}
+    }
+    throw 'Appearance colors could not meet the required contrast.'
+}
+function Get-SwsdThemePalette([string]$Id) {
+    $Id=Resolve-SwsdThemeId $Id
+    if ($Id -eq 'system') {throw 'Resolve Match Windows to light or dark before requesting its palette.'}
+    if ($script:SwsdThemePalettes.ContainsKey($Id)) {return $script:SwsdThemePalettes[$Id].Clone()}
+    $c=$script:SwsdThemes[$Id].colors
+    $p=@{
+        Canvas=$c[0]; Card=$c[1]; Flyout=$c[1]; Text=$c[2]; Muted=$c[3]; Border=$c[4]
+        Accent=$c[5]; Selected=$c[6]; Success=$c[8]; Error=$c[9]
+        Control=(Mix-SwsdColor $c[1] $c[2] 0.035)
+        IconBackground=$c[7]; AccentBackground=$c[7]; WashLeft=$c[0]; WashRight=$c[0]
+    }
+    $surfaces=@($p.Canvas,$p.Card,$p.Control)
+    # Solarized Light's source fg is below 4.5:1 on its source panel.
+    # Preserve it in the table, and derive the smallest readable body-text change.
+    $p.Text=Get-SwsdReadableColor $p.Text $surfaces
+    $surfaces+=@($p.Selected)
+    # T-Tui's dim colors sometimes fall below AA on these WPF surfaces.
+    $p.Muted=Get-SwsdReadableColor $p.Muted $surfaces
+    $p.ControlBorder=Get-SwsdReadableColor $c[4] @($p.Card,$p.Control,$p.Canvas) 3
+    $p.Divider=Mix-SwsdColor $c[4] $p.Card 0.25
+    $p.AccentText=if ((Get-SwsdColorContrast '#ffffff' $p.Accent) -ge (Get-SwsdColorContrast '#101010' $p.Accent)) {'#ffffff'} else {'#101010'}
+    $p.AccentForeground=Get-SwsdReadableColor $p.Accent $surfaces
+    for ($tint=55; $tint -ge 0; $tint--) {
+        $p.IconBackground=Mix-SwsdColor $p.Card $c[7] ($tint/100.0)
+        if ((Get-SwsdColorContrast $p.Text $p.IconBackground) -ge 4.5) {break}
+    }
+    $p.AccentBackground=$p.IconBackground
+    $p.SelectedText=Get-SwsdReadableColor $p.Text @($p.Selected)
+    $p.AccentChipText=Get-SwsdReadableColor $p.Accent @($p.AccentBackground)
+    $p.SuccessBackground=Mix-SwsdColor $p.Card $p.Success 0.07
+    $p.ErrorBackground=Mix-SwsdColor $p.Card $p.Error 0.07
+    $dark=(Get-SwsdColorLuminance $p.Canvas) -lt 0.5
+    $p.Warning=if ($dark) {'#ffd25e'} else {'#8a5300'}
+    $p.WarningBackground=Mix-SwsdColor $p.Card $p.Warning 0.07
+    foreach ($kind in @('Success','Error','Warning')) {
+        $p[$kind+'Text']=Get-SwsdReadableColor $p[$kind] @($p[$kind+'Background'])
+        $p[$kind+'Foreground']=Get-SwsdReadableColor $p[$kind] $surfaces
+    }
+    if ($Id -eq 'light') {$p.WashLeft='#dde7f6'; $p.WashRight='#ece5f3'}
+    elseif ($Id -eq 'dark') {$p.WashLeft='#26304a'; $p.WashRight='#2c2638'}
+    $script:SwsdThemePalettes[$Id]=$p.Clone()
+    return $p
+}
+
 $script:SwsdPackageVersion = '3.2.0'
 $script:SwsdClientVersion = '3.1.0'
 $script:SwsdCredentialTarget = 'swsd-mcp/api-token'
@@ -261,7 +380,7 @@ function Get-SwsdSettings {
                 }
             }
         }
-        if ($saved.PSObject.Properties['theme'] -and $saved.theme -in @('system','light','dark')) { $settings.theme = $saved.theme }
+        if ($saved.PSObject.Properties['theme']) { $settings.theme = Resolve-SwsdThemeId $saved.theme }
     }
     return $settings
 }
@@ -271,12 +390,13 @@ function Save-SwsdSettings {
         [Parameter(Mandatory)][ValidateSet('https://api.samanage.com','https://apieu.samanage.com')][string]$BaseUrl,
         [Parameter(Mandatory)][ValidateSet('triage','agent','knowledge','operations','full','custom')][string]$Profile,
         [string]$ProfileFile,
-        [ValidateSet('system','light','dark')][string]$Theme
+        [string]$Theme
     )
     New-Item -ItemType Directory -Path $script:SwsdHome -Force | Out-Null
     $temporary = Join-Path $script:SwsdHome ('settings-' + [guid]::NewGuid().ToString('N') + '.tmp')
     try {
         if (-not $Theme) { $Theme = (Get-SwsdSettings).theme }
+        $Theme = Resolve-SwsdThemeId $Theme
         $value = @{ baseUrl = $BaseUrl; profile = $Profile; theme = $Theme }
         if ($Profile -eq 'custom') {
             if (-not $ProfileFile) { $ProfileFile = (Get-SwsdSettings).profileFile }
