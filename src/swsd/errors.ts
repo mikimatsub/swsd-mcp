@@ -1,23 +1,28 @@
 import type { CallToolResult } from '@modelcontextprotocol/server';
 import { toolError } from '../mcp/errors.js';
 import { InputError } from '../utils/idResolver.js';
+import { redactSecrets, redactText } from '../utils/secrets.js';
 
 export class SwsdHttpError extends Error {
   constructor(
     public readonly status: number,
     public readonly body: unknown,
     public readonly retryAfter?: string,
+    token?: string,
   ) {
     super(`SWSD HTTP ${status}`);
     this.name = 'SwsdHttpError';
+    this.body = redactSecrets(body, token);
+    this.retryAfter = retryAfter === undefined ? undefined : redactText(retryAfter, token);
   }
 }
 
 export class SwsdNetworkError extends Error {
-  constructor(cause: unknown) {
+  constructor(cause: unknown, token?: string) {
+    const message = redactText(cause instanceof Error ? cause.message : String(cause), token);
     super(
-      `SWSD network error: ${cause instanceof Error ? cause.message : String(cause)}`,
-      { cause },
+      `SWSD network error: ${message}`,
+      { cause: new Error(message) },
     );
     this.name = 'SwsdNetworkError';
   }

@@ -2,6 +2,7 @@
 import { parseEnv, type TransportName } from './config/env.js';
 import { runStdio } from './transports/stdio.js';
 import { runHttp } from './transports/http.js';
+import { redactText } from './utils/secrets.js';
 
 function parseArgs(argv: string[]): { transport?: TransportName } {
   const out: { transport?: TransportName } = {};
@@ -35,6 +36,7 @@ async function main(): Promise<void> {
   const env = parseEnv(process.env);
   const args = parseArgs(process.argv.slice(2));
   const transport = args.transport ?? env.SWSD_TRANSPORT;
+  env.SWSD_TRANSPORT = transport;
 
   if (transport === 'stdio') {
     await runStdio(env);
@@ -44,6 +46,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  process.stderr.write(`Fatal: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`);
+  process.stderr.write(`Fatal: ${redactText(err instanceof Error ? err.message : String(err), process.env.SWSD_TOKEN)}\n`);
   process.exit(1);
 });

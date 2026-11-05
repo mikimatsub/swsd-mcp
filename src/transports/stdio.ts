@@ -3,6 +3,7 @@ import type { Env } from '../config/env.js';
 import { createMcpServer } from '../mcp/server.js';
 import { createSwsdClient } from '../swsd/client.js';
 import { registerTools } from '../config/toolRegistry.js';
+import { redactTransport, validateToken } from '../utils/secrets.js';
 
 export async function runStdio(env: Env): Promise<void> {
   if (!env.SWSD_TOKEN) {
@@ -12,6 +13,7 @@ export async function runStdio(env: Env): Promise<void> {
     process.exit(2);
   }
 
+  validateToken(env.SWSD_TOKEN);
   const client = createSwsdClient({ env, token: env.SWSD_TOKEN });
   const server = createMcpServer();
   const enabledTools: string[] = [];
@@ -25,5 +27,5 @@ export async function runStdio(env: Env): Promise<void> {
   });
 
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  await server.connect(redactTransport(transport, env.SWSD_TOKEN));
 }

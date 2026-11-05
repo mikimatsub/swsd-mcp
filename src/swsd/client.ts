@@ -3,6 +3,7 @@ import { buildHeaders } from './headers.js';
 import { serializeQuery } from './query.js';
 import { extractPagination, type PaginationMeta } from './pagination.js';
 import { SwsdHttpError, SwsdNetworkError } from './errors.js';
+import { redactValue } from '../utils/secrets.js';
 
 export interface SwsdGetResult<T> {
   body: T;
@@ -60,7 +61,7 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
       try {
         // Per-request timeout via AbortSignal.timeout. If the call hangs,
         // fetch rejects with DOMException name "TimeoutError" — handled
-        // by the catch below and retried for idempotent methods.
+        // by the catch below and retried for GET only.
         const res = await fetch(url, {
           ...init,
           signal: AbortSignal.timeout(env.SWSD_REQUEST_TIMEOUT_MS),
@@ -81,7 +82,7 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
           delay *= 2;
           continue;
         }
-        throw new SwsdNetworkError(e);
+        throw new SwsdNetworkError(e, token);
       }
     }
   }
@@ -90,7 +91,7 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
     const qs = init.query ? serializeQuery(init.query) : '';
     const url = `${baseUrl}${ensureLeadingSlash(path)}${qs ? `?${qs}` : ''}`;
     const method = (init.method ?? 'GET').toUpperCase();
-    const isRetryable = method === 'GET' || method === 'HEAD';
+    const isRetryable = method === 'GET';
 
     const isMultipart =
       typeof FormData !== 'undefined' && init.body instanceof FormData;
@@ -122,9 +123,9 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
     }
 
     if (!res.ok) {
-      throw new SwsdHttpError(res.status, body, res.headers.get('retry-after') ?? undefined);
+      throw new SwsdHttpError(res.status, body, res.headers.get('retry-after') ?? undefined, token);
     }
-    return { body, headers: res.headers, status: res.status };
+    return { body: redactValue(body, token), headers: res.headers, status: res.status };
   }
 
   return {
