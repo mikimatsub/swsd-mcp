@@ -76,12 +76,12 @@ Replace `your-jwt-here` with your token. EU tenants use `https://apieu.samanage.
 Create the file if it doesn't exist. Then restart your client.
 
 **Windows plugin setup:** after installing the Windows `swsd` plugin, start a new local chat and ask to set up SWSD on this computer. Reopen setup from the Windows Start menu. The WPF settings window has Home and Tools tabs.
-Appearance offers **Match Windows**, **Light**, and **Dark**, saved on this PC.
+Appearance offers **Match Windows**, **Light**, **Dark**, and named themes such as Dracula, Catppuccin, Nord, Gruvbox, and Tokyo Night, saved on this PC.
 Browse tools by area, search with **Ctrl+F**, inspect Read/Edit/Delete badges and
 example prompts, and select a profile to change the available tool set. The **?**
 beside **JSON Web Token** shows the SWSD User detail screen and **Actions →
 Generate JSON Web Token**, used only when no token is shown. Test verifies the
-connection and stores the JSON Web Token in Windows Credential Manager. Home also provides tool installation/repair, update checks, and US/EU region selection. The picker offers Triage, Agent, Knowledge, and Operations; custom profiles use the server configuration below, with no custom builder in the Windows app. Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`. Restart the desktop app and start a new chat after a profile change.
+connection and stores the JSON Web Token in Windows Credential Manager. Home also provides tool installation/repair, update checks, and US/EU region selection. The picker offers Triage, Agent, Knowledge, Operations, and saved custom profiles. On the Tools page, build a custom profile, then save, rename, delete, import, or export it. Other MCP clients still use the server configuration below (`SWSD_PROFILE=custom`). Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`. Restart the desktop app and start a new chat after a profile change.
 
 **Claude Code shortcut**: skip editing the file by hand. This saves a private entry for the current project in `~/.claude.json`:
 
