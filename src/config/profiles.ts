@@ -27,6 +27,8 @@ const TIME_AND_ATTACHMENT_TOOLS = [
 ] as const;
 
 const OPERATIONS_RECORD_TOOLS = [
+  'swsd_add_record_comment',
+  'swsd_create_record_task',
   'swsd_list_changes',
   'swsd_get_change',
   'swsd_create_change',
@@ -91,7 +93,6 @@ const ASSET_SUBRESOURCE_WRITE_TOOLS = [
   'swsd_add_hardware_warranty',
   'swsd_update_hardware_warranty',
   'swsd_add_contract_item',
-  'swsd_update_contract_item',
 ] as const;
 
 const PROCUREMENT_WRITE_TOOLS = [
@@ -108,8 +109,10 @@ const PROCUREMENT_WRITE_TOOLS = [
 ] as const;
 
 const DELETE_TOOLS = [
+  'swsd_delete_comment',
+  'swsd_delete_task',
+  'swsd_delete_time_track',
   'swsd_delete_hardware_warranty',
-  'swsd_delete_contract_item',
   'swsd_delete_contract',
   'swsd_delete_purchase_order',
   'swsd_delete_vendor',
@@ -165,9 +168,12 @@ const AGENT_TOOLS = [
   'swsd_list_incident_tasks',
   'swsd_create_incident_task',
   'swsd_update_task_state',
+  'swsd_update_task',
   // Problem records — list/get/create lets agents promote recurring
   // incidents to a problem record for root-cause investigation.
   'swsd_list_problems',
+  'swsd_list_record_comments',
+  'swsd_list_record_tasks',
   'swsd_get_problem',
   'swsd_create_problem',
   'swsd_update_problem',
@@ -184,6 +190,8 @@ export const PROFILE_TOOLS = {
     // Read-only problem visibility — surface root-cause records without
     // granting promote/create rights to first-line support.
     'swsd_list_problems',
+    'swsd_list_record_comments',
+    'swsd_list_record_tasks',
   ],
   agent: AGENT_TOOLS,
   operations: [...new Set([...AGENT_TOOLS, ...OPERATIONS_RECORD_TOOLS, ...DIRECTORY_WRITE_TOOLS, ...ASSET_WRITE_TOOLS, ...ASSET_SUBRESOURCE_WRITE_TOOLS, ...PROCUREMENT_WRITE_TOOLS, ...DELETE_TOOLS])],
@@ -250,7 +258,10 @@ export const PROFILE_TOOLS = {
     'swsd_list_incident_tasks',
     'swsd_create_incident_task',
     'swsd_update_task_state',
+    'swsd_update_task',
     'swsd_list_problems',
+    'swsd_list_record_comments',
+    'swsd_list_record_tasks',
     'swsd_get_problem',
     'swsd_create_problem',
     'swsd_update_problem',

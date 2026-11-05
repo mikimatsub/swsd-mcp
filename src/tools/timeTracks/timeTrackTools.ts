@@ -10,6 +10,7 @@ import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
 import { buildTimeTrackPayload, toTimeTrack } from '../../swsd/mappers/timeTrack.js';
+import { registerSafeSubresourceDelete } from '../shared/safeDelete.js';
 import { checkWriteMode } from '../shared/writeMode.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
@@ -149,4 +150,28 @@ export function registerUpdateTimeTrack(server: McpServer, ctx: ToolContext): vo
 function unwrapTimeTrack(raw: unknown): unknown {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw;
   return 'time_track' in raw ? (raw as { time_track?: unknown }).time_track : raw;
+}
+
+export function registerDeleteTimeTrack(server: McpServer, ctx: ToolContext): void {
+  registerSafeSubresourceDelete(server, ctx, {
+    kind: 'time track',
+    toolName: 'swsd_delete_time_track',
+    collection: 'time_tracks',
+    idField: 'time_track_id',
+    envelopeKey: 'time_track',
+    summarize: (raw) => {
+      const track = toTimeTrack(raw);
+      if (!track) return null;
+      // The API documents minutes; the existing mapper also accepts minutes_parsed.
+      const minutes = raw && typeof raw === 'object' && 'minutes' in raw
+        && (typeof raw.minutes === 'number' || (typeof raw.minutes === 'string' && raw.minutes.trim() !== ''))
+        ? Number(raw.minutes) : track.minutes_parsed;
+      return {
+        id: track.id,
+        name: track.name,
+        minutes: minutes !== undefined && Number.isFinite(minutes) ? minutes : null,
+        creator_email: track.creator?.email ?? null,
+      };
+    },
+  });
 }

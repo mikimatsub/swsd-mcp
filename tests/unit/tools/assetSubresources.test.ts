@@ -20,6 +20,7 @@ const CASES = [
     minimal: { service: 'Synthetic support' }, partial: { status: 'Expired' },
     labels: ['service', 'provider', 'status'],
     identity: { id: ID, hardware_id: PARENT_ID, service: 'Synthetic support', provider: 'Synthetic provider' },
+    actions: ['add', 'update'] as const, api: (fields: Record<string, unknown>) => fields,
   },
   {
     stem: 'contract_item', root: 'item', parent: 'contract_id', child: 'item_id',
@@ -29,6 +30,9 @@ const CASES = [
     minimal: { name: 'Synthetic license' }, partial: { quantity: 0 },
     labels: ['name', 'version', 'tag'],
     identity: { id: ID, contract_id: PARENT_ID, name: 'Synthetic license', version: '1', tag: 'SYNTHETIC-7' },
+    // SWSD calls the quantity `qty`; contract items have no stable ids, so only add is offered.
+    actions: ['add'] as const,
+    api: ({ quantity, ...rest }: Record<string, unknown>) => ({ ...rest, ...(quantity !== undefined ? { qty: quantity } : {}) }),
   },
 ];
 type Spec = typeof CASES[number];
@@ -104,13 +108,13 @@ describe('swsd_list_hardware_warranties', () => {
 });
 
 describe.each(CASES)('$stem writes', (spec) => {
-  describe.each(['add', 'update'] as const)('%s', (action) => {
+  describe.each([...spec.actions])('%s', (action) => {
     const update = action === 'update';
     const name = 'swsd_' + action + '_' + spec.stem;
     const ref = { [spec.parent]: PARENT_ID, ...(update ? { [spec.child]: ID } : {}) };
     const path = update ? spec.path : spec.collection;
     const input = { ...ref, ...spec.fields };
-    const payload = { [spec.root]: spec.fields };
+    const payload = { [spec.root]: spec.api(spec.fields) };
 
     it('declares exact input fields and write annotations', () => {
       const { schema, tool } = setup(name);
@@ -155,7 +159,7 @@ describe.each(CASES)('$stem writes', (spec) => {
       client.setPutResponse({ id: ID });
       const fields = update ? spec.partial : spec.minimal;
       const result = await invoke({ ...ref, ...fields, unknown: 'ignored', qty: 9, price: 12, notes: 'ignored' });
-      expect(client.calls).toEqual([{ type: update ? 'put' : 'post', path, body: { [spec.root]: fields } }]);
+      expect(client.calls).toEqual([{ type: update ? 'put' : 'post', path, body: { [spec.root]: spec.api(fields) } }]);
       expect(result.structuredContent).toEqual({ [spec.root]: { id: ID }, ...(update ? { changed_fields: Object.keys(fields) } : {}) });
     });
 
@@ -239,7 +243,7 @@ describe.each(CASES)('$stem writes', (spec) => {
   });
 });
 
-describe.each(CASES)('$stem delete', (spec) => {
+describe.each(CASES.filter((spec) => spec.root === 'warranty'))('$stem delete', (spec) => {
   const name = 'swsd_delete_' + spec.stem;
   const ref = { [spec.parent]: PARENT_ID, [spec.child]: ID };
   const raw = { id: '7', ...spec.fields, note: 'SYNTHETIC_PRIVATE_CHILD', attachments: [{ secret: 'SYNTHETIC_PRIVATE_ATTACHMENT' }] };
@@ -385,58 +389,18 @@ describe.each(CASES)('$stem delete', (spec) => {
   });
 });
 
-describe('contract item ID-only preview', () => {
-  const ref = { contract_id: PARENT_ID, item_id: ID };
-
-  it.each([false, true])('reports unverified item identity when items are absent (envelope=%s)', async (envelope) => {
-    const { client, invoke } = setup('swsd_delete_contract_item');
-    const contract = { id: PARENT_ID, name: 'Synthetic contract', note: 'SYNTHETIC_PRIVATE_PARENT' };
-    client.setLookupBody(envelope ? { contract } : contract);
-    const result = await invoke(ref);
-    expect(result.isError).toBeUndefined();
-    expect(result.structuredContent).toMatchObject({ confirmation_required: true, would_delete: { id: ID, contract_id: PARENT_ID } });
-    expect(result.structuredContent?.hint).toContain('preview by supplied item id only');
-    expect(text(result)).toContain('Item existence was not verified');
-    expect(JSON.stringify(result)).not.toContain('SYNTHETIC_PRIVATE');
-    expect(client.calls).toEqual([{ type: 'get', path: '/contracts/42.json', params: {} }]);
+describe('contract item update/delete', () => {
+  it.each(['swsd_update_contract_item', 'swsd_delete_contract_item'])('is not offered because SWSD items have no stable ids: %s', (name) => {
+    for (const profile of ['triage', 'agent', 'knowledge', 'operations', 'full'] as const) {
+      expect((PROFILE_TOOLS[profile] as readonly string[]).includes(name)).toBe(false);
+    }
   });
-
-  it.each([
-    { mode: 'live' as const, confirm_id: 8, deleted: false },
-    { mode: 'live' as const, confirm_id: ID, deleted: true },
-    { mode: 'dry-run' as const, confirm_id: ID, deleted: false },
-  ])('honors confirmation and mode for an ID-only preview: $mode/$confirm_id', async ({ mode, confirm_id, deleted }) => {
-    const { client, invoke } = setup('swsd_delete_contract_item', mode);
-    client.setLookupBody({ contract: { id: PARENT_ID } });
-    const result = await invoke({ ...ref, confirm: true, confirm_id });
-    expect(result.isError).toBeUndefined();
-    expect(result.structuredContent).toMatchObject(deleted
-      ? { deleted: true, record: { id: ID, contract_id: PARENT_ID } }
-      : { [mode === 'dry-run' ? 'dry_run' : 'confirmation_required']: true, would_delete: { id: ID, contract_id: PARENT_ID } });
-    expect(text(result)).toContain('Item existence was not verified');
-    expect(client.calls).toEqual([
-      { type: 'get', path: '/contracts/42.json', params: {} },
-      ...(deleted ? [{ type: 'delete', path: '/contracts/42/items/7.json' }] : []),
-    ]);
-  });
-
-  it.each([null, [], {}, { id: 99 }, { contract: null }, { id: PARENT_ID, items: null }, { id: PARENT_ID, items: {} }, { id: PARENT_ID, items: 'invalid' }].map((body) => ({ body })))(
-    'rejects invalid parents or malformed present item lists: $body', async ({ body }) => {
-      const { client, invoke } = setup('swsd_delete_contract_item');
-      client.setLookupBody(body);
-      const result = await invoke({ ...ref, confirm: true, confirm_id: ID });
-      expect(result.isError).toBe(true);
-      expect(text(result)).toContain('Could not verify');
-      expect(result.structuredContent).toBeUndefined();
-      expect(client.calls).toEqual([{ type: 'get', path: '/contracts/42.json', params: {} }]);
-    },
-  );
 });
 
 describe('asset subresource schemas and profiles', () => {
   const tools = [
     { name: 'swsd_list_hardware_warranties', input: { hardware_id: PARENT_ID }, ids: ['hardware_id'] },
-    ...CASES.flatMap((spec) => ['add', 'update', 'delete'].map((action) => ({
+    ...CASES.flatMap((spec) => [...spec.actions, ...(spec.root === 'warranty' ? ['delete'] : [])].map((action) => ({
       name: 'swsd_' + action + '_' + spec.stem,
       input: { [spec.parent]: PARENT_ID, ...(action !== 'add' ? { [spec.child]: ID } : {}), ...(action !== 'delete' ? spec.minimal : {}) },
       ids: [spec.parent, ...(action !== 'add' ? [spec.child] : []), ...(action === 'delete' ? ['confirm_id'] : [])],

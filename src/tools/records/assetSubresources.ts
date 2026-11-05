@@ -14,7 +14,6 @@ const Label = z.string().min(1).max(MAX_LABEL_CHARS);
 const HardwareInput = z.object({ hardware_id: InternalId.describe('Internal hardware asset ID.') });
 const WarrantyRefInput = HardwareInput.extend({ warranty_id: InternalId.describe('Internal warranty ID.') });
 const ContractInput = z.object({ contract_id: InternalId.describe('Internal contract ID.') });
-const ItemRefInput = ContractInput.extend({ item_id: InternalId.describe('Internal contract item ID.') });
 const WarrantyFields = z.object({
   service: Label,
   provider: Label.optional(),
@@ -26,7 +25,8 @@ const ItemFields = z.object({
   name: Label,
   version: z.string().max(MAX_LABEL_CHARS).optional(),
   tag: z.string().max(MAX_LABEL_CHARS).optional(),
-  quantity: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+  quantity: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional()
+    .describe('Item quantity; sent to SWSD as `qty`.'),
 });
 const Confirmation = SafeDeleteInput.pick({ confirm: true, confirm_id: true });
 
@@ -38,14 +38,18 @@ const SUBRESOURCES = {
     update: WarrantyRefInput.extend(WarrantyFields.partial().shape),
     delete: WarrantyRefInput.extend(Confirmation.shape),
     fields: Object.keys(WarrantyFields.shape), identity: ['service', 'provider'],
+    apiNames: {} as Record<string, string>,
   },
   item: {
     kind: 'contract item', stem: 'contract_item', root: 'item',
     parent: 'contract_id', child: 'item_id', collection: 'contracts', children: 'items',
     add: ContractInput.extend(ItemFields.shape),
-    update: ItemRefInput.extend(ItemFields.partial().shape),
-    delete: ItemRefInput.extend(Confirmation.shape),
+    // SWSD contract items expose no stable ids (SolarWinds support confirmed), so only add is offered.
+    update: ContractInput.extend(ItemFields.partial().shape),
+    delete: ContractInput.extend(Confirmation.shape),
     fields: Object.keys(ItemFields.shape), identity: ['name', 'version', 'tag'],
+    // SWSD names the item quantity `qty`; the tool input keeps the readable name.
+    apiNames: { quantity: 'qty' } as Record<string, string>,
   },
 } as const;
 
@@ -109,9 +113,9 @@ function registerSubresourceWrite(server: McpServer, ctx: ToolContext, cfg: Subr
       try {
         const fields: Record<string, unknown> = {};
         for (const key of cfg.fields) {
-          if (input[key] !== undefined) fields[key] = input[key];
+          if (input[key] !== undefined) fields[cfg.apiNames[key] ?? key] = input[key];
         }
-        const changed = Object.keys(fields);
+        const changed = cfg.fields.filter((key) => input[key] !== undefined);
         if (update && changed.length === 0) {
           return toolError('No fields to update — provide at least one field besides the parent and child IDs.');
         }
@@ -140,7 +144,7 @@ function registerSubresourceWrite(server: McpServer, ctx: ToolContext, cfg: Subr
   );
 }
 
-function registerSubresourceDelete(server: McpServer, ctx: ToolContext, cfg: Subresource): void {
+function registerSubresourceDelete(server: McpServer, ctx: ToolContext, cfg: typeof SUBRESOURCES.warranty): void {
   server.registerTool(
     'swsd_delete_' + cfg.stem,
     {
@@ -148,7 +152,6 @@ function registerSubresourceDelete(server: McpServer, ctx: ToolContext, cfg: Sub
         'DESTRUCTIVE — delete an SWSD ' + cfg.kind + '. Requires internal ' + cfg.parent + ' and ' + cfg.child + '. ' +
         'First call without confirmation to preview the record from its parent. Ask the user to confirm, ' +
         'then re-call with confirm:true and confirm_id equal to the previewed child id. ' +
-        (cfg.root === 'item' ? 'If the contract omits items, previews by supplied item id only and says so. ' : '') +
         'Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.',
       inputSchema: cfg.delete,
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: true },
@@ -161,35 +164,18 @@ function registerSubresourceDelete(server: McpServer, ctx: ToolContext, cfg: Sub
         // Follow safeDelete: disabled blocks before any lookup, and dry-run always previews.
         const gated = checkWriteMode(ctx, { ...request, action: 'delete ' + cfg.kind + ' ' + String(id) });
         if (gated?.isError) return gated;
-        const previewPath = cfg.root === 'warranty'
-          ? collectionPath(cfg, parentId) + '.json'
-          : '/contracts/' + String(parentId) + '.json';
-        const { body } = await ctx.client.get<unknown>(previewPath);
-        let rows: unknown;
-        let idOnly = false;
-        if (cfg.root === 'warranty') {
-          rows = unwrap(body, 'warranties');
-        } else {
-          const contract = readRecord(body, 'contract');
-          if (!contract || contract.id !== parentId) {
-            return toolError('Could not verify contract ' + String(parentId) + ' from SWSD. No DELETE request was sent.');
-          }
-          idOnly = !('items' in contract);
-          rows = contract.items;
+        const { body } = await ctx.client.get<unknown>(collectionPath(cfg, parentId) + '.json');
+        const rows = unwrap(body, cfg.children);
+        if (!Array.isArray(rows)) {
+          return toolError('Could not verify ' + cfg.kind + ' list from SWSD. No DELETE request was sent.');
         }
+        const found = rows.map((row: unknown) => readRecord(row, cfg.root)).find((row) => row?.id === id);
+        if (!found) return toolError('Not found: ' + cfg.kind + ' ' + String(id) + '. No DELETE request was sent.');
         const record: Record<string, unknown> = { id, [cfg.parent]: parentId };
-        if (!idOnly) {
-          if (!Array.isArray(rows)) {
-            return toolError('Could not verify ' + cfg.kind + ' list from SWSD. No DELETE request was sent.');
-          }
-          const found = rows.map((row: unknown) => readRecord(row, cfg.root)).find((row) => row?.id === id);
-          if (!found) return toolError('Not found: ' + cfg.kind + ' ' + String(id) + '. No DELETE request was sent.');
-          // Only identity fields are exposed, never the raw record, parent, or headers.
-          for (const key of cfg.identity) record[key] = typeof found[key] === 'string' ? found[key] : null;
-        }
-        const note = idOnly ? 'Contract response omitted items; preview by supplied item id only. Item existence was not verified. ' : '';
+        // Only identity fields are exposed, never the raw record, parent, or headers.
+        for (const key of cfg.identity) record[key] = typeof found[key] === 'string' ? found[key] : null;
         if (gated || input.confirm !== true || input.confirm_id !== id) {
-          const hint = note + 'Ask the user to confirm deletion of this ' + cfg.kind +
+          const hint = 'Ask the user to confirm deletion of this ' + cfg.kind +
             ', then re-call with confirm:true and confirm_id:' + String(id) + ' (the internal child id).';
           return structuredResult(
             {
@@ -203,7 +189,7 @@ function registerSubresourceDelete(server: McpServer, ctx: ToolContext, cfg: Sub
         await ctx.client.delete(request.path);
         return structuredResult(
           { deleted: true, record, request },
-          'Deleted ' + cfg.kind + ' ' + String(id) + '. ' + note,
+          'Deleted ' + cfg.kind + ' ' + String(id) + '.',
         );
       } catch (err) {
         return mapSwsdError(err);
@@ -220,7 +206,3 @@ export const registerDeleteHardwareWarranty = (server: McpServer, ctx: ToolConte
   registerSubresourceDelete(server, ctx, SUBRESOURCES.warranty);
 export const registerAddContractItem = (server: McpServer, ctx: ToolContext): void =>
   registerSubresourceWrite(server, ctx, SUBRESOURCES.item, false);
-export const registerUpdateContractItem = (server: McpServer, ctx: ToolContext): void =>
-  registerSubresourceWrite(server, ctx, SUBRESOURCES.item, true);
-export const registerDeleteContractItem = (server: McpServer, ctx: ToolContext): void =>
-  registerSubresourceDelete(server, ctx, SUBRESOURCES.item);
