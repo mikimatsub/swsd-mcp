@@ -1,4 +1,4 @@
-﻿param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [ValidateRange(1,15)][int]$WindowTestSeconds = 2)
+param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [switch]$ValidateDpiChanges, [ValidateRange(1,15)][int]$WindowTestSeconds = 2)
 $ErrorActionPreference = 'Stop'
 if ($ValidateHandlers) {
     # Handler checks exercise credential flows without depending on a signed-in desktop.
@@ -47,7 +47,48 @@ if ($CheckOnly) {
 }
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+# DPI awareness before any window is created
+try {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class SwsdDpiBootstrap {
+    [DllImport("user32.dll", SetLastError=true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetProcessDpiAwarenessContext(IntPtr context);
+    [DllImport("shcore.dll")] private static extern int SetProcessDpiAwareness(int awareness);
+    [DllImport("user32.dll", SetLastError=true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetProcessDPIAware();
+    [DllImport("user32.dll")] private static extern IntPtr GetWindowDpiAwarenessContext(IntPtr window);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool AreDpiAwarenessContextsEqual(IntPtr first, IntPtr second);
+    public static string Enable() {
+        try { if (SetProcessDpiAwarenessContext(new IntPtr(-4))) return "user32!SetProcessDpiAwarenessContext (PerMonitorV2)"; }
+        catch (EntryPointNotFoundException) {} catch (DllNotFoundException) {}
+        try { if (SetProcessDpiAwareness(2) == 0) return "shcore!SetProcessDpiAwareness (PerMonitor)"; }
+        catch (EntryPointNotFoundException) {} catch (DllNotFoundException) {}
+        try { if (SetProcessDPIAware()) return "user32!SetProcessDPIAware (System)"; }
+        catch (EntryPointNotFoundException) {} catch (DllNotFoundException) {}
+        return "Unchanged (host already configured DPI awareness)";
+    }
+    public static string WindowAwareness(IntPtr window) {
+        try {
+            IntPtr context = GetWindowDpiAwarenessContext(window);
+            if (AreDpiAwarenessContextsEqual(context, new IntPtr(-4))) return "PerMonitorV2";
+            if (AreDpiAwarenessContextsEqual(context, new IntPtr(-3))) return "PerMonitor";
+            if (AreDpiAwarenessContextsEqual(context, new IntPtr(-2))) return "System";
+            return "Unaware";
+        } catch (EntryPointNotFoundException) { return "Unavailable"; }
+    }
+}
+'@
+    $script:SwsdDpiAwarenessPath = [SwsdDpiBootstrap]::Enable()
+} catch {}
 [Windows.Forms.Application]::EnableVisualStyles()
+
+
 # Display only authored messages. Raw exception text can contain request data or credentials.
 function Format-SwsdFriendlyError([Exception]$Exception) {
     $msg = $Exception.GetBaseException().Message
@@ -96,6 +137,9 @@ function Invoke-SwsdSafe {
     try { . $Body } catch {
         $message = (Format-SwsdFriendlyError $_.Exception).Friendly
         $script:SwsdHandlerErrors += "${Source}: $message"
+        if ($ValidateWindow) {
+            [Console]::Error.WriteLine(('{0}: {1} at {2}' -f $Source, $_.Exception.GetBaseException().GetType().Name, $_.ScriptStackTrace))
+        }
         try { Add-Content -LiteralPath (Join-Path $env:TEMP 'swsd-settings.log') -Value ("{0:u} [{1}] {2}" -f (Get-Date), $Source, $message) } catch {}
         if ($Quiet) { return }
         try {
@@ -107,6 +151,7 @@ function Invoke-SwsdSafe {
             $f = Get-Variable -Name form -Scope Script -ValueOnly -ErrorAction SilentlyContinue
             if ($f -is [Windows.Forms.Form]) { $f.UseWaitCursor = $false }
             if (Get-Command Update-SwsdDashboard -ErrorAction SilentlyContinue) { Update-SwsdDashboard }
+            if ($ValidateWindow -and $Source -eq 'Tick' -and $f -is [Windows.Forms.Form]) { $f.Close() }
         } catch {}
     }
 }
@@ -118,22 +163,88 @@ function Confirm-SwsdNodeInstall {
     return [Windows.Forms.MessageBox]::Show('Install Node.js 24.22.1 using Windows Package Manager? Windows may ask for administrator approval. Reopen setup after installation.', 'Install Node.js 24', 'YesNo', 'Question')
 }
 
-# DPI awareness before any window is created
-try {
-    Add-Type -TypeDefinition @'
+# PowerShell 5.1 does not opt its executable into Framework WinForms' DpiChanged
+# handling. Handle WM_DPICHANGED ourselves, without changing powershell.exe.config.
+Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition @'
 using System;
+using System.Drawing;
 using System.Runtime.InteropServices;
-public static class SwsdDpiBootstrap {
-    // System-aware DPI. The WinForms layout is validated for system DPI scaling;
-    // per-monitor awareness breaks it (-ValidateWindow fails at 125%).
-    [DllImport("user32.dll")] private static extern bool SetProcessDPIAware();
-    public static void Enable() {
-        try { SetProcessDPIAware(); } catch {}
+using System.Windows.Forms;
+namespace SwsdDesktop {
+  public sealed class MonitorDpiEventArgs : EventArgs {
+    public int DeviceDpiNew { get; private set; }
+    public Rectangle SuggestedRectangle { get; private set; }
+    public MonitorDpiEventArgs(int dpi, Rectangle bounds) { DeviceDpiNew = dpi; SuggestedRectangle = bounds; }
+  }
+  public class DpiForm : Form {
+    [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
+    [DllImport("user32.dll")] private static extern int GetSystemMetricsForDpi(int index, uint dpi);
+    [DllImport("user32.dll")] private static extern bool DestroyIcon(IntPtr icon);
+    [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
+    private int windowDpi = 96;
+    private Icon generatedIcon;
+    // Control.DeviceDpi stays at system DPI when the Framework opt-in is absent.
+    public new int DeviceDpi { get { return windowDpi; } }
+    public int ScrollBarWidth {
+      get {
+        try { return GetSystemMetricsForDpi(2, (uint)windowDpi); } // SM_CXVSCROLL
+        catch (EntryPointNotFoundException) { return (int)Math.Ceiling(SystemInformation.VerticalScrollBarWidth * windowDpi / (double)base.DeviceDpi); }
+      }
     }
+    public event EventHandler<MonitorDpiEventArgs> MonitorDpiChanged;
+    public void UpdateIcon(string family, float scale) {
+      int size = Math.Max(16, (int)Math.Round(64 * scale));
+      using (Bitmap bitmap = new Bitmap(size, size)) {
+        using (Graphics g = Graphics.FromImage(bitmap)) {
+          g.ScaleTransform(size / 64f, size / 64f);
+          g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+          g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+          g.Clear(Color.Transparent);
+          Color accent = Color.FromArgb(0, 120, 212);
+          if (!String.IsNullOrEmpty(family)) {
+            using (Font font = new Font(family, 40, FontStyle.Regular, GraphicsUnit.Pixel))
+            using (Brush brush = new SolidBrush(accent))
+            using (StringFormat format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center }) {
+              g.DrawString("\uE774", font, brush, new RectangleF(0, 0, 64, 64), format);
+            }
+          } else {
+            using (Pen pen = new Pen(accent, 5)) { g.DrawEllipse(pen, 6, 6, 52, 52); g.DrawEllipse(pen, 20, 6, 24, 52); g.DrawLine(pen, 6, 32, 58, 32); }
+          }
+        }
+        IntPtr handle = bitmap.GetHicon();
+        try {
+          using (Icon borrowed = Icon.FromHandle(handle)) {
+            Icon previous = generatedIcon;
+            generatedIcon = (Icon)borrowed.Clone();
+            Icon = generatedIcon;
+            if (previous != null) previous.Dispose();
+          }
+        } finally { DestroyIcon(handle); }
+      }
+    }
+    protected override void Dispose(bool disposing) {
+      base.Dispose(disposing);
+      if (disposing && generatedIcon != null) { generatedIcon.Dispose(); generatedIcon = null; }
+    }
+    protected override void OnHandleCreated(EventArgs e) {
+      base.OnHandleCreated(e);
+      try { windowDpi = (int)GetDpiForWindow(Handle); }
+      catch (EntryPointNotFoundException) { using (Graphics g = CreateGraphics()) { windowDpi = (int)g.DpiX; } }
+    }
+    protected override void WndProc(ref Message m) {
+      if (m.Msg == 0x02E0) {
+        windowDpi = (int)(m.WParam.ToInt64() & 0xffff);
+        RECT r = (RECT)Marshal.PtrToStructure(m.LParam, typeof(RECT));
+        var handler = MonitorDpiChanged;
+        if (handler != null) handler(this, new MonitorDpiEventArgs(windowDpi, Rectangle.FromLTRB(r.Left, r.Top, r.Right, r.Bottom)));
+        m.Result = IntPtr.Zero;
+        return; // One scaling owner: do not let Framework scale the same controls again.
+      }
+      base.WndProc(ref m);
+    }
+  }
 }
 '@
-    [SwsdDpiBootstrap]::Enable()
-} catch {}
 
 # Merged C# interop: existing Windows helpers + DWM/DPI pinvokes
 if (-not ('SwsdDesktop.Windows' -as [type])) {
@@ -187,16 +298,18 @@ namespace SwsdDesktop {
   public class ThemedComboBox : ComboBox {
     public Color BorderColor = Color.Gray;
     public Color ArrowColor = Color.Black;
+    public float PixelScale = 1;
+    private int Px(int value) { return Math.Max(1, (int)Math.Round(value * PixelScale)); }
     protected override void WndProc(ref Message m) {
       base.WndProc(ref m);
       if (m.Msg == 0x000F || m.Msg == 0x0133) {
         using (Graphics g = Graphics.FromHwnd(Handle)) {
           Rectangle r = ClientRectangle;
-          using (Pen back = new Pen(BackColor, 2)) { g.DrawRectangle(back, 1, 1, r.Width - 2, r.Height - 2); }
-          int arrowWidth = SystemInformation.VerticalScrollBarWidth;
-          Rectangle arrow = new Rectangle(r.Right - arrowWidth - 3, 1, arrowWidth + 2, r.Height - 2);
+          using (Pen back = new Pen(BackColor, Px(2))) { g.DrawRectangle(back, Px(1), Px(1), r.Width - Px(2), r.Height - Px(2)); }
+          int arrowWidth = Math.Max(SystemInformation.VerticalScrollBarWidth, Font.Height + Px(4));
+          Rectangle arrow = new Rectangle(r.Right - arrowWidth - Px(3), Px(1), arrowWidth + Px(2), r.Height - Px(2));
           using (SolidBrush b = new SolidBrush(BackColor)) { g.FillRectangle(b, arrow); }
-          using (Pen inner = new Pen(BackColor)) { for (int i = 1; i <= 3; i++) g.DrawRectangle(inner, i, i, arrow.Left - i - 1, r.Height - 2 * i - 1); }
+          using (Pen inner = new Pen(BackColor)) { for (int i = 1; i <= Px(3); i++) g.DrawRectangle(inner, i, i, arrow.Left - i - 1, r.Height - 2 * i - 1); }
           int cx = arrow.Left + arrow.Width / 2, cy = arrow.Top + arrow.Height / 2;
           int w = Math.Max(3, arrowWidth / 4);
           using (Pen ap = new Pen(ArrowColor, Math.Max(1, arrowWidth / 12))) {
@@ -204,7 +317,7 @@ namespace SwsdDesktop {
             g.DrawLines(ap, new Point[] { new Point(cx - w, cy - w / 2), new Point(cx, cy + w / 2), new Point(cx + w, cy - w / 2) });
           }
           g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-          using (Pen border = new Pen(BorderColor)) { g.DrawRectangle(border, 0, 0, r.Width - 1, r.Height - 1); }
+          using (Pen border = new Pen(BorderColor, Px(1))) { g.DrawRectangle(border, 0, 0, r.Width - 1, r.Height - 1); }
         }
       }
     }
@@ -342,12 +455,14 @@ if ($env:SWSD_UI_SCALE) {
     if ($script:SwsdUiScale -gt 4.0) { $script:SwsdUiScale = 4.0 }
 }
 
-function ScalePx([int]$LogicalPx) {
-    return [int][Math]::Round($LogicalPx * $script:SwsdUiScale)
+$script:SwsdDeviceDpi = 96
+function ScalePx([double]$LogicalPx) {
+    return [int][Math]::Round($LogicalPx * $script:SwsdUiScale * $script:SwsdDeviceDpi / 96)
 }
 
 function ScaleFont([double]$PointSize) {
-    return [float]($PointSize * $script:SwsdUiScale)
+    # Pixel fonts avoid TextRenderer's system-DPI point conversion on another monitor.
+    return [float]($PointSize * 96 / 72 * $script:SwsdUiScale * $script:SwsdDeviceDpi / 96)
 }
 
 # Layout constants (logical px at scale 1.0)
@@ -364,37 +479,21 @@ $script:SwsdButtonGap = 8
 $script:SwsdContentWidth = 560
 $script:SwsdScreenMargin = 16
 
-$form = New-Object Windows.Forms.Form
+$form = New-Object SwsdDesktop.DpiForm
 $form.Text = 'SolarWinds Service Desk Setup'
 $form.StartPosition = 'Manual'
+$launchArea = [Windows.Forms.Screen]::FromPoint([Windows.Forms.Cursor]::Position).WorkingArea
+$form.Location = New-Object Drawing.Point(($launchArea.Left + 16), ($launchArea.Top + 16))
 $form.FormBorderStyle = 'Sizable'
 $form.MaximizeBox = $true
 $form.MinimizeBox = $true
 $form.AutoSize = $false
 $form.AutoScaleMode = 'Dpi'
-$form.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
+$form.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $form.BackColor = $script:SwsdPalette.WindowBg
 $form.ForeColor = $script:SwsdPalette.TextPrimary
-try {
-    $iconBmp = New-Object Drawing.Bitmap 64, 64
-    $g = [Drawing.Graphics]::FromImage($iconBmp)
-    $g.SmoothingMode = 'AntiAlias'; $g.TextRenderingHint = 'AntiAliasGridFit'
-    $g.Clear([Drawing.Color]::Transparent)
-    $accent = [Drawing.Color]::FromArgb(0, 120, 212)
-    $brush = New-Object Drawing.SolidBrush $accent
-    if ($script:SwsdIconFont) {
-        $iconFont = New-Object Drawing.Font($script:SwsdIconFont, 40, [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
-        $fmt = New-Object Drawing.StringFormat; $fmt.Alignment = 'Center'; $fmt.LineAlignment = 'Center'
-        $g.DrawString([string][char]0xE774, $iconFont, $brush, (New-Object Drawing.RectangleF(0, 0, 64, 64)), $fmt)
-        $iconFont.Dispose()
-    } else {
-        $pen = New-Object Drawing.Pen($accent, 5)
-        $g.DrawEllipse($pen, 6, 6, 52, 52); $g.DrawEllipse($pen, 20, 6, 24, 52); $g.DrawLine($pen, 6, 32, 58, 32); $pen.Dispose()
-    }
-    $brush.Dispose(); $g.Dispose()
-    $form.Icon = [Drawing.Icon]::FromHandle($iconBmp.GetHicon())
-    $form.ShowIcon = $true
-} catch {}
+$form.UpdateIcon($script:SwsdIconFont, [float]$script:SwsdUiScale)
+$form.ShowIcon = $true
 
 # DWM attributes applied after handle creation
 $form.Add_HandleCreated({ param($sender, $e) Invoke-SwsdSafe -Source 'HandleCreated' -Quiet {
@@ -484,7 +583,7 @@ function New-SwsdButton([string]$Text, [bool]$Primary = $false) {
     $btn.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx $script:SwsdButtonGap), 0)
     $btn.Anchor = 'Top,Left'
     $btn.Cursor = [Windows.Forms.Cursors]::Hand
-    $btn.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
+    $btn.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
     $textWidth = [Windows.Forms.TextRenderer]::MeasureText($Text, $btn.Font).Width
     $btn.Size = New-Object Drawing.Size(($textWidth + 2 * (ScalePx $script:SwsdButtonPaddingH) + 2), (ScalePx $script:SwsdButtonMinHeight))
     # Intentional disabled look: owner-draw so WinForms' muddy system gray is never used.
@@ -526,7 +625,7 @@ function New-SwsdFieldLabel([string]$Text) {
     $l = New-Object Windows.Forms.Label
     $l.AutoSize = $true
     $l.Text = $Text
-    $l.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 9))
+    $l.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
     $l.ForeColor = $script:SwsdPalette.TextPrimary
     return $l
 }
@@ -580,7 +679,7 @@ function New-SwsdCard([string]$Title, [string]$IconName) {
         if ($IconName -and $script:SwsdIconFont) {
             $iconLabel = New-Object Windows.Forms.Label
             $iconLabel.AutoSize = $true
-            $iconLabel.Font = New-Object Drawing.Font($script:SwsdIconFont, (ScaleFont 12))
+            $iconLabel.Font = New-Object Drawing.Font($script:SwsdIconFont, (ScaleFont 12), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
             $iconLabel.Text = Get-SwsdIconGlyph $IconName
             $iconLabel.ForeColor = $script:SwsdAccentColor
             $iconLabel.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx 8), 0)
@@ -591,7 +690,7 @@ function New-SwsdCard([string]$Title, [string]$IconName) {
         $sectionTitle = New-Object Windows.Forms.Label
         $sectionTitle.AutoSize = $true
         $sectionTitle.Text = $Title
-        $sectionTitle.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 11))
+        $sectionTitle.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 11), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
         $sectionTitle.ForeColor = $script:SwsdPalette.TextPrimary
         $sectionTitle.Anchor = 'Left'
         $col = if ($IconName -and $script:SwsdIconFont) { 1 } else { 0 }
@@ -630,7 +729,7 @@ $headerPanel.Margin = New-Object Windows.Forms.Padding(0, 0, 0, (ScalePx $script
 $headerIcon = New-Object Windows.Forms.Label
 $headerIcon.AutoSize = $true
 $headerIconFont = if ($script:SwsdIconFont) { $script:SwsdIconFont } else { 'Segoe UI' }
-$headerIcon.Font = New-Object Drawing.Font($headerIconFont, (ScaleFont 22))
+$headerIcon.Font = New-Object Drawing.Font($headerIconFont, (ScaleFont 22), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $headerIcon.Text = Get-SwsdIconGlyph 'SolarWinds'
 $headerIcon.ForeColor = $script:SwsdAccentColor
 $headerIcon.Margin = New-Object Windows.Forms.Padding(0, 0, (ScalePx 10), 0)
@@ -641,7 +740,7 @@ $headerPanel.SetRowSpan($headerIcon, 2)
 $titleLabel = New-Object Windows.Forms.Label
 $titleLabel.AutoSize = $true
 $titleLabel.Text = 'SolarWinds Service Desk'
-$titleLabel.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 16))
+$titleLabel.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 16), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $titleLabel.ForeColor = $script:SwsdPalette.TextPrimary
 $titleLabel.Anchor = 'Left,Bottom'
 $headerPanel.Controls.Add($titleLabel, 1, 0)
@@ -649,7 +748,7 @@ $headerPanel.Controls.Add($titleLabel, 1, 0)
 $subtitleLabel = New-Object Windows.Forms.Label
 $subtitleLabel.AutoSize = $true
 $subtitleLabel.Text = 'Connect your own SolarWinds account. Your token stays in Windows Credential Manager on this computer.'
-$subtitleLabel.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$subtitleLabel.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $subtitleLabel.ForeColor = $script:SwsdPalette.TextSecondary
 $subtitleLabel.Anchor = 'Left,Top'
 $subtitleLabel.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
@@ -661,8 +760,8 @@ $rootPanel.Controls.Add($headerPanel, 0, 0)
 $statusCard = New-SwsdCard 'Status' 'Info'
 # Measure once, then lock every item to the same four columns on the 8px grid.
 # Absolute TableLayoutPanel columns keep state text from moving neighboring fields.
-$dashboardFont = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
-$dashboardChipFont = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$dashboardFont = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
+$dashboardChipFont = New-Object Drawing.Font('Segoe UI', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $dashboardChipTexts = @('OK', 'Unsupported', 'Missing', 'Repair needed', 'Check access', 'Saved', 'Needed', 'Not checked', 'Checking', 'Offline', 'Current', 'Available', 'Ahead', 'Install first')
 function Measure-SwsdGridText([string[]]$Texts, [Drawing.Font]$Font, [int]$PaddingPx) {
     $width = 0
@@ -672,16 +771,19 @@ function Measure-SwsdGridText([string[]]$Texts, [Drawing.Font]$Font, [int]$Paddi
     $grid = ScalePx 8
     return [int]($grid * [Math]::Ceiling(($width + (ScalePx $PaddingPx)) / $grid))
 }
-$dashboardIconWidth = ScalePx 32
-$dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'Tools', 'Token', 'Region', 'Profile', 'Updates') $dashboardFont 8
-$dashboardValueWidth = [Math]::Max((ScalePx 144), (Measure-SwsdGridText (@('Not installed', 'Unavailable', ('swsd-mcp ' + $script:SwsdPackageVersion)) + @($script:SwsdProfiles | ForEach-Object { $_.name })) $dashboardFont 8))
-$dashboardChipWidth = Measure-SwsdGridText $dashboardChipTexts $dashboardChipFont 16
+function Update-SwsdDashboardMetrics([Drawing.Font]$ValueFont, [Drawing.Font]$ChipFont) {
+$script:dashboardIconWidth = ScalePx 32
+$script:dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'Tools', 'Token', 'Region', 'Profile', 'Updates') $ValueFont 8
+$script:dashboardValueWidth = [Math]::Max((ScalePx 144), (Measure-SwsdGridText (@('Not installed', 'Unavailable', ('swsd-mcp ' + $script:SwsdPackageVersion)) + @($script:SwsdProfiles | ForEach-Object { $_.name })) $ValueFont 8))
+$script:dashboardChipWidth = Measure-SwsdGridText $dashboardChipTexts $ChipFont 16
 # A chip is exactly one measured line plus 4 logical pixels above and below.
-$dashboardChipHeight = [Windows.Forms.TextRenderer]::MeasureText('Ag', $dashboardChipFont).Height + (2 * (ScalePx 4))
-$dashboardItemHeight = $dashboardChipHeight
-$dashboardRowHeight = $dashboardItemHeight + (ScalePx 8)
-$dashboardItemWidth = $dashboardIconWidth + $dashboardLabelWidth + $dashboardValueWidth + $dashboardChipWidth
-$dashboardColumnWidth = $dashboardItemWidth + (ScalePx 8)
+$script:dashboardChipHeight = [Windows.Forms.TextRenderer]::MeasureText('Ag', $ChipFont).Height + (2 * (ScalePx 4))
+$script:dashboardItemHeight = $dashboardChipHeight
+$script:dashboardRowHeight = $dashboardItemHeight + (ScalePx 8)
+$script:dashboardItemWidth = $dashboardIconWidth + $dashboardLabelWidth + $dashboardValueWidth + $dashboardChipWidth
+$script:dashboardColumnWidth = $dashboardItemWidth + (ScalePx 8)
+}
+Update-SwsdDashboardMetrics $dashboardFont $dashboardChipFont
 $statusRowTable = New-Object Windows.Forms.TableLayoutPanel
 $statusRowTable.AutoSize = $false
 $statusRowTable.ColumnCount = 2
@@ -713,7 +815,7 @@ function New-StatusRow([string]$AccessibleName, [string]$IconGlyph, [string]$Lab
 
     $icon = New-Object Windows.Forms.Label
     $iconFont = if ($script:SwsdIconFont) { $script:SwsdIconFont } else { 'Segoe UI' }
-    $icon.Font = New-Object Drawing.Font($iconFont, (ScaleFont 10))
+    $icon.Font = New-Object Drawing.Font($iconFont, (ScaleFont 10), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
     $icon.Text = $IconGlyph
     $icon.ForeColor = $script:SwsdPalette.TextSecondary
     $icon.Padding = New-Object Windows.Forms.Padding(0, 0, (ScalePx 8), 0)
@@ -773,7 +875,7 @@ $statusRowTable.Margin = New-Object Windows.Forms.Padding(0)
 
 $ctaChip = New-Object Windows.Forms.Label
 $ctaChip.AutoSize = $true
-$ctaChip.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 9))
+$ctaChip.Font = New-Object Drawing.Font('Segoe UI Semibold', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $ctaChip.Text = 'Done - fully quit and restart ChatGPT, then start a new chat.'
 $ctaChip.Padding = New-Object Windows.Forms.Padding((ScalePx 8), (ScalePx 4), (ScalePx 8), (ScalePx 4))
 $ctaChip.BackColor = $script:SwsdPalette.StatusSuccessBg
@@ -784,7 +886,7 @@ Add-CardRow $statusCard $ctaChip
 
 $progressText = New-Object Windows.Forms.Label
 $progressText.AutoSize = $true
-$progressText.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$progressText.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $progressText.ForeColor = $script:SwsdPalette.StatusInfoFg
 $progressText.Text = 'Installing tools... this window stays available.'
 $progressText.Visible = $false
@@ -813,17 +915,17 @@ Set-SwsdButtonRow @($copyDiagnostics, $showDetails)
 $statusButtonRow.Controls.AddRange(@($copyDiagnostics, $showDetails))
 Add-CardRow $statusCard $statusButtonRow
 $copyDiagnostics.Add_Click({ param($sender, $e) Invoke-SwsdSafe -Source 'CopyDiagnosticsClick' {
-    $graphics = $form.CreateGraphics()
-    try { $dpi = $graphics.DpiX } finally { $graphics.Dispose() }
+    $dpi = $form.DeviceDpi
     $theme = if ($script:SwsdDarkMode) { 'dark' } else { 'light' }
     $report = Get-SwsdDiagnostics -LogPath $script:SwsdDiagnosticsLogPath -Dpi $dpi -Scale $script:SwsdUiScale -Theme $theme
+    $report = $report.Replace('[Display]', ("[Display]`r`nDPI awareness API: {0}`r`nWindow awareness: {1}" -f $script:SwsdDpiAwarenessPath, [SwsdDpiBootstrap]::WindowAwareness($form.Handle)))
     Set-SwsdClipboard -Text $report
     Set-SwsdStatus -Kind success -Text 'Diagnostics copied. You can paste them into your support request.'
     if ($form.Visible) { Update-SwsdFormSize }
 } })
 $errorDetails = New-Object Windows.Forms.Label
 $errorDetails.AutoSize = $true
-$errorDetails.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$errorDetails.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $errorDetails.ForeColor = $script:SwsdPalette.TextSecondary
 $errorDetails.AccessibleName = 'Error details'
 $errorDetails.Visible = $false
@@ -885,7 +987,7 @@ $installDesc = New-Object Windows.Forms.Label
 $installDesc.AutoSize = $true
 $installDesc.Text = 'Requires Node.js 24.15 or newer within version 24.'
 $installDesc.ForeColor = $script:SwsdPalette.TextSecondary
-$installDesc.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$installDesc.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $installDesc.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 Add-CardRow $card1 $installDesc
 
@@ -913,7 +1015,7 @@ $region.DropDownStyle = 'DropDownList'
 $region.FlatStyle = 'Flat'
 $region.BackColor = $script:SwsdPalette.InputBg
 $region.ForeColor = $script:SwsdPalette.TextPrimary
-$region.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
+$region.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $region.Height = ScalePx 30
 $region.DrawMode = 'OwnerDrawFixed'
 $region.Add_DrawItem({
@@ -927,7 +1029,7 @@ $region.Add_DrawItem({
     } elseif (-not $sender.Enabled) { $script:SwsdPalette.TextSecondary } else { $script:SwsdPalette.TextPrimary }
     $e.Graphics.FillRectangle((New-Object Drawing.SolidBrush($bg)), $e.Bounds)
     $text = $sender.GetItemText($sender.Items[$e.Index])
-    $e.Graphics.DrawString($text, $sender.Font, (New-Object Drawing.SolidBrush($fg)), $e.Bounds.X + 2, $e.Bounds.Y + 2)
+    $e.Graphics.DrawString($text, $sender.Font, (New-Object Drawing.SolidBrush($fg)), $e.Bounds.X + (ScalePx 2), $e.Bounds.Y + (ScalePx 2))
  }})
 [void]$region.Items.Add('US - api.samanage.com')
 [void]$region.Items.Add('EU - apieu.samanage.com')
@@ -941,7 +1043,7 @@ $tokenBox.UseSystemPasswordChar = $true
 $tokenBox.BackColor = $script:SwsdPalette.InputBg
 $tokenBox.ForeColor = $script:SwsdPalette.TextPrimary
 $tokenBox.BorderStyle = 'None'
-$tokenBox.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
+$tokenBox.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $tokenBox.Height = ScalePx 30
 $tokenBox.Add_EnabledChanged({ param($sender, $e) Invoke-SwsdSafe -Source 'EnabledChanged' {
     if (-not $tokenBox.Enabled) { $tokenBox.ForeColor = $script:SwsdPalette.TextSecondary }
@@ -955,7 +1057,7 @@ $tokenHint = New-Object Windows.Forms.Label
 $tokenHint.AutoSize = $true
 $tokenHint.Text = 'Saved tokens are never displayed. Paste a new token only to add or replace it.'
 $tokenHint.ForeColor = $script:SwsdPalette.TextSecondary
-$tokenHint.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$tokenHint.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $tokenHint.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 Add-CardRow $card2 $tokenHint
 
@@ -986,7 +1088,7 @@ $profileDesc = New-Object Windows.Forms.Label
 $profileDesc.AutoSize = $true
 $profileDesc.Text = 'You can change this later without re-entering a token.'
 $profileDesc.ForeColor = $script:SwsdPalette.TextSecondary
-$profileDesc.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$profileDesc.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $profileDesc.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 Add-CardRow $card3 $profileDesc
 
@@ -997,7 +1099,7 @@ $profile.AccessibleName = 'SWSD profile'
 $profile.FlatStyle = 'Flat'
 $profile.BackColor = $script:SwsdPalette.InputBg
 $profile.ForeColor = $script:SwsdPalette.TextPrimary
-$profile.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10))
+$profile.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 10), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $profile.Height = ScalePx 30
 $profile.DrawMode = 'OwnerDrawFixed'
 $profile.Add_DrawItem({
@@ -1011,7 +1113,7 @@ $profile.Add_DrawItem({
     } elseif (-not $sender.Enabled) { $script:SwsdPalette.TextSecondary } else { $script:SwsdPalette.TextPrimary }
     $e.Graphics.FillRectangle((New-Object Drawing.SolidBrush($bg)), $e.Bounds)
     $text = $sender.GetItemText($sender.Items[$e.Index])
-    $e.Graphics.DrawString($text, $sender.Font, (New-Object Drawing.SolidBrush($fg)), $e.Bounds.X + 2, $e.Bounds.Y + 2)
+    $e.Graphics.DrawString($text, $sender.Font, (New-Object Drawing.SolidBrush($fg)), $e.Bounds.X + (ScalePx 2), $e.Bounds.Y + (ScalePx 2))
  }})
 foreach ($item in $script:SwsdProfiles) { [void]$profile.Items.Add($item.name) }
 $savedProfile = (Get-SwsdSettings).profile
@@ -1024,7 +1126,7 @@ $profileDescription.AutoSize = $true
 $profileDescription.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].description
 $profileDescription.ForeColor = $script:SwsdPalette.TextSecondary
-$profileDescription.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$profileDescription.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 Add-CardRow $card3 $profileDescription
 $profile.Add_SelectedIndexChanged({ param($sender, $e) Invoke-SwsdSafe -Source 'SelectedIndexChanged' { $profileDescription.Text = $script:SwsdProfiles[$profile.SelectedIndex].description  }})
 
@@ -1042,7 +1144,7 @@ $currentProfile = New-Object Windows.Forms.Label
 $currentProfile.AutoSize = $true
 $currentProfile.Text = 'Saved profile: ' + $script:SwsdProfiles[$profile.SelectedIndex].name
 $currentProfile.ForeColor = $script:SwsdPalette.TextSecondary
-$currentProfile.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9))
+$currentProfile.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $currentProfile.Anchor = 'Left'
 $currentProfile.Margin = New-Object Windows.Forms.Padding((ScalePx 12), 0, 0, 0)
 $currentProfile.AutoSize = $false
@@ -1065,7 +1167,7 @@ $status.AutoSize = $true
 $status.MaximumSize = New-Object Drawing.Size((ScalePx $script:SwsdContentWidth), 0)
 $status.Text = 'Start with Install / repair tools. Then test and save your token. After setup, start a new chat.'
 $status.ForeColor = $script:SwsdPalette.TextSecondary
-$status.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5))
+$status.Font = New-Object Drawing.Font('Segoe UI', (ScaleFont 9.5), [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
 $statusPanel.Controls.Add($status)
 
 $rootPanel.Controls.Add($statusPanel, 0, 5)
@@ -1098,9 +1200,38 @@ function Reset-SwsdStatus {
 }
 
 # Auto-size the form to fit content, clamped to working area
-function Update-SwsdFormSize {
+function Update-SwsdDashboardGrid([int]$AvailableWidth) {
+    $columns = if (2 * $dashboardColumnWidth -le $AvailableWidth) { 2 } else { 1 }
+    $rows = [int][Math]::Ceiling($statusRows.Count / $columns)
+    $statusRowTable.SuspendLayout()
+    try {
+        $statusRowTable.Controls.Clear()
+        $statusRowTable.ColumnStyles.Clear(); $statusRowTable.RowStyles.Clear()
+        $statusRowTable.ColumnCount = $columns; $statusRowTable.RowCount = $rows
+        for ($i = 0; $i -lt $columns; $i++) { [void]$statusRowTable.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Absolute', $dashboardColumnWidth))) }
+        for ($i = 0; $i -lt $rows; $i++) { [void]$statusRowTable.RowStyles.Add((New-Object Windows.Forms.RowStyle('Absolute', $dashboardRowHeight))) }
+        for ($i = 0; $i -lt $statusRows.Count; $i++) {
+            $column = $i % $columns
+            $leftGap = if ($column -eq 0) { 0 } else { ScalePx 8 }
+            $rightGap = if ($column -eq 0) { ScalePx 8 } else { 0 }
+            $statusRows[$i].Panel.Margin = New-Object Windows.Forms.Padding($leftGap, 0, $rightGap, (ScalePx 8))
+            $statusRowTable.Controls.Add($statusRows[$i].Panel, $column, [int][Math]::Floor($i / $columns))
+        }
+        $gridSize = New-Object Drawing.Size(($columns * $dashboardColumnWidth), ($rows * $dashboardRowHeight))
+        # TableLayout can restore a pre-measurement specified width on its next
+        # parent layout, giving surplus pixels to the last Absolute column.
+        $statusRowTable.MinimumSize = [Drawing.Size]::Empty
+        $statusRowTable.MaximumSize = $gridSize
+        $statusRowTable.MinimumSize = $gridSize
+        $statusRowTable.Size = $gridSize
+    } finally { $statusRowTable.ResumeLayout($true) }
+}
+function Update-SwsdFormSize([switch]$Center, [switch]$PreserveSize) {
     try {
         $scaledContentWidth = ScalePx $script:SwsdContentWidth
+        $screen = [Windows.Forms.Screen]::FromControl($form).WorkingArea
+        $dashboardInset = 2 * ((ScalePx $script:SwsdRootPaddingH) + (ScalePx $script:SwsdCardPaddingH) + (ScalePx $script:SwsdScreenMargin)) + ($form.Width - $form.ClientSize.Width) + $form.ScrollBarWidth
+        Update-SwsdDashboardGrid ($screen.Width - $dashboardInset)
 
         # First pass: set wrapping widths generously so GetPreferredSize sees unwrapped text
         foreach ($lbl in @($subtitleLabel, $installDesc, $tokenHint, $profileDesc, $profileDescription, $status, $ctaChip, $progressText, $errorDetails)) {
@@ -1116,6 +1247,14 @@ function Update-SwsdFormSize {
 
         # Use the larger of natural width and target content width
         $targetClientWidth = [Math]::Max($preferred.Width, $scaledContentWidth)
+        # GetPreferredSize can under-report a fixed table inside an AutoSize card.
+        # Include the actual dashboard plus every ancestor's padding/margins.
+        $dashboardClientWidth = $statusRowTable.Width
+        for ($parent = $statusRowTable; $parent -ne $form; $parent = $parent.Parent) {
+            $dashboardClientWidth += $parent.Margin.Horizontal
+            if ($parent -ne $statusRowTable) { $dashboardClientWidth += $parent.Padding.Horizontal }
+        }
+        $targetClientWidth = [Math]::Max($targetClientWidth, $dashboardClientWidth)
 
         # Now set wrapping widths based on target width
         $availableCardWidth = $targetClientWidth - (2 * (ScalePx $script:SwsdRootPaddingH)) - (2 * (ScalePx $script:SwsdCardPaddingH))
@@ -1132,7 +1271,7 @@ function Update-SwsdFormSize {
         $rootPanel.PerformLayout()
         $preferredWrapped = $rootPanel.GetPreferredSize([Drawing.Size]::Empty)
 
-        $screen = [Windows.Forms.Screen]::FromPoint([Windows.Forms.Cursor]::Position).WorkingArea
+        $screen = [Windows.Forms.Screen]::FromControl($form).WorkingArea
         $margin = ScalePx $script:SwsdScreenMargin
         $maxWidth = $screen.Width - (2 * $margin)
         # Clamp the whole window (client content plus frame) only to the working area.
@@ -1153,10 +1292,14 @@ function Update-SwsdFormSize {
         # Reserve the scrollbar's actual pixel width so the fixed dashboard still fits.
         $needsScroll = $finalClientHeight -gt ($targetHeight - $frameHeight)
         if ($needsScroll) {
-            $targetWidth = [Math]::Min($maxWidth, ($targetWidth + [Windows.Forms.SystemInformation]::VerticalScrollBarWidth))
+            $targetWidth = [Math]::Min($maxWidth, ($targetWidth + $form.ScrollBarWidth))
         }
 
         $form.MinimumSize = New-Object Drawing.Size($targetWidth, $targetHeight)
+        if ($PreserveSize) {
+            $targetWidth = [Math]::Min($maxWidth, [Math]::Max($targetWidth, $form.Width))
+            $targetHeight = [Math]::Min($maxHeight, [Math]::Max($targetHeight, $form.Height))
+        }
         $form.Size = New-Object Drawing.Size($targetWidth, $targetHeight)
 
         # Force layout after sizing
@@ -1167,7 +1310,10 @@ function Update-SwsdFormSize {
 
         $centerX = $screen.Left + [int](($screen.Width - $targetWidth) / 2)
         $centerY = $screen.Top + [int](($screen.Height - $targetHeight) / 2)
-        $form.Location = New-Object Drawing.Point($centerX, $centerY)
+        if ($Center) { $form.Location = New-Object Drawing.Point($centerX, $centerY) }
+        else {
+            $form.Location = New-Object Drawing.Point(([Math]::Max($screen.Left, [Math]::Min($form.Left, $screen.Right - $form.Width))), ([Math]::Max($screen.Top, [Math]::Min($form.Top, $screen.Bottom - $form.Height))))
+        }
 
         # Final pass: update wrapping widths based on actual client width
         Update-SwsdWrappingWidths
@@ -1175,7 +1321,7 @@ function Update-SwsdFormSize {
         # Re-layout one more time after wrapping width update
         $form.PerformLayout()
         $rootPanel.PerformLayout()
-    } catch {}
+    } catch { throw }
 }
 
 # Update MaximumSize on wrapping labels when the card width changes
@@ -1197,21 +1343,103 @@ function Update-SwsdWrappingWidths {
     } catch {}
 }
 
-$form.Add_Load({ param($sender, $e) Invoke-SwsdSafe -Source 'Load' { Update-SwsdFormSize  }})
-$form.Add_Resize({ param($sender, $e) Invoke-SwsdSafe -Source 'Resize' -Quiet { Update-SwsdWrappingWidths  }})
+# Capture immutable geometry at 96 DPI (including SWSD_UI_SCALE). Never multiply
+# the last monitor's rounded sizes/fonts: 96 -> 120 -> 192 -> 96 must be lossless.
+$script:SwsdDpiLayout = New-Object 'System.Collections.Generic.List[object]'
+$script:SwsdDpiFonts = @()
+$script:SwsdApplyingDpi = $false
+$script:SwsdAppliedDpi = 0
+function Save-SwsdDpiLayout([Windows.Forms.Control]$Control) {
+    $script:SwsdDpiLayout.Add(@{
+        Control = $Control; Font = $Control.Font; Size = $Control.Size
+        Minimum = $Control.MinimumSize; Maximum = $Control.MaximumSize
+        Padding = $Control.Padding; Margin = $Control.Margin
+        Columns = $(if ($Control -is [Windows.Forms.TableLayoutPanel]) { @($Control.ColumnStyles | ForEach-Object { $_.Width }) } else { @() })
+        Rows = $(if ($Control -is [Windows.Forms.TableLayoutPanel]) { @($Control.RowStyles | ForEach-Object { $_.Height }) } else { @() })
+    })
+    foreach ($child in $Control.Controls) { Save-SwsdDpiLayout $child }
+}
+Save-SwsdDpiLayout $form
+$form.AutoScaleDimensions = $form.CurrentAutoScaleDimensions
 
-# Handle PerMonitorV2 DPI changes
-try {
-    $form.Add_DpiChanged({
-        param($sender, $e) Invoke-SwsdSafe -Source 'DpiChanged' {
-        try {
-            if ($e.SuggestedRectangle -ne $null) {
-                $form.Bounds = $e.SuggestedRectangle
+function Update-SwsdDpiLayout([int]$Dpi) {
+    if ($script:SwsdApplyingDpi -or $script:SwsdAppliedDpi -eq $Dpi) { return }
+    $script:SwsdApplyingDpi = $true
+    $script:SwsdDeviceDpi = $Dpi
+    $factor = $Dpi / 96.0
+    $oldFonts = $script:SwsdDpiFonts
+    $script:SwsdDpiFonts = @()
+    $statusHasPadding = $status.Padding.Horizontal -gt 0
+    foreach ($entry in $script:SwsdDpiLayout) { $entry.Control.SuspendLayout() }
+    try {
+        foreach ($entry in $script:SwsdDpiLayout) {
+            $control = $entry.Control
+            $font = New-Object Drawing.Font($entry.Font.FontFamily, ([float]($entry.Font.Size * $factor)), $entry.Font.Style, [Drawing.GraphicsUnit]::Pixel)
+            $script:SwsdDpiFonts += $font
+            $control.Font = $font
+            foreach ($property in @('Padding', 'Margin')) {
+                $p = $entry[$property]
+                $control.$property = New-Object Windows.Forms.Padding(([int][Math]::Round($p.Left * $factor)), ([int][Math]::Round($p.Top * $factor)), ([int][Math]::Round($p.Right * $factor)), ([int][Math]::Round($p.Bottom * $factor)))
             }
-            Update-SwsdFormSize
-        } catch {}
-     }})
-} catch {}
+            if ($control -eq $form) { continue }
+            $control.MinimumSize = [Drawing.Size]::Empty
+            $control.MaximumSize = New-Object Drawing.Size(([int][Math]::Round($entry.Maximum.Width * $factor)), ([int][Math]::Round($entry.Maximum.Height * $factor)))
+            $control.MinimumSize = New-Object Drawing.Size(([int][Math]::Round($entry.Minimum.Width * $factor)), ([int][Math]::Round($entry.Minimum.Height * $factor)))
+            if (-not $control.AutoSize) { $control.Size = New-Object Drawing.Size(([int][Math]::Round($entry.Size.Width * $factor)), ([int][Math]::Round($entry.Size.Height * $factor))) }
+            if ($control -is [Windows.Forms.TableLayoutPanel] -and $control -ne $statusRowTable) {
+                for ($i = 0; $i -lt $control.ColumnStyles.Count; $i++) {
+                    if ($control.ColumnStyles[$i].SizeType -eq 'Absolute') { $control.ColumnStyles[$i].Width = [int][Math]::Round($entry.Columns[$i] * $factor) }
+                }
+                for ($i = 0; $i -lt $control.RowStyles.Count; $i++) {
+                    if ($control.RowStyles[$i].SizeType -eq 'Absolute') { $control.RowStyles[$i].Height = [int][Math]::Round($entry.Rows[$i] * $factor) }
+                }
+            }
+        }
+        # Font metrics are not linear at fractional DPI. Remeasure the fixed grid.
+        Update-SwsdDashboardMetrics $srNode.Label.Font $srNode.Chip.Font
+        foreach ($item in $statusRows) {
+            $item.Panel.MinimumSize = New-Object Drawing.Size($dashboardItemWidth, $dashboardItemHeight)
+            $item.Panel.Size = $item.Panel.MinimumSize
+            $widths = @($dashboardIconWidth, $dashboardLabelWidth, $dashboardValueWidth, $dashboardChipWidth)
+            for ($i = 0; $i -lt 4; $i++) { $item.Panel.ColumnStyles[$i].Width = $widths[$i] }
+            $item.Panel.RowStyles[0].Height = $dashboardItemHeight
+            $item.Chip.Padding = New-Object Windows.Forms.Padding((ScalePx 8), (ScalePx 4), (ScalePx 8), (ScalePx 4))
+        }
+        foreach ($row in @($installButtonRow, $buttonRow2, $profileButtonRow, $statusButtonRow)) {
+            $buttons = @($row.Controls | Where-Object { $_ -is [Windows.Forms.Button] })
+            foreach ($button in $buttons) {
+                $button.FlatAppearance.BorderSize = [Math]::Max(1, (ScalePx 1))
+                $button.Width = [Windows.Forms.TextRenderer]::MeasureText($button.Text, $button.Font).Width + (2 * (ScalePx $script:SwsdButtonPaddingH)) + (2 * $button.FlatAppearance.BorderSize)
+            }
+            Set-SwsdButtonRow $buttons
+        }
+        foreach ($combo in @($region, $profile)) {
+            $combo.PixelScale = $script:SwsdUiScale * $factor
+            $combo.ItemHeight = [Windows.Forms.TextRenderer]::MeasureText('Ag', $combo.Font).Height + (ScalePx 4)
+        }
+        $tokenBox.Parent.Height = $tokenBox.PreferredSize.Height + $tokenBox.Parent.Padding.Vertical
+        $currentProfile.Size = New-Object Drawing.Size(([Windows.Forms.TextRenderer]::MeasureText('Saved profile: Administrator (all tools)', $currentProfile.Font).Width), (ScalePx $script:SwsdButtonMinHeight))
+        if ($statusHasPadding) { $status.Padding = New-Object Windows.Forms.Padding((ScalePx 10), (ScalePx 6), (ScalePx 10), (ScalePx 6)) }
+        $form.AutoScaleDimensions = $form.CurrentAutoScaleDimensions
+        $form.UpdateIcon($script:SwsdIconFont, [float]($script:SwsdUiScale * $factor))
+        $script:SwsdAppliedDpi = $Dpi
+    } finally {
+        for ($i = $script:SwsdDpiLayout.Count - 1; $i -ge 0; $i--) { $script:SwsdDpiLayout[$i].Control.ResumeLayout($true) }
+        foreach ($font in $oldFonts) { $font.Dispose() }
+        $script:SwsdApplyingDpi = $false
+    }
+}
+$form.Add_Load({ param($sender, $e) Invoke-SwsdSafe -Source 'Load' { Update-SwsdDpiLayout $form.DeviceDpi; Update-SwsdFormSize -Center }})
+$form.Add_Resize({ param($sender, $e) Invoke-SwsdSafe -Source 'Resize' -Quiet { if (-not $script:SwsdApplyingDpi) { Update-SwsdWrappingWidths } }})
+$form.Add_MonitorDpiChanged({
+    param($sender, $e) Invoke-SwsdSafe -Source 'DpiChanged' {
+        # Release the previous monitor's minimum before applying a smaller rectangle.
+        $form.MinimumSize = [Drawing.Size]::Empty
+        $form.Bounds = $e.SuggestedRectangle
+        Update-SwsdDpiLayout $e.DeviceDpiNew
+        Update-SwsdFormSize -PreserveSize
+    }
+})
 
 $script:SwsdInstallWorker = $null
 $script:SwsdInstallTimer = New-Object Windows.Forms.Timer
@@ -1454,6 +1682,30 @@ if ($ValidateWindow) {
     # Visible lifecycle probe: no token entry, installation, settings or credential actions.
     if ($env:SWSD_PREVIEW_ENABLED -ne '1') { foreach ($control in @($install,$checkUpdates,$nodeInstallButton,$region,$tokenBox,$save,$test,$remove,$profile,$saveProfile,$copyDiagnostics)) { $control.Enabled = $false } }
     $script:SwsdWindowResult = $null
+    $script:SwsdWindowResults = New-Object 'System.Collections.Generic.List[object]'
+    $script:SwsdDpiSteps = New-Object 'System.Collections.Generic.Queue[object]'
+    $script:SwsdDpiStep = 'initial'
+    if ($ValidateDpiChanges) {
+        # Exercise the actual message path as well as moves to existing monitors.
+        # Neither operation changes display configuration or uses user data.
+        Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
+using System;
+using System.Drawing;
+using System.Runtime.InteropServices;
+public static class SwsdDpiProbe {
+    [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll", EntryPoint="SendMessageW")]
+    private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr dpi, ref RECT rectangle);
+    public static void Send(IntPtr window, int dpi, Rectangle bounds) {
+        RECT r = new RECT { Left = bounds.Left, Top = bounds.Top, Right = bounds.Right, Bottom = bounds.Bottom };
+        SendMessage(window, 0x02E0, new IntPtr(dpi | (dpi << 16)), ref r);
+    }
+}
+'@
+        foreach ($screen in [Windows.Forms.Screen]::AllScreens) { $script:SwsdDpiSteps.Enqueue(@{ Screen = $screen; Name = ('monitor ' + $screen.DeviceName) }) }
+        $script:SwsdDpiSteps.Enqueue(@{ Screen = [Windows.Forms.Screen]::PrimaryScreen; Name = 'primary return' })
+        foreach ($dpi in @(96,120,144,168,192,168,144,120,96)) { $script:SwsdDpiSteps.Enqueue(@{ Dpi = $dpi; Name = "WM_DPICHANGED $dpi" }) }
+    }
     $probe = New-Object Windows.Forms.Timer
     $probe.Interval = 200
     $probe.Add_Tick({ param($sender, $e) Invoke-SwsdSafe -Source 'Tick' {
@@ -1461,6 +1713,11 @@ if ($ValidateWindow) {
         try {
         $script:SwsdLayoutFailures = @()
         $script:SwsdLayoutNotes = @()
+        if ($script:SwsdHandlerErrors.Count -gt 0) { $script:SwsdLayoutFailures += $script:SwsdHandlerErrors }
+        if ([SwsdDpiBootstrap]::WindowAwareness($form.Handle) -ne 'PerMonitorV2' -and $script:SwsdDpiAwarenessPath -like '*PerMonitorV2*') { $script:SwsdLayoutFailures += 'Window did not inherit PerMonitorV2 awareness.' }
+        if ($script:SwsdDeviceDpi -ne $form.DeviceDpi) { $script:SwsdLayoutFailures += 'Layout DPI differs from window DPI.' }
+        if ($region.ItemHeight -lt [Windows.Forms.TextRenderer]::MeasureText('Ag', $region.Font).Height + (ScalePx 4)) { $script:SwsdLayoutFailures += 'Region dropdown text is clipped.' }
+        if ($profile.ItemHeight -lt [Windows.Forms.TextRenderer]::MeasureText('Ag', $profile.Font).Height + (ScalePx 4)) { $script:SwsdLayoutFailures += 'Profile dropdown text is clipped.' }
 
         # Button rows must be pixel-identical: same Top and Height for every button (tolerance 0),
         # and equal widths inside a row of action buttons.
@@ -1491,7 +1748,7 @@ if ($ValidateWindow) {
         $rowHeights = @($statusRowTable.GetRowHeights() | Sort-Object -Unique)
         if ($columnWidths.Count -ne 1) { $script:SwsdLayoutFailures += 'Dashboard grid columns differ in width.' }
         if ($rowHeights.Count -ne 1) { $script:SwsdLayoutFailures += 'Dashboard grid rows differ in height.' }
-        for ($ci = 0; $ci -lt 2; $ci++) {
+        for ($ci = 0; $ci -lt $statusRowTable.ColumnCount; $ci++) {
             $items = @($statusRows | Where-Object { $statusRowTable.GetColumn($_.Panel) -eq $ci })
             foreach ($field in @('Icon', 'Label', 'Value', 'Chip')) {
                 # Compare in a shared coordinate space, not relative to separate item panels.
@@ -1499,7 +1756,7 @@ if ($ValidateWindow) {
                 if ($lefts.Count -ne 1) { $script:SwsdLayoutFailures += "Dashboard column $ci $field lefts differ: $($lefts -join ',')" }
             }
         }
-        for ($ri = 0; $ri -lt 3; $ri++) {
+        for ($ri = 0; $ri -lt $statusRowTable.RowCount; $ri++) {
             $items = @($statusRows | Where-Object { $statusRowTable.GetRow($_.Panel) -eq $ri })
             foreach ($field in @('Panel', 'Icon', 'Label', 'Value', 'Chip')) {
                 $tops = @($items | ForEach-Object { $_[$field].RectangleToScreen($_[$field].ClientRectangle).Top } | Sort-Object -Unique)
@@ -1531,7 +1788,7 @@ if ($ValidateWindow) {
                 }
             }
         }
-        if ($script:SwsdUiScale -eq 1) {
+        if ($script:SwsdUiScale * $script:SwsdDeviceDpi / 96 -eq 1) {
             if ($form.Height -gt 1032) { $script:SwsdLayoutFailures += "Scale 1 form height ($($form.Height)) exceeds 1032px." }
             # A clamped window must not conceal excess content behind scrolling at 1080p.
             if ($workingArea.Height -ge 1032 -and ($rootPanel.AutoScroll -or $rootPanel.VerticalScroll.Visible -or $rootPanel.HorizontalScroll.Visible)) {
@@ -1656,6 +1913,16 @@ if ($ValidateWindow) {
         }
 
         $script:SwsdWindowResult = @{
+            dpiStep = $script:SwsdDpiStep
+            dpiAwarenessPath = $script:SwsdDpiAwarenessPath
+            windowDpiAwareness = [SwsdDpiBootstrap]::WindowAwareness($form.Handle)
+            deviceDpi = $form.DeviceDpi
+            dashboardWidth = $statusRowTable.Width
+            dashboardMinimumWidth = $statusRowTable.MinimumSize.Width
+            dashboardColumnWidth = $dashboardColumnWidth
+            dashboardColumnWidths = @($statusRowTable.GetColumnWidths())
+            dashboardParentWidth = $statusRowTable.Parent.ClientSize.Width
+            dashboardColumns = $statusRowTable.ColumnCount
             visible = $form.Visible
             foreground = ([SwsdDesktop.Windows]::GetForegroundWindow() -eq $form.Handle)
             foregroundAvailable = ([SwsdDesktop.Windows]::GetForegroundWindow() -ne [IntPtr]::Zero)
@@ -1680,14 +1947,35 @@ if ($ValidateWindow) {
         } catch {
             $script:SwsdWindowResult = @{ error = $_.Exception.Message }
         }
+        $script:SwsdWindowResults.Add($script:SwsdWindowResult)
+        if ($script:SwsdDpiSteps.Count -gt 0) {
+            $step = $script:SwsdDpiSteps.Dequeue()
+            $script:SwsdDpiStep = $step.Name
+            if ($step.ContainsKey('Screen')) {
+                $area = $step.Screen.WorkingArea
+                $form.MinimumSize = [Drawing.Size]::Empty
+                $form.Bounds = New-Object Drawing.Rectangle(($area.Left + 16), ($area.Top + 16), ([Math]::Min($form.Width, $area.Width - 32)), ([Math]::Min($form.Height, $area.Height - 32)))
+                Update-SwsdDpiLayout $form.DeviceDpi
+                Update-SwsdFormSize
+            } else {
+                $ratio = $step.Dpi / [double]$form.DeviceDpi
+                $suggested = New-Object Drawing.Rectangle($form.Left, $form.Top, ([int][Math]::Round($form.Width * $ratio)), ([int][Math]::Round($form.Height * $ratio)))
+                [SwsdDpiProbe]::Send($form.Handle, $step.Dpi, $suggested)
+            }
+            $probe.Start()
+        } else { $close.Stop(); $close.Interval = $WindowTestSeconds * 1000; $close.Start() }
      }})
     $close = New-Object Windows.Forms.Timer
-    $close.Interval = $WindowTestSeconds * 1000
+    $close.Interval = 30000 # Watchdog: a failed transition must not leave a test window open.
     $close.Add_Tick({ param($sender, $e) Invoke-SwsdSafe -Source 'Tick' { $close.Stop(); $form.Close()  }})
-    $form.Add_Shown({ param($sender, $e) Invoke-SwsdSafe -Source 'Shown' { $probe.Start(); $close.Start()  }})
+    $form.Add_Shown({ param($sender, $e) Invoke-SwsdSafe -Source 'Shown' { $probe.Start(); $close.Start() }})
     try {
         [void]$form.ShowDialog()
-        $script:SwsdWindowResult | ConvertTo-Json
+        $script:SwsdWindowResults.ToArray() | ConvertTo-Json -Depth 5
+        if ($script:SwsdDpiSteps.Count -gt 0 -or $script:SwsdWindowResults.Count -eq 0) { throw 'Window validation did not complete before its watchdog elapsed.' }
+        foreach ($result in $script:SwsdWindowResults) {
+        $script:SwsdWindowResult = $result
+        if ($result.ContainsKey('error')) { throw ('Window probe failed: ' + $result.error) }
         if (-not $script:SwsdWindowResult -or -not $script:SwsdWindowResult.visible -or
             -not $script:SwsdWindowResult.foregroundAvailable -or $script:SwsdWindowResult.behindForeground -or
             $script:SwsdWindowResult.alwaysOnTop -or
@@ -1696,6 +1984,7 @@ if ($ValidateWindow) {
         if ($script:SwsdWindowResult.layoutFailures -and $script:SwsdWindowResult.layoutFailures.Count -gt 0) {
             $failureList = ($script:SwsdWindowResult.layoutFailures -join '; ')
             throw "Layout validation failed: $failureList"
+        }
         }
     } finally {
         $probe.Dispose(); $close.Dispose()
