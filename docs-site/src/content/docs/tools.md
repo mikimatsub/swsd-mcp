@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 132 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 136 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **132 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **136 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
 
 This page is the at-a-glance summary: what each tool does and which [profile](/configuration/#profiles) includes it.
 
@@ -120,13 +120,15 @@ A "list my service requests" wrapper is not shipped. The SAManage REST API has n
 
 ---
 
-## Comments (3)
+## Comments (5)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_incident_comments` | R, UI | ✓ | ✓ |   | ✓ | ✓ |
 | `swsd_add_incident_comment` | W | ✓ | ✓ |   | ✓ | ✓ |
 | `swsd_update_comment` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_list_record_comments` | R | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_add_record_comment` | W |   |   |   | ✓ | ✓ |
 
 - **`swsd_list_incident_comments`**: paginated comment thread for an incident, including private/internal comments if your token has permission. Accepts the incident's `id` or human-facing `number`. Renders the `comment-thread` widget in MCP Apps-capable hosts (vertical conversation with author chips, timestamps, public/private badges, sanitized HTML bodies).
 - **`swsd_add_incident_comment`**: post a new comment. Set `is_private: true` for internal-only comments (default `false` = visible to the requester). Accepts the incident's `id` or human-facing `number`. To edit later, use `swsd_update_comment`.
@@ -134,13 +136,15 @@ A "list my service requests" wrapper is not shipped. The SAManage REST API has n
 
 ---
 
-## Tasks (3)
+## Tasks (5)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_incident_tasks` | R | ✓ | ✓ |   | ✓ | ✓ |
 | `swsd_create_incident_task` | W |   | ✓ |   | ✓ | ✓ |
 | `swsd_update_task_state` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_list_record_tasks` | R | ✓ | ✓ |   | ✓ | ✓ |
+| `swsd_create_record_task` | W |   |   |   | ✓ | ✓ |
 
 SWSD incident sub-tasks are inline-only: they exist as ordered children of a parent incident, not as first-class records, so every tool here takes an `incident_id_or_number`.
 
