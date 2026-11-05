@@ -120,15 +120,14 @@ A "list my service requests" wrapper is not shipped. The SAManage REST API has n
 
 ---
 
-## Comments (5)
+## Comments (4)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_incident_comments` | R, UI | ✓ | ✓ |   | ✓ | ✓ |
 | `swsd_add_incident_comment` | W | ✓ | ✓ |   | ✓ | ✓ |
 | `swsd_update_comment` | W |   | ✓ |   | ✓ | ✓ |
-| `swsd_list_record_comments` | R | ✓ | ✓ |   | ✓ | ✓ |
-| `swsd_add_record_comment` | W |   |   |   | ✓ | ✓ |
+| `swsd_delete_comment` | W |   |   |   | ✓ | ✓ |
 
 - **`swsd_list_incident_comments`**: paginated comment thread for an incident, including private/internal comments if your token has permission. Accepts the incident's `id` or human-facing `number`. Renders the `comment-thread` widget in MCP Apps-capable hosts (vertical conversation with author chips, timestamps, public/private badges, sanitized HTML bodies).
 - **`swsd_add_incident_comment`**: post a new comment. Set `is_private: true` for internal-only comments (default `false` = visible to the requester). Accepts the incident's `id` or human-facing `number`. To edit later, use `swsd_update_comment`.
@@ -143,8 +142,8 @@ A "list my service requests" wrapper is not shipped. The SAManage REST API has n
 | `swsd_list_incident_tasks` | R | ✓ | ✓ |   | ✓ | ✓ |
 | `swsd_create_incident_task` | W |   | ✓ |   | ✓ | ✓ |
 | `swsd_update_task_state` | W |   | ✓ |   | ✓ | ✓ |
-| `swsd_list_record_tasks` | R | ✓ | ✓ |   | ✓ | ✓ |
-| `swsd_create_record_task` | W |   |   |   | ✓ | ✓ |
+| `swsd_update_task` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_delete_task` | W |   |   |   | ✓ | ✓ |
 
 SWSD incident sub-tasks are inline-only: they exist as ordered children of a parent incident, not as first-class records, so every tool here takes an `incident_id_or_number`.
 
@@ -154,13 +153,14 @@ SWSD incident sub-tasks are inline-only: they exist as ordered children of a par
 
 ---
 
-## Time Tracking (3)
+## Time Tracking (4)
 
 | Tool | Type | triage | agent | knowledge | operations | full |
 |---|---|---|---|---|---|---|
 | `swsd_list_time_tracks` | R |   | ✓ |   | ✓ | ✓ |
 | `swsd_log_time` | W |   | ✓ |   | ✓ | ✓ |
 | `swsd_update_time_track` | W |   | ✓ |   | ✓ | ✓ |
+| `swsd_delete_time_track` | W |   |   |   | ✓ | ✓ |
 
 Time entries are scoped to a parent `incident`, `problem`, `change`, or `release`.
 

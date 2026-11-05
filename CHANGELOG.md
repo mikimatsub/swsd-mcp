@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   them; group, site and department lookups join Agent, Operations and Full.
 - Added directory write tools (Operations/Full): create/update/delete for users, groups, sites, departments, categories and roles, `swsd_get_role`, and `swsd_add_group_member` / `swsd_remove_group_member`. Deletes and membership removal require `confirm: true` with a matching `confirm_id`.
 - Added asset and CMDB write tools (Operations/Full): create/update/delete for hardware assets, mobile devices, other assets and configuration items, plus `swsd_update_printer`. Deletes require `confirm: true` with a matching `confirm_id`.
-- Added `swsd_list_record_comments`, `swsd_add_record_comment`, `swsd_list_record_tasks` and `swsd_create_record_task` for problems, changes and releases. Lists join every profile with problem visibility; writes are Operations/Full.
+- Added `swsd_update_task` (name, assignee, due date, completion) and confirm-gated `swsd_delete_comment`, `swsd_delete_task` and `swsd_delete_time_track`; deletes preview the sub-record from its incident before sending anything.
 - Added procurement and catalog write tools (Operations/Full): create/update/delete for contracts, purchase orders, vendors, service catalog items and change catalogs, plus `swsd_list_change_catalogs` and `swsd_get_change_catalog`. Deletes require `confirm: true` with a matching `confirm_id`.
 - Added `swsd_ticket_stats`, a read-only ticket summary (totals, breakdowns, median
   resolution time) with a `ticket-stats` MCP Apps widget, in every profile that has

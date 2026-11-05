@@ -51,6 +51,7 @@ export interface TaskWriteFields {
   due_at?: string;
   assignee_email?: string;
   state?: string;
+  is_complete?: boolean;
 }
 
 /**
@@ -69,6 +70,7 @@ export function buildTaskWritePayload(
   if (fields.due_at !== undefined) task.due_at = fields.due_at;
   if (fields.assignee_email !== undefined) task.assignee = { email: fields.assignee_email };
   if (fields.state !== undefined) task.state = fields.state;
+  if (fields.is_complete !== undefined) task.is_complete = fields.is_complete;
   return { task };
 }
 

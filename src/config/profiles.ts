@@ -102,6 +102,9 @@ const PROCUREMENT_WRITE_TOOLS = [
 ] as const;
 
 const DELETE_TOOLS = [
+  'swsd_delete_comment',
+  'swsd_delete_task',
+  'swsd_delete_time_track',
   'swsd_delete_contract',
   'swsd_delete_purchase_order',
   'swsd_delete_vendor',
@@ -157,6 +160,7 @@ const AGENT_TOOLS = [
   'swsd_list_incident_tasks',
   'swsd_create_incident_task',
   'swsd_update_task_state',
+  'swsd_update_task',
   // Problem records — list/get/create lets agents promote recurring
   // incidents to a problem record for root-cause investigation.
   'swsd_list_problems',
@@ -246,6 +250,7 @@ export const PROFILE_TOOLS = {
     'swsd_list_incident_tasks',
     'swsd_create_incident_task',
     'swsd_update_task_state',
+    'swsd_update_task',
     'swsd_list_problems',
     'swsd_list_record_comments',
     'swsd_list_record_tasks',
