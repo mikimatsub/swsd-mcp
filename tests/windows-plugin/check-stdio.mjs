@@ -11,7 +11,7 @@ const root = fileURLToPath(new URL('../../plugins/swsd/', import.meta.url));
 const temporary = await mkdtemp(join(tmpdir(), 'swsd-stdio-'));
 const fakeToken = 'test-only-not-a-real-token';
 const runtimeVersion = JSON.parse(await readFile(join(root, 'runtime/package.json'), 'utf8')).dependencies['swsd-mcp'];
-const runtime = process.argv[2] ? resolve(process.argv[2]) : join(process.env.LOCALAPPDATA, 'swsd-mcp/runtime', runtimeVersion, 'node_modules/swsd-mcp/dist');
+const runtime = resolve(process.argv[2] ?? join(root, 'runtime/node_modules/swsd-mcp/dist'));
 const { PROFILE_TOOLS } = await import(pathToFileURL(join(runtime, 'config/profiles.js')).href);
 const quotePs = s => s.replaceAll("'", "''");
 const ps = (file) => new Promise((resolvePromise, reject) => {
@@ -34,7 +34,8 @@ const stopServer = async () => {
 try {
   const common = (await readFile(join(root, 'scripts/Common.ps1'), 'utf8'))
     .replace("$script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'swsd-mcp'", `$script:SwsdHome = '${quotePs(temporary)}'`)
-    .replace('return Join-Path $script:SwsdHome "runtime\\$script:SwsdPackageVersion\\node_modules\\swsd-mcp\\dist\\cli.js"', `return '${quotePs(join(runtime, 'cli.js'))}'`);
+    .replace('return Join-Path $script:SwsdHome "runtime\\$version\\node_modules\\swsd-mcp\\dist\\cli.js"', `return '${quotePs(join(runtime, 'cli.js'))}'`);
+  assert.ok(common.includes(`return '${quotePs(join(runtime, 'cli.js'))}'`), 'Launcher fixture must redirect the active entry point');
   const readerFixture = `Add-Type -TypeDefinition @'
 namespace SwsdDesktop {
   public static class Credentials {

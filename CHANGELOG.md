@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Issue-form app, server, Windows, and profile fields support URL prefills, with a warning to omit secrets and use synthetic examples.
 - Changelog format validation through `npm run check:changelog` in the CI lint job.
+- Windows Tools profile builder with catalog checkboxes, named saves, rename,
+  delete, and schema-validated JSON import and export. Home and Tools pickers
+  include saved custom profiles and configure the server with their profile file.
+- In-app What's new with bundled, offline release notes grouped by version and
+  Keep a Changelog sections.
+- Report a bug and Request a feature buttons with version and profile prefills
+  that exclude credentials, personal details, and profile paths.
 
 ### Changed
 
@@ -33,8 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   PerMonitorV2 monitor/DPI round-trip validation are retained.
 - Windows profiles are data-driven for the picker: Operations covers all tools,
   Full remains a hidden alias for older installs that still store profile=full,
-  and lock pills show Operations instead of Full. A Custom profile builder is
-  planned as a follow-up.
+  and lock pills show Operations instead of Full. Saved custom profiles appear
+  by name in both pickers.
+- The Windows JSON Web Token row shows a masked saved credential and
+  "Verified just now" after a successful connection test.
+- Windows Update installs the latest published server with npm integrity checks
+  in a separate runtime, activates it only after validation, and preserves the
+  previous runtime on failure. Newer active runtimes count as installed.
 - Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.2.0`.
 - Release tag pushes now publish the container image with `X.Y.Z` and `X.Y`
   tags and a matching `org.opencontainers.image.version` label.

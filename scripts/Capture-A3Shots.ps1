@@ -8,7 +8,7 @@ try {
     $scriptPath=Join-Path $PSScriptRoot '../plugins/swsd/scripts/Manage-Swsd.ps1'
     foreach ($theme in @('light','dark')) {
         $env:SWSD_THEME=$theme
-        foreach ($state in @('ready','firstrun','jwt-help','error','tools','tool-detail')) {
+        foreach ($state in @('ready','firstrun','jwt-help','error','tools','tool-detail','profile-builder','custom-selected','import-error','whats-new')) {
             $path=Join-Path $OutputDirectory "app-$state-$theme.png"
             $output=& powershell.exe -NoProfile -NonInteractive -STA -WindowStyle Hidden -File $scriptPath -ValidateWindow -PreviewState $state -ScreenshotPath $path
             if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $path)) {throw "Capture failed: $state / $theme"}

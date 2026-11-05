@@ -1,0 +1,1075 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- Custom profiles selected with `SWSD_PROFILE=custom`, using the union of trimmed
+  `SWSD_TOOLS` names and a bounded version-1 JSON `SWSD_PROFILE_FILE`. Unknown
+  tools warn and are skipped; an empty valid selection fails startup. Published
+  `schemas/swsd-profile.schema.json` matches runtime file validation.
+
+- Issue-form app, server, Windows, and profile fields support URL prefills, with a warning to omit secrets and use synthetic examples.
+- Changelog format validation through `npm run check:changelog` in the CI lint job.
+- Windows Tools profile builder with catalog checkboxes, named saves, rename,
+  delete, and schema-validated JSON import and export. Home and Tools pickers
+  include saved custom profiles and configure the server with their profile file.
+- In-app What's new with bundled, offline release notes grouped by version and
+  Keep a Changelog sections.
+- Report a bug and Request a feature buttons with version and profile prefills
+  that exclude credentials, personal details, and profile paths.
+
+### Changed
+
+- `operations` now includes all 145 tools, including KB authoring. `full` remains
+  a backward-compatible alias with a once-per-process stderr deprecation notice;
+  profile tables, Registry metadata, and connector manifests use `operations`.
+- Delete tools require `operations` or explicit inclusion in a custom profile,
+  retaining preview, `confirm`, and matching `confirm_id` safety gates.
+
+- Rebuilt Windows setup in WPF/XAML for PowerShell 5.1 with the A3 Home shell,
+  top Home/Tools navigation, a searchable 145-tool browser with profile locks and
+  Read/Edit/Delete badges, and live, saved Match Windows / Light / Dark Appearance.
+  JSON Web Token help now embeds the User detail and Generate-only figures.
+  Credential isolation, background maintenance, diagnostics redaction, and
+  PerMonitorV2 monitor/DPI round-trip validation are retained.
+- Windows profiles are data-driven for the picker: Operations covers all tools,
+  Full remains a hidden alias for older installs that still store profile=full,
+  and lock pills show Operations instead of Full. Saved custom profiles appear
+  by name in both pickers.
+- The Windows JSON Web Token row shows a masked saved credential and
+  "Verified just now" after a successful connection test.
+- Windows Update installs the latest published server with npm integrity checks
+  in a separate runtime, activates it only after validation, and preserves the
+  previous runtime on failure. Newer active runtimes count as installed.
+- Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.2.0`.
+- Release tag pushes now publish the container image with `X.Y.Z` and `X.Y`
+  tags and a matching `org.opencontainers.image.version` label.
+
+- Changelog headings, categories, UTC publication dates, and version links follow Keep a Changelog 1.1.0 throughout the release history.
+
+### Removed
+
+- Removed the README's obsolete `Upgrading to 3.0.0` section.
+
+### Fixed
+
+- Corrected the docs site and README against the current tool registry,
+  profiles, configuration, widget rendering, Windows setup, and transports.
+  Removed release-history prose and unsupported security, hosting, and client
+  compatibility claims from the docs pages.
+
+- Custom prompts and widgets require all their tools. A catalog lookup without
+  the service-request tool no longer advertises an unusable Submit form.
+  Catalog output validation accepts its documented passthrough fields.
+
+- Windows A3 setup now offers a primary Update action for newer tools, displays
+  plain Read/Edit/Delete pills, and uses friendlier catalog summaries. Profile
+  labels consistently use Operations, and Agent's 94 excluded tools remain
+  available to browse regardless of the selected area.
+- Windows update lookup now uses the PowerShell 5.1 Framework process API when
+  cleaning up its own timed-out lookup, fixing the unsupported overload fallback.
+- Documentation: the README widgets section now lists all ten widgets,
+  including `ticket-stats` and `swsd_my_queue`; the widgets reference describes
+  the incident-list title total (`matched_total`/`total_scope`) instead of a
+  footer chip. The 3.2.0 entry describes its system-DPI-aware implementation;
+  the Windows settings app now supports PerMonitorV2 as described below.
+- Windows settings: enable PerMonitorV2 before creating windows, with per-monitor
+  and system-aware fallbacks on older Windows. Moving between monitors reapplies
+  the suggested window bounds and rescales fonts, icons, spacing, inputs, buttons,
+  and fixed dashboard cells without cumulative rounding. Measure the dashboard's
+  full card width and use one column when needed, fixing overflow at 125% scaling.
+  DPI diagnostics and light/dark layout checks retain the `SWSD_UI_SCALE` test hook.
+
+## [3.2.0] - 2026-11-05
+
+### Added
+
+- Windows settings: Copy diagnostics shares a plain-text environment report with
+  credential presence only and a conservatively redacted 20-line log tail. The
+  status action row uses the shared button style; CI checks isolated credentials,
+  token-fragment redaction, and the actual handler with a mocked clipboard.
+- Windows settings: Check for updates runs the mockable npm lookup in a background
+  runspace, with current/available/offline results in an aligned dashboard chip.
+  The install, update-check, and Node helper buttons use the shared equal-width row.
+- Confirmed, background Node.js helper pinned to 24.22.1 through winget; missing
+  winget and failed installs show friendly guidance. The confirmation is mockable.
+- Install/repair skips npm when the bundled version and entry point already match,
+  while refreshing the client, recipe, and shortcut; forced repair remains available.
+  Offline update and mocked winget/repair checks run alongside handler checks in CI.
+- Windows settings dashboard with themed Node.js, installed tools/version, token
+  presence, region, and profile chips, refreshed after each action. Credential
+  presence checks never materialize or display the saved token value.
+- Background install/repair using a PowerShell runspace, an animated themed
+  progress bar, disabled action controls during work, friendly in-window errors,
+  safe error details, and restart guidance. Handler validation awaits the real
+  polling timer with mocked installs, including failure and retry.
+- Windows settings app: every event handler runs in a safe wrapper (friendly in-window error, controls re-enabled); new check-ui-handlers test clicks every button under StrictMode with mocked actions in CI; globe app icon replaces the default window icon.
+- Windows settings app: one shared button style so buttons in a row have identical top, height and width; field labels and token placeholder; themed dark-mode dropdown borders; clear disabled-button look; -ValidateWindow fails on any 1px button-row mismatch.
+- Added `swsd_sla_risk` tool: lists open incidents ranked by SLA breach risk with
+  color-coded risk levels (breached, critical, warning, ok, no_due_date), due
+  countdowns, and a dedicated MCP Apps widget (`sla-risk`).
+- Added `swsd_my_queue` tool: work-queue view defaulting to the authenticated
+  user's open incidents, with per-row SLA risk computation and sort options.
+  Reuses the existing `incident-list` widget.
+- Factored shared `resolveCurrentUser` helper from `listMyIncidents` for reuse
+  across tools that need JWT-based user resolution.
+- Added the read-only `swsd_change_calendar` tool to Agent, Operations and Full:
+  bounded change/release scans, client-side filters, UTC day grouping, shared-CI
+  and group overlap conflicts, and explicit unscheduled/truncated scan accounting.
+- Added the content-sized change calendar MCP Apps widget with viewer-local times,
+  responsive rows, safe record links, conflict details, and light/dark themes.
+- Added read-only get-by-id lookups: `swsd_get_user` (with `group_ids`),
+  `swsd_get_group` (with members), `swsd_get_site`, `swsd_get_department` and
+  `swsd_get_category`. User and category lookups join every profile that lists
+  them; group, site and department lookups join Agent, Operations and Full.
+- Added directory write tools (Operations/Full): create/update/delete for users, groups, sites, departments, categories and roles, `swsd_get_role`, and `swsd_add_group_member` / `swsd_remove_group_member`. Deletes and membership removal require `confirm: true` with a matching `confirm_id`.
+- Added asset and CMDB write tools (Operations/Full): create/update/delete for hardware assets, mobile devices, other assets and configuration items, plus `swsd_update_printer`. Deletes require `confirm: true` with a matching `confirm_id`.
+- Added hardware warranty tools (`swsd_list_hardware_warranties`, `swsd_add_hardware_warranty`, `swsd_update_hardware_warranty`, confirm-gated `swsd_delete_hardware_warranty`) and `swsd_add_contract_item`. SWSD contract items expose no stable ids, so no update or delete tool is offered for them.
+- Added `swsd_list_record_comments`, `swsd_add_record_comment`, `swsd_list_record_tasks` and `swsd_create_record_task` for problems, changes and releases. Lists join every profile with problem visibility; writes are Operations/Full.
+- Added `swsd_update_task` (name, assignee, due date, completion) and confirm-gated `swsd_delete_comment`, `swsd_delete_task` and `swsd_delete_time_track`; deletes preview the sub-record from its incident before sending anything.
+- Added procurement and catalog write tools (Operations/Full): create/update/delete for contracts, purchase orders, vendors, service catalog items and change catalogs, plus `swsd_list_change_catalogs` and `swsd_get_change_catalog`. Deletes require `confirm: true` with a matching `confirm_id`.
+- Added `swsd_ticket_stats`, a read-only ticket summary (totals, breakdowns, median
+  resolution time) with a `ticket-stats` MCP Apps widget, in every profile that has
+  `swsd_sla_risk`.
+- Added built-in MCP prompts `swsd_morning_triage`, `swsd_sla_risk_review` and
+  `swsd_weekly_change_review`, offered only when the active profile has the tools
+  they use.
+- Added the `swsd_update_problem` write tool (state, root cause, symptoms,
+  workaround and core fields) to Agent, Operations and Full.
+- Added confirm-gated delete tools for incidents, problems, changes, releases and
+  solutions (Operations and Full only). The first call previews the record; the
+  DELETE runs only with `confirm: true` and a matching `confirm_id`. Dry-run mode
+  always previews and disabled mode blocks.
+
+### Changed
+
+- Shared status collection for the dashboard and `-CheckOnly`, with Node.js
+  version and region added to the existing JSON fields.
+- Restyled the Windows settings app to a Windows 11 look using WinForms only:
+  card-based layout with TableLayoutPanel/FlowLayoutPanel, system-DPI-aware resizable
+  window, dark/light theme from system personalization
+  settings, DWM immersive dark mode and Mica backdrop on supported builds,
+  colored status chips with icon glyphs, and a subtle fade-in animation. All
+  existing behaviors, switches, and accessible names are preserved. The window
+  now auto-sizes to show all options without scrolling or resizing on load,
+  clamped to the current monitor's working area. An SWSD_UI_SCALE environment variable allows simulating higher
+  DPI scaling for testing.
+- Polished the `sla-risk` widget: it now sizes to its content instead of
+  scrolling, truncates long incident names with full text on hover, drops the
+  Priority/Assignee and then the number column on narrow hosts, follows the
+  host theme in dark mode, and exposes its render functions for unit tests.
+  The `swsd_sla_risk` description now states that list rows normally only carry
+  `due_at`, so SLA violations are counted only when SWSD includes them.
+- Made manual release recovery skip only the Windows plugin's live npm-latest
+  assertion while rebuilding an immutable tag. Deterministic plugin checks and
+  the normal online PR, main, and initial tag gates remain enabled.
+- Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.1.1`;
+  the separately gated plugin client and administrator promotion remain 3.1.0.
+
+### Fixed
+
+- Windows plugin: Repair from the manager window now always reinstalls, the
+  up-to-date shortcut also checks the installed lockfile, and a timed-out update
+  check no longer leaves npm running.
+- MCP Registry profile descriptions now match the tool counts in `PROFILE_TOOLS`,
+  with an offline metadata regression check to prevent drift.
+- Widgets recover from errors when a later successful result arrives in the same
+  iframe, preserving cached render targets and interactive controls.
+- `swsd_sla_risk_review` accepts a numeric group ID directly, so group-scoped
+  reviews work in every supported profile without a group lookup tool.
+- `swsd_list_my_incidents` now applies requester email locally, case-insensitively,
+  together with the authenticated assignee filter.
+- Incident lists, My Queue and SLA Risk now distinguish upstream candidate counts
+  from matched totals, omit sort/display options from applied filters, and show
+  an honest visible count in the incident-list widget.
+- Task list, create and update results now consistently honor boolean
+  `is_complete`, with the state-based fallback shared by every handler.
+- Malformed or interrupted upstream responses and unexpected list shapes now
+  report sanitized errors instead of successful empty results.
+- Hour-based `updated_within` aliases and timestamped `updated_from` values now
+  apply the exact cutoff locally, sending SWSD only a widened calendar date; day
+  and week aliases retain their UTC calendar-date behavior.
+- `swsd_sla_risk` now collects `max_results` across up to ten candidate pages and
+  reports scan truncation when pages or matching rows remain.
+- My-incident group fallback hints now use the public `assigned_to_group` input.
+- Solution get/update descriptions now share delete's six-digit number and
+  seven-digit internal-ID boundary with the resolver.
+- Change-calendar conflict details are capped at 200 while retaining aggregate
+  and per-record counts; the widget reports omitted details and indexes them once.
+- Group lookups preserve membership IDs and user labels, exposing user IDs only
+  when supplied explicitly by SWSD.
+- Configuration-item writes now use `state`, `site_id` and `department_id`.
+- Change-catalog writes now validate and send `state_id` instead of `state`.
+- HTTP-selected CLI launches now propagate the transport mode, and HTTP always
+  rejects local `file_path` attachments before accessing the filesystem.
+- Invalid SWSD tokens fail before fetch; credentials are redacted from errors,
+  nested tool content and structured results, and custom-field dump diagnostics.
+- `SWSD_BASE_URL` now requires HTTPS and rejects embedded URL credentials.
+- HTTP rate limits use the same normalized token as authentication, preventing
+  quota bypass through Bearer casing or ignored Authorization headers.
+- HTTP rejects non-loopback Origins by default and supports optional exact Host
+  validation through `SWSD_ALLOWED_HOSTS`, without changing the listen address.
+  Hosted deployments that serve browser-based clients must list those origins in
+  `SWSD_ALLOWED_ORIGINS`. Requests without an Origin header are unaffected.
+- HTTP parser and unexpected errors return bounded generic JSON, with safe
+  metadata-only logging; authentication and rate limiting run before JSON parsing.
+- Outbound retries are limited to GET; HEAD now makes only one attempt.
+- Widgets now follow the host's light or dark theme. The UI build had been lowering
+  CSS `light-dark()` to the OS color-scheme preference, so eight widgets ignored
+  the host theme. The incident list also keeps numbers and words whole in narrow
+  hosts and scrolls horizontally instead.
+- `swsd_create_service_request` in dry-run mode failed output validation instead of
+  returning the previewed request.
+
+## [3.1.1] - 2026-11-02
+
+### Changed
+
+- Moved the Windows plugin runtime pin to the published `swsd-mcp@3.1.0`
+  and regenerated its lock, as required by the runtime-version test.
+- Aligned the MCP client, core and server packages at 2.4.0, the Node adapter
+  at 2.1.2 and MCP Apps at 2.0.4. The public tool names, schemas, transports,
+  configuration and Node 24 runtime requirement are unchanged.
+- Updated express-rate-limit to 8.7.2, ESLint to 10.14.0,
+  typescript-eslint to 8.72.1, and the eligible Astro documentation stack.
+- Refreshed the pinned Node 24 Alpine image digest. Node 26 is now Active LTS,
+  but its runtime and Windows-plugin migration remains separately gated.
+
+### Security
+
+- Updated the MCP SDK Node adapter and made the already-reviewed
+  `@hono/node-server` 2.1.5 fix an exact public dependency for
+  GHSA-rmxm-3fg6-px4f. The Windows plugin runtime also overrides its published
+  3.1.0 dependency graph instead of retaining vulnerable adapter 1.19.17.
+- Overrode development-only `minimatch` to 11.0.1, fixing
+  GHSA-g3hv-75wg-m249 across ESLint and typescript-eslint without suppressing
+  the audit or OSV findings.
+
+## [3.1.0] - 2026-10-24
+
+### Added
+
+- Windows desktop plugin (`plugins/swsd`, client 3.1.0): private settings and
+  token window, Windows Credential Manager-backed launcher, Start menu
+  shortcut, and a five-profile dropdown (Triage, Agent, Knowledge, Operations,
+  Full). Repository marketplace entry in `.agents/plugins/marketplace.json`.
+- Windows CI job running the isolated install/repair, profile persistence and
+  real PowerShell STDIO launcher checks against the pinned runtime.
+- `tests/unit/pluginRuntimeVersion.test.ts`, which fails when the plugin
+  runtime recipe, its lockfile, or the setup script's expected version is not
+  the latest `swsd-mcp` version published on npm (or is ahead of the root version), when an SDK v1 override returns,
+  or when the plugin client version drifts between manifest, launcher and setup.
+
+### Changed
+
+- The plugin runtime moved from the pilot pin `swsd-mcp@2.3.2` / SDK 1.31.0 to
+  `swsd-mcp@3.0.2` on the MCP SDK v2 packages; the SDK override was removed and
+  the runtime lockfile regenerated (strict install, 0 vulnerabilities,
+  verified registry signatures). Profile tool counts are unchanged on 3.x:
+  14 / 37 / 15 / 64 / 66.
+- Updated ESLint to 10.13.0 and Astro to 7.4.0 after their publication-age gates.
+
+**Deferred work**
+
+- `typescript-eslint` 8.72.0, Astro 7.4.1/7.4.2 and Vite 8.3.5 await their
+  three-day publication-age gates.
+- Plugin promotion still requires clean-Windows-user acceptance: native
+  credential create/replace/remove, private token entry, credential-backed live
+  access, supported desktop delivery, and profile changes on new connections.
+- The plugin keeps Node `>=24.15.0 <25`; see `plugins/swsd/ADMIN.md` and #73.
+
+### Security
+
+- Updated transitive `body-parser` to 2.4.0 for GHSA-27r3-jxmh-p828 (DoS via
+  trailing bytes after a compressed body), ahead of the publication-age gate.
+
+## [3.0.2] - 2026-10-19
+
+### Changed
+
+- Updated Zod to 4.6.7 and the Node HTTP adapter override to 2.1.5 after
+  verifying their declared Node and Hono compatibility and completing the
+  inherited three-day publication-age gate.
+- Updated Vitest and its coverage provider to 5.0.5, jsdom to 30.1.3,
+  `typescript-eslint` to 8.71.2, the Node 24 type line to 24.19.2, and the
+  compatible documentation and transitive dependency graph.
+- Refreshed the pinned Node 24 Alpine image digest and OSV Scanner reusable
+  workflow to v2.7.0. Public tool names, schemas, error behavior,
+  configuration, transports, and the Node 24 runtime requirement are
+  unchanged from 3.0.1.
+- Regenerated all five Copilot connector versions to match 3.0.2. The release
+  passed strict peer installs, audits and signature checks, 711 tests and
+  coverage gates, server/widget/docs builds, legacy protocol checks, live
+  read-only SWSD checks, and container build and smoke tests.
+
+**Deferred work**
+
+- Astro 7.4.1, Undici 8.12.3, and other releases published on October 19 remain
+  deferred until their three-day publication-age gates elapse and a fresh
+  combined head passes review.
+- TypeScript 7 remains blocked by `typescript-eslint`'s declared `<6.1` peer
+  range. Node 26 and its type line remain deferred until the upstream LTS
+  transition on October 28. Draft #141 remains pending native credential,
+  administrator import, and clean coworker installation verification.
+
+## [3.0.1] - 2026-10-12
+
+### Changed
+
+- Aligned the MCP client, core, and server packages at 2.3.1 and the Node HTTP
+  adapter at 2.1.1. The existing stateless HTTP implementation already creates
+  a server and transport per request as required by the SDK 2.3 release notes.
+- Updated `@hono/node-server` to 2.1.4, the resolved `express-rate-limit` to
+  8.7.1, jsdom to 30.1.2, ESLint to 10.12.0, `typescript-eslint` to 8.71.1,
+  Vite to 8.3.4, and the compatible documentation toolchain.
+- Updated pinned Setup Node and CodeQL Actions to reviewed immutable commits,
+  and documented the current SDK, TypeScript, Node, and protocol constraints in
+  the maintenance runbook.
+- Regenerated all five Copilot connector versions to match 3.0.1. Public tool
+  names, schemas, environment variables, transports, and runtime requirements
+  are unchanged from 3.0.0.
+
+**Deferred work**
+
+- Vitest 5.0.4, DOMPurify 3.4.17, Zod 4.6.6, and OSV Scanner Action 2.7.0
+  remain deferred until every changed version has passed the inherited
+  three-day publication-age gate and the regenerated head passes fresh review.
+- Draft #141 remains separate pending native credential, administrator import,
+  and clean coworker installation verification.
+
+### Security
+
+- Overrode the documentation build's transitive `postcss-selector-parser` to
+  7.1.6, fixing CVE-2026-104844 / GHSA-rj75-hqrm-r3gf without suppressing the
+  affected dependency path or weakening the OSV gate.
+- Updated Express to 5.3.0, including upstream `qs` fixes for CVE-2026-2391,
+  CVE-2026-82417, and CVE-2026-82562. The release passed the ordinary three-day
+  publication-age gate; no security exception was used.
+
+## [3.0.0] - 2026-10-04
+
+### Changed
+
+**Breaking changes and upgrade guidance**
+
+- Unknown tool names now return a JSON-RPC `-32602` error instead of a successful
+  JSON-RPC envelope containing `CallToolResult.isError: true`. SDK clients must
+  catch the rejected call for an unknown name; list tools before choosing a name.
+- Advertised schemas use SDK v2's JSON Schema 2020-12 serialization, including
+  changed `additionalProperties` representation and omitted legacy task metadata.
+  Update golden tool-list snapshots and strict schema validators. Tool names,
+  input property names/required fields, annotations, UI metadata and resources
+  are preserved. Validation errors for known tools remain `isError: true` results,
+  with SDK v2 wording and without the old `MCP error <code>:` text prefix.
+- The major version makes these observable wire/error changes explicit and keeps
+  consumers pinned to the 2.x SemVer range on that line. The four existing legacy
+  protocol revisions work over both transports. Node requirements, profile
+  selection, environment variables and launch commands are unchanged.
+
+- Migrated MCP Apps to 2.0.3 and replaced the monolithic SDK with compatible
+  client/core/server 2.2.0 packages and Node HTTP adapter 2.1.0. All new exact
+  package versions passed the inherited three-day publication gate.
+- Registered complete Zod input/output schemas, preserving runtime refinements,
+  and updated the Node HTTP transport and public SDK imports.
+- Added real CLI HTTP/STDIO checks for all four deployed protocol versions,
+  exact tools, safety annotations, metadata calls, seven widget resources, and
+  unknown/invalid-known tool error behavior. CI runs them after the server build.
+- Updated development `globals` to 17.13.0 after its publication-age gate
+  elapsed on October 4 at 03:57 UTC; final combined checks were rerun.
+- Retained TypeScript 6 and the Node 24 LTS production policy. SDK 2.3.0 and other
+  ordinary updates inside the publication-age gate remain deferred. TypeScript 7
+  exceeds the current stable lint parser's supported peer range.
+- Regenerated all five Copilot connector versions to match 3.0.0. The 2026-07-28
+  HTTP binding remains a separate protocol migration.
+
+**Deferred work**
+
+- #140's regenerated dependency head remains open until its three-day gate has
+  elapsed and fresh combined checks pass. #141's repaired Windows plugin remains
+  draft pending native credential testing and workspace/clean coworker rollout.
+- The external local maintenance job remains paused pending approval for a
+  supported management session and a broader recurring prompt.
+
+## [2.3.2] - 2026-10-04
+
+### Changed
+
+- Consolidated the compatible Docker, Node type, `tsx`, `globals`, and lock
+  updates proposed in #136–#140 into this verified release update.
+- Updated MCP SDK 1.31.0, MCP Apps 1.7.5, DOMPurify 3.4.16,
+  `express-rate-limit` 8.7.0, Helmet 8.3.0, Zod 4.6.5, and the
+  `@hono/node-server` 2.1.3 override.
+- Updated Vitest and coverage to 5.0.3, jsdom to 30.1.1, Vite to 8.3.1,
+  ESLint to 10.11.0, and the remaining compatible development dependencies.
+- Updated the docs toolchain to Astro 7.3.5, Starlight 0.42.4,
+  `astro-d2` 0.14.0, and the matching markdown peer 7.3.1.
+- Refreshed both dependency locks with the inherited three-day release-age
+  policy and pinned the official Node 24 Alpine image and Dockerfile 1.27.1
+  frontend to reviewed digests.
+- Updated immutable GitHub Actions pins for Node setup, Docker builds and
+  publishing, CodeQL, and OSV; updated the MCP publisher to 1.8.1.
+
+**Maintenance scope**
+
+- Newer releases still inside the three-day soak window remain deferred.
+  Renovate regenerated #140 after the original lock update was incorporated;
+  its newer head remains open pending release age and a fresh review.
+  MCP Apps 2 requires the SDK 2 migration, TypeScript 7 exceeds the current
+  lint toolchain's peer range, and Node 26 is outside the supported Node 24
+  runtime line. These require separate compatibility work.
+- Draft #141 remains separate: workspace administrator import and a clean
+  coworker installation have not been verified. This release does not enable
+  or deploy that plugin.
+
+### Fixed
+
+- Manual release recovery now checks out the existing release tag instead
+  of current main and shares the tag-triggered run's concurrency key.
+- MCP Registry recovery checks the canonical exact-version endpoint and
+  fails closed on outages or unexpected metadata; only a confirmed 404
+  authorizes publication.
+- Added lockfile version consistency and relative external widget-asset
+  checks, plus a read-only release smoke script and maintenance runbook.
+- Removed unused nested local-link records from the docs lockfile after
+  verifying the root adapter reference with strict clean installations.
+- Regenerated all five Copilot connector versions to match 2.3.2.
+
+### Security
+
+- Removed `vite-plugin-singlefile` and its unpatched `braces` dependency
+  ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)).
+  A dependency-free Vite plugin now inlines each widget's JavaScript and CSS,
+  escapes HTML terminators, and rejects missing or leftover external assets.
+- Replaced the docs-only, unpatched `http-cache-semantics` dependency
+  ([GHSA-ch52-4w7c-c8xp](https://github.com/advisories/GHSA-ch52-4w7c-c8xp))
+  with a private adapter that grants no cache lifetime. Remote docs images
+  expire immediately and must be revalidated. Regression checks exercise
+  Astro's real image-loading functions before every docs build.
+- Added fresh npm vulnerability audit gates for the server, documentation,
+  and release builds. No vulnerability findings are suppressed.
+
+## [2.3.1] - 2026-08-20
+
+### Changed
+
+- Updated `@hono/node-server` to 2.1.1 and `tsx` to 4.23.12.
+- Updated the docs toolchain to Astro 7.2.2, `astro-d2` 0.13.1, and
+  the `esbuild` 0.28.2 override, keeping Astro's exact
+  `@astrojs/markdown-remark` peer aligned.
+- Refreshed compatible root and docs dependency locks while retaining the
+  inherited three-day minimum release age.
+
+### Security
+
+- Updated transitive `nanoid` from 3.3.17 to 3.3.18 in both lockfiles to
+  remediate `GHSA-2v37-7h3g-55p8`.
+
+## [2.3.0] - 2026-08-10
+
+### Added
+
+- Added measured V8 coverage reporting and CI regression gates at 72% statements,
+  66% branches, 80% functions, and 76% lines, plus direct request-boundary tests
+  for the SWSD HTTP client.
+- Added optional `SWSD_ATTACHMENT_ROOT` containment for local stdio attachment
+  paths.
+
+### Changed
+
+- Updated the official `node:24-alpine` image digest and refreshed the resolved
+  `express-rate-limit` and `@hono/node-server` runtime versions after full
+  compatibility, container, and security validation.
+- Updated the documentation site to `@astrojs/starlight` 0.41.7.
+
+### Fixed
+
+- Enforced MCP Registry metadata limits in tests and made partially completed
+  release workflows safely resumable without moving an existing release tag.
+
+### Security
+
+- Bounded MCP query, label, long-text, filter, relationship, custom-field, and
+  request-variable inputs and now validate date inputs as ISO 8601/RFC 3339.
+- Hardened attachment inputs to require exactly one source, canonical base64,
+  safe display names, regular local files, and the SWSD 25 MB per-file limit.
+
+## [2.2.1] - 2026-08-03
+
+### Changed
+
+- Completed all four MCP tool annotation hints explicitly for every tool and
+  added a registry-wide regression test for annotation completeness.
+- Refreshed runtime and development dependency locks, including
+  `@hono/node-server` 2.0.12 and `brace-expansion` 5.0.9.
+
+### Security
+
+- Raised the minimum DOMPurify version to 3.4.13 so downstream installs cannot
+  retain releases affected by the sanitizer advisories fixed through 3.4.12.
+
+## [2.2.0] - 2026-07-09
+
+### Added
+
+- Added an `operations` profile for ITSM lifecycle work, with 64 tools: the
+  default agent workflow plus change/release management, asset/CMDB lookup,
+  procurement context, risk lookup, time tracking, and attachments.
+- Added change and release read/write tools:
+  `swsd_list_changes`, `swsd_get_change`, `swsd_create_change`,
+  `swsd_update_change`, `swsd_list_releases`, `swsd_get_release`,
+  `swsd_create_release`, and `swsd_update_release`.
+- Added read-only asset, CMDB, procurement, and risk tools for hardware,
+  mobile devices, printers, software, other assets, configuration items,
+  contracts, purchase orders, vendors, and risks.
+- Added time tracking tools for incidents, problems, changes, and releases:
+  `swsd_list_time_tracks`, `swsd_log_time`, and
+  `swsd_update_time_track`.
+- Added `swsd_upload_attachment` with base64 input for hosted/HTTP clients
+  and stdio-only local `file_path` support.
+- Added `SWSD_WRITE_MODE=live|dry-run|disabled` and applied it to all write
+  tools so operators can preview or block mutations without changing
+  profiles.
+
+### Changed
+
+- The default `agent` profile now includes time tracking and attachment
+  workflow tools, increasing from 33 to 37 tools.
+- The `full` profile now exposes 66 tools across 15 categories.
+- Copilot Studio Swagger artifacts now include the new `operations` profile.
+
+## [2.1.1] - 2026-06-06
+
+### Fixed
+
+Patch release for public package metadata only. No API behavior changes.
+
+- Refresh published npm and MCP Registry metadata after the repository rename/casing cleanup.
+- Publish `server.json` to the MCP Registry from the trusted tag release workflow.
+- Align the runtime MCP server version reported in banners, `User-Agent`, and `swsd_get_server_info` with `package.json`.
+
+## [2.1.0] - 2026-05-08
+
+### Added
+
+The v2.1 release: strictly additive over v2.0.2. Closes the
+"too-many-round-trips" UX gap surfaced in v2.0 user smoke testing
+(every tool keyed on `id` only: agents had to call `swsd_list_*`
+first to translate a human-facing `number` into an internal `id`)
+and broadens the rich-UI surface from 4 widgets to 7. Adds two
+entirely new tool families (Tasks, Problems) and a date-natural-language
+alias on the two highest-traffic list tools.
+
+- **Tools accept either id or human-facing number** on every id-keyed
+  tool: `swsd_get_incident`, `swsd_update_incident`, `swsd_assign_incident`,
+  `swsd_update_incident_state`, `swsd_link_solution_to_incident`,
+  `swsd_list_incident_comments`, `swsd_add_incident_comment`,
+  `swsd_update_comment`, `swsd_get_solution`, `swsd_update_solution`,
+  `swsd_get_record_audits`. Eliminates the 4-round-trip "show me 60310"
+  friction reported in v2.0.2 user smoke testing: agents can now pass
+  the number visible in the SWSD UI directly. New shared utility
+  `src/utils/idResolver.ts` disambiguates by digit count (≥7 digits =
+  internal id, ≤6 digits = human-facing number) with a single targeted
+  list lookup when ambiguous.
+- **Date-natural-language alias** `updated_within: "7d" | "24h" | "1w" | "30d"`
+  on `swsd_list_incidents` and `swsd_list_my_incidents`. Resolves to the
+  same `updated_from` filter SWSD already accepts; lets agents say
+  "incidents updated in the last 7 days" without computing ISO dates.
+- **Tasks tools (3 new):** `swsd_list_incident_tasks`,
+  `swsd_create_incident_task`, `swsd_update_task_state` for SWSD
+  incident sub-task management. Inline-only (tasks are scoped to a parent
+  incident, not first-class records).
+- **Problems tools (3 new):** `swsd_list_problems`, `swsd_get_problem`,
+  `swsd_create_problem` for ITIL problem-record management. Previously
+  entirely unexposed: agents could not promote recurring incidents to a
+  problem record without dropping back to the SWSD UI.
+- **3 new widgets:**
+  - **comment-thread** for `swsd_list_incident_comments`: vertical
+    conversation with author chips, timestamps, public/private badges,
+    and sanitized HTML bodies.
+  - **audit-timeline** for `swsd_get_record_audits`: vertical timeline
+    grouped by day with action chips and field-level diffs.
+  - **catalog-item-form** for `swsd_get_catalog_item`: first widget to
+    call back into the server via `app.callServerTool`. Renders catalog
+    item variables as a form; submits via `swsd_create_service_request`.
+    Collapses the 4-round-trip service-request workflow to 2.
+- **`swsd_list_my_incidents` now renders the incident-list widget** (was
+  previously text-only despite returning the same shape as
+  `swsd_list_incidents`).
+- **incident-detail widget enriched** with description (sanitized HTML),
+  due date (with Overdue badge), SLA violations count, resolution body,
+  and created date: fields the `?layout=long` API already returned but
+  the widget never surfaced.
+
+### Changed
+
+- `swsd_get_record_audits`: when `object_type` is `incidents` or
+  `solutions`, the `id` field accepts either form (internal id ≥7 digits
+  or human-facing number ≤6 digits). Other object types (`problems`,
+  `changes`, `releases`, `hardwares`, `other_assets`) remain id-only
+  until those entities gain list APIs to disambiguate against.
+
+**Dependencies**
+
+- **Added:** `dompurify@^3.4.2` (no peer-deps, npm audit clean) for HTML
+  sanitization in solution-detail, incident-detail, comment-thread, and
+  catalog-item-form widgets.
+- **Added (devDep):** `jsdom@^29.1.1` for DOMPurify-using sanitizer
+  tests.
+
+**Internal**
+
+- New shared utilities: `src/utils/idResolver.ts` (id-vs-number
+  resolver) and `src/utils/dateAliases.ts` (`updated_within` parser).
+- New shared UI helpers: `src/ui/shared/sanitizeHtml.ts` (DOMPurify
+  wrapper), `src/ui/shared/error.ts` (`renderError`), and the
+  consolidated `tests/unit/tools/_helpers/mockClient.ts` (eliminated
+  ~571 lines of test-fixture duplication across 8 tool tests).
+- Tool count after v2.1: `triage` 14, `agent` 33 (default), `knowledge`
+  15, `full` 35 across 10 categories (added Tasks and Problems
+  categories). Per-profile Swagger specs regenerated.
+
+### Fixed
+
+- **`swsd_list_my_incidents` and `swsd_list_incidents` now actually filter by user.**
+  SWSD's `/incidents.json` endpoint **silently ignores** the `assignee_email` and
+  `requester_email` query parameters: verified live 2026-05-08 against an admin
+  token (a fake email returns the entire 56,829-row tenant; a real user's email
+  returns the same 56,829). Latent since v2.0.0 (PR #26 introduced
+  `swsd_list_my_incidents` assuming the filter worked); previously masked because
+  the `applied_filters` echo claimed success while the data didn't match. Both
+  tools now apply the party filter **client-side** after the response lands,
+  case-insensitive exact-match on `assignee.email` / `requester.email`. The
+  server-side filters that DO narrow (state, priority, category, dates, sites,
+  departments, `assigned_to=<group_id>`, query) are unchanged. Output adds a
+  `scan` block with `candidates_scanned` / `matches_in_page` / `client_filter_applied`
+  so consumers can reason about what was actually narrowed where. For users with
+  `available_for_assignment=false` (administrators), `swsd_list_my_incidents`
+  surfaces an explicit caveat in the summary pointing at `assigned_to=<group_id>`
+  as the working alternative. Independent OSS prior-art crosscheck: the Python
+  competitor `cptncoconut/samanage-mcp` arrived at the same client-side-filter
+  conclusion (their `_client_filter` helper docstring: *"Apply filters that the
+  Samanage API does not reliably honour server-side"*).
+- **incident-list widget overflow on narrow viewports.** The 6-column
+  table is now wrapped in an `overflow-x: auto` container; scrolls
+  instead of clipping at <560px wide.
+- **incident-list missing sort indicator.** Sortable headers now display
+  ▲/▼ + `aria-sort` on the active column.
+- **solution-detail widget excerpt-only rendering.** Solutions now render
+  the full sanitized HTML body: the whole point of opening a KB article.
+- **All 7 widgets handle `isError: true`.** Tool errors now show a clear
+  error state instead of an infinite "Loading…" spinner.
+- **`InputError` no longer surfaces with "Unexpected error:" prefix.**
+  `mapSwsdError` now recognizes the class and forwards the user-friendly
+  message verbatim.
+- **Dead CSS rule removed** from `incident-list/styles.css`
+  (`th:focus-visible` outline that never fired because `<th>` elements
+  have no `tabindex` and no keyboard handler).
+
+## [2.0.2] - 2026-05-08
+
+### Changed
+
+**Internal**
+
+- New `.github/codeql/codeql-config.yml` scopes CodeQL analysis to
+  `src/` only, excluding `scripts/` (maintainer-only utilities not
+  shipped in the npm tarball), `tests/` (synthetic fixtures), `dist/`
+  (generated output), `.research/` (gitignored probes),
+  `node_modules/`, and `copilot-studio/`. Closes the
+  `js/http-to-file-access` finding on `scripts/dump-custom-fields.ts`
+  for the right structural reason: maintainer scripts where the user
+  controls both the SWSD response and the output path are
+  out-of-scope for production-code analysis.
+- Net dependencies: added `helmet@^8.1.0` (one prod dep, ~30 KB
+  unpacked); bumped `express-rate-limit` patch version. No new
+  transitive vulnerabilities introduced (`npm audit` clean).
+
+### Security
+
+Defense-in-depth security release. Addresses 4 findings from the new
+Aikido Security integration plus 2 CodeQL alerts. No public API
+changes; no behavior changes for legitimate inputs.
+
+- **HTTP security headers via Helmet** (Aikido finding). The Express
+  HTTP transport now mounts `helmet()` first in the middleware chain,
+  so every response (including `/healthz`, errors, and 404s) carries:
+  HSTS (`Strict-Transport-Security: max-age=31536000; includeSubDomains`,
+  Helmet 8.1.0's one-year default), CSP
+  (`Content-Security-Policy: default-src 'self'; ...`), `X-Frame-Options:
+  SAMEORIGIN` (Helmet 8 default; restricts iframe embedding to same-origin,
+  fine for our JSON-only API endpoints since no legitimate client iframes
+  our responses), `X-Content-Type-Options: nosniff`, `Referrer-Policy:
+  no-referrer`, Cross-Origin-Opener-Policy + Cross-Origin-Resource-Policy
+  (both `same-origin`), and several legacy hardening headers. Defaults
+  are correct for our JSON-only endpoints (no HTML, no scripts, no
+  inline styles); no customization needed.
+- **IPv6-aware rate-limit keying** (transitive, surfaced by the
+  `express-rate-limit` 8.5.x bump). The `keyGenerator` now passes
+  `req.ip` through `ipKeyGenerator` from `express-rate-limit` before
+  hashing it with the token. For IPv4 this is a no-op. For **IPv6**,
+  this collapses each /56 prefix (the library default) to a single
+  rate-limit quota. Without it, clients in the same /56 would have
+  received separate quotas and effectively bypassed the limit. The
+  behavior change is invisible to IPv4-only deployments. The 8.5.x
+  library throws `ERR_ERL_KEY_GEN_IPV6` at startup if a custom
+  `keyGenerator` skips this step, so the fix was non-optional once
+  the dep was bumped.
+- **`auth.ts` ReDoS hardening** (CodeQL `js/polynomial-redos`). The
+  HTTP transport's `extractToken()` previously matched the
+  `Authorization` header with `/^Bearer\s+(.+)$/i`. The `\s+` and
+  `(.+)` overlap (`.` matches whitespace) creates polynomial
+  backtracking on adversarial input like `Bearer ` followed by tens of
+  thousands of spaces, which could tie up a worker thread. Replaced
+  with a linear-time `startsWith` + `slice` + `trim` parse. Behavior
+  is identical for legitimate inputs (case-insensitive Bearer prefix,
+  trims whitespace, preserves JWT internal characters); ReDoS payloads
+  now finish in microseconds instead of minutes. New
+  `tests/unit/transports/auth.test.ts` (14 cases) pins the fix and
+  includes a 100k-space adversarial regression test that completes in
+  &lt; 100ms.
+- **`loadUiResource` path-traversal defense** (Aikido finding,
+  CodeQL-equivalent file-inclusion). `src/mcp/uiResources.ts` now
+  validates the `name` parameter against a closed allowlist of the
+  four UI bundle slugs (`incident-detail`, `solution-detail`,
+  `incident-list`, `custom-fields`) before any path resolution or
+  filesystem call. Today every caller is hardcoded, but the function
+  is exported and could be misused; the allowlist removes the
+  path-traversal concern entirely. Tests in
+  `tests/unit/mcp/uiResources.test.ts` exercise rejection of
+  `../../etc/passwd`, `..\\..\\Windows\\System32\\...`,
+  `/etc/passwd`, embedded traversals, empty strings, and case
+  variants.
+- **`ip-address` XSS patched via dependency bump** (GHSA-v2v4-37r5-5v8g,
+  Aikido finding). Bumped `express-rate-limit` from `8.4.1` to
+  `^8.5.1`, which transitively pulls `ip-address@10.2.0` (the patched
+  version, up from the vulnerable `10.1.0`). Removed the matching
+  `osv-scanner.toml` `IgnoredVulns` entry: the suppression is no
+  longer needed since the vulnerability is patched at the source.
+
+## [2.0.1] - 2026-05-07
+
+### Changed
+
+**Internal**
+
+- Bundle size budget for UI artifacts raised from 200 KB to 500 KB to
+  accommodate the canonical SDK (`tests/unit/ui/build.test.ts`).
+  Empirical bundle size is ~340 KB raw / ~82 KB gzipped per widget.
+  The change is metadata-only; the npm tarball grows from ~97 KB to
+  ~320 KB compressed.
+- Removed `tests/unit/ui/host.test.ts`: its 4 tests pinned a runtime
+  `--`-prefix guard on the deleted `applyHostThemeVariables` helper.
+  The SDK's `applyHostStyleVariables` enforces the same constraint at
+  the type level, so the runtime test no longer applies.
+
+### Fixed
+
+- **MCP Apps widget protocol.** The four UI-bearing tools
+  (`swsd_get_incident`, `swsd_get_solution`, `swsd_list_incidents`,
+  `swsd_describe_custom_fields`) now use the canonical `App` class from
+  `@modelcontextprotocol/ext-apps` for view ↔ host communication. The
+  prior hand-rolled `{type:'init'}/{type:'ready'}` postMessage shape was
+  incompatible with spec-compliant hosts (VS Code Insiders Copilot Chat,
+  Claude Desktop, etc.). The SDK's `PostMessageTransport` silently
+  drops messages without `jsonrpc: "2.0"`, which left widgets stuck in
+  their initial empty state in every spec host. Widgets now perform the
+  spec-mandated `ui/initialize` → `ui/notifications/initialized` →
+  `ui/notifications/tool-result` handshake via `App.connect()` and
+  `addEventListener('toolresult', ...)`. Tool handlers, output schemas,
+  and the wire shape on the server side are unchanged; this is purely
+  a fix to the iframe-side data channel.
+- Replaced our hand-rolled `applyHostThemeVariables` `--`-prefix guard
+  with the SDK's `applyHostStyleVariables` (the type signature
+  `McpUiStyles = Record<McpUiStyleVariableKey, string | undefined>`
+  enforces the prefix at the type level, so the runtime guard is
+  delegated to the spec). Also wires `applyDocumentTheme` and
+  `applyHostFonts` so widgets respond to host theme + font changes,
+  not just CSS variables.
+
+## [2.0.0] - 2026-05-07
+
+### Added
+
+The v2 release. Strictly additive over v1.0.1: no existing tool's input or
+output schema changed, no tool was removed, no breaking change in any wire
+contract. The major-version bump is for scope (5 new tools, MCP Apps UI
+capability, identity tools, audits, custom-field writes, and the Service
+Catalog category) rather than for SemVer-compatibility breakage.
+
+Highlights:
+
+- **Identity**: `swsd_get_me` decodes the JWT, looks up the authenticated
+  user via `/users/{id}.json`, and returns user_id + email + groups so
+  agents can answer "my X" queries without manual entry. `swsd_list_my_incidents`
+  is the Asana-style wrapper.
+- **MCP Apps UI**: four read tools (`swsd_get_incident`, `swsd_get_solution`,
+  `swsd_list_incidents`, `swsd_describe_custom_fields`) ship rich UI bundles
+  for hosts that support [SEP-1865](https://modelcontextprotocol.io/specification/2025-11-25).
+  Hosts without MCP Apps support are unaffected.
+- **Service Catalog**: three new tools (`swsd_list_catalog_items`,
+  `swsd_get_catalog_item`, `swsd_create_service_request`) so agents can
+  fulfill requests through SWSD's catalog instead of always creating
+  generic incidents.
+- **Audits**: `swsd_get_record_audits` exposes the per-record change log.
+- **Custom-field writes**: `swsd_create_incident`, `swsd_update_incident`,
+  `swsd_create_solution`, `swsd_update_solution` accept a `custom_fields`
+  parameter that maps to SWSD's nested-wrapper write convention.
+- **Scope discriminator**: list tools now return `pagination.total_scope`
+  (`filtered` / `tenant` / `unknown`) and `applied_filters` echo so agents
+  can distinguish "narrowed to my filters" from "all tenant data".
+
+**Tier 2: v2 Service Catalog support**
+
+- Three new tools that surface SWSD's Service Catalog:
+  - `swsd_list_catalog_items`: paginated browse of catalog items with
+    `state`, `department`, `site`, and free-text `query` filters. Returns
+    compact summaries (id, name, state, category/subcategory, request_count,
+    updated_at, variable_count). Carries the same Plan B
+    `applied_filters` echo + `pagination.total_scope` discriminator as
+    `swsd_list_incidents`.
+  - `swsd_get_catalog_item`: single-item lookup that exposes the full
+    `variables` array (the request form schema). Each variable carries
+    `id` (consume as `custom_field_id` when submitting), `name`, `kind`
+    (`free_text` / `drop_down_menu` / `multi_select` / `date` / `user`),
+    `field_type` (numeric SAManage code), `options` (newline-separated
+    allowed values for dropdowns), `required`, and `helptext`.
+  - `swsd_create_service_request`: submits a request via
+    `POST /catalog_items/{id}/service_requests.json`. The endpoint
+    auto-sets `is_service_request: true` and inherits the catalog item's
+    category/subcategory. Variables are sent as
+    `request_variables_attributes` (Rails-style nested-attributes shape
+    discovered through live probe: the read-shape `request_variables`
+    field name is silently dropped by SWSD on this endpoint). Requester
+    defaults to the JWT-authenticated user; the tool resolves the user's
+    email via `GET /users/{id}.json` because this endpoint rejects
+    `requester: {id}` and requires `requester: {email}`.
+- Server `instructions` augmented with catalog-first guidance: when the
+  user asks to "request" something, agents should call
+  `swsd_list_catalog_items` → `swsd_get_catalog_item` →
+  `swsd_create_service_request`, falling back to `swsd_create_incident`
+  only when no catalog item matches.
+- Tool counts after Plan E: `triage` 12, `agent` 27 (default),
+  `knowledge` 15, `full` 29 across 8 categories (added the
+  Service Catalog category). Per-profile Swagger specs regenerated.
+- e2e smoke test (`.research/v2/smoke-tests/mcp-e2e-smoke.mjs`) extended
+  with Test 8 verifying catalog endpoint integration end-to-end.
+
+**Not shipped (deferred to v2.5):** `swsd_list_my_service_requests`. The
+SAManage REST API has no documented filter parameter that narrows the
+`/incidents.json` collection to service-request rows. We probed 14
+candidate filters (`is_service_request=true`, `sub_type=*`,
+`request_type=*`, `incident_type=*`, etc.) and all were silently ignored
+(returned the unfiltered set). A wrapper that paginated through tens of
+thousands of incidents to find the few service-request rows would be a
+bad tool. Will revisit once SWSD documents the correct filter mechanism
+or exposes a top-level `/service_requests.json` collection (currently
+404).
+
+**Tier 1: v2 MCP Apps capability**
+
+- MCP Apps support (SEP-1865, spec 2025-11-25) for `swsd_get_incident`,
+  `swsd_get_solution`, `swsd_list_incidents`, and
+  `swsd_describe_custom_fields`. Capable hosts render rich UI (single-record
+  detail views, filterable/sortable tables, searchable explorers); text-only
+  clients are unaffected: the `_meta.ui.resourceUri` advertisement is
+  silently ignored and the tools return their normal text + structured
+  output. UI bundles are single-file inlined HTML (`text/html;profile=mcp-app`)
+  with no external network access. New build pipeline (Vite +
+  vite-plugin-singlefile) emits the bundles under `dist/ui/`; the server
+  registers them via `registerAppTool` / `registerAppResource` from
+  `@modelcontextprotocol/ext-apps@^1.7.1`.
+
+**Tier 1: v2 identity & scope**
+
+- New tool `swsd_get_me`: JWT-payload decode + `GET /users/{id}.json` + optional `GET /profile.json` enrichment. Returns the authenticated user's id, email, name, role, department, site, group_ids, and assignment status. **Call this first when the request mentions "me", "my", or "I"**; server INSTRUCTIONS now teach the model this pattern.
+- New tool `swsd_list_my_incidents`: thin wrapper that internally calls `swsd_get_me` then `swsd_list_incidents` with `assignee_email = your email`. Same input shape as `swsd_list_incidents` minus the `assignee_email` parameter. Asana-style explicit-my-X pattern (Stream 4 research).
+- `applied_filters` echo + `pagination.total_scope` discriminator (`filtered` | `tenant` | `unknown`) on `swsd_list_incidents` and `swsd_list_my_incidents` responses. Closes the brief's scope-ambiguity failure mode in-band: the model can now distinguish "25 of 87 matching your filters" from "25 of 56,800 tenant-wide" without guessing. **No comparable MCP server in the ecosystem ships this** as of May 2026 (Linear, GitHub, Atlassian, Asana, ServiceNow, Notion, Slack, Stripe: verified during v2 research).
+- Server `INSTRUCTIONS` augmented with whoami-first guidance: model receives this in the MCP `initialize` response, mirroring GitHub's `serverInstructions` "Always call get_me first" pattern.
+- New JWT decoder helper (`src/swsd/jwt.ts`): extracts user_ic + any other JWT claims locally, no HTTP cost. Defensive parsing returns null on any malformed input.
+
+**Tests (Tier 1: v2 identity & scope)**
+
+- New `tests/unit/swsd/jwt.test.ts`: 8 edge cases (sample SWSD JWT, ESM extra claims, invalid base64, non-JSON payload, non-object payload, defensive null/undefined inputs).
+- New `tests/unit/mappers/me.test.ts`: 8 edge cases on `toUserMeRecord` (full record projection, /profile.json enrichment, defensive null handling, non-numeric id rejection, group_ids filtering of non-numeric entries).
+
+**Tier 1: v2 custom-field writes**
+
+- `custom_fields` parameter on `swsd_create_incident`, `swsd_update_incident`, `swsd_create_solution`, and `swsd_update_solution`. Accepts `[{name, value}]` rows. Name-keyed for cross-entity portability (Solutions reject `custom_field_id`-only keying with HTTP 400; Incidents accept either). Validated field types: Text, Dropdown, Number, Checkbox, Date.
+
+**Tier 1: v2 quick wins**
+
+- `detail_level: 'short' | 'long'` parameter on `swsd_get_incident` and `swsd_get_solution`. Use `'long'` to fold SWSD's `?layout=long` extras (comments, attachments, audits, SLA data, tags, statistics, satisfaction, resolution for incidents; attachments, audits, tags, full statistics for solutions) into one call. Replaces the typical 2–3 round-trip pattern.
+- New tool `swsd_get_record_audits`: wraps `GET /{type}/{id}/audits.json` for `incidents`, `problems`, `changes`, `releases`, `solutions`, `hardwares`, and `other_assets`. In the `agent` and `full` profiles. Lets the model answer "who changed this and when?" without parsing layout=long.
+- Expanded `swsd_list_incidents` filters: `sites`, `departments`, `assigned_to_group`, `created_from`/`created_to`, `updated_to`, `state_is_not`, `sort_by`, `sort_order`, free-text `query`. All forward-only: no breaking changes.
+- `outputSchema` declared on all 15 read tools: enables client-side response validation, particularly useful for Microsoft Copilot Studio response shape validation.
+- `upstream_rate_limit` block added to `swsd_get_server_info` output. Documents SWSD's account-wide rate limits (1000 cpm Advanced / 1500 cpm Premier; signal: `429 + Retry-After` only: no `X-RateLimit-*` headers).
+- New tool `swsd_get_record_audits` registered in `agent` and `full` profiles, raising tool count from 23 to 24 across 7 categories (added the Audits category).
+
+**Tests (Tier 1: v2 quick wins)**
+
+- New `tests/unit/mappers/audit.test.ts`: 8 edge-case tests for `toAuditSummary`.
+- New `tests/unit/toolNames.test.ts`: 25 tests asserting every tool in `PROFILE_TOOLS` matches the SEP-986 name regex (`^[a-zA-Z][a-zA-Z0-9_-]{0,127}$`). Defense against future drift.
+
+### Changed
+
+- Migrated dependency-update automation from Dependabot to Renovate. The
+  `renovate.json` extends `mikimatsub/.github:renovate-config` (a central
+  config repo shared across mikimatsub's projects), which itself extends
+  the upstream `config:best-practices` preset. Notable behavior changes:
+  3-day minimum-release-age on npm packages (supply-chain attack defense),
+  weekly lock-file maintenance, abandonment detection, and pinned-digest
+  helpers for Docker and GitHub Actions.
+
+**Tier 1: v2 quick wins**
+
+- `@modelcontextprotocol/sdk` floor relaxed from exact `1.29.0` to `^1.26.0`. Picks up `GHSA-345p-7cg4-v4c7` (cross-client response-leak) fix as defense-in-depth even though v1's per-request server construction was already safe.
+
+### Fixed
+
+**Fixed / Retracted**
+
+- The v0.5 documented limitation that "SWSD returns 500 on every payload variant tested" for custom-field writes was **incorrect**. v1's investigation tested only the array-direct shape `{custom_fields_values: [{name, value}]}`. The actual shape SWSD requires is the SAManage-documented nested wrapper `{custom_fields_values: {custom_fields_value: [{name, value}]}}`: confirmed live against the live tenant on May 6, 2026 and against the official `SAManage/Samples` Ruby code (https://github.com/SAManage/Samples/blob/master/Sync%20Users/sync_users.rb). The `swsd_describe_custom_fields` tool description and the server-level INSTRUCTIONS string have been updated accordingly.
+
+## [1.0.1] - 2026-05-04
+
+### Changed
+
+Patch release. Mechanical version bump only (`package.json` and `package-lock.json`): no source-code or behavior changes versus v1.0.0. Published to npm 2026-05-04.
+
+## [1.0.0] - 2026-05-04
+
+### Added
+
+**Initial public release**
+
+First public release on npm and GitHub. The pre-release work happened
+across 11 commits on the `main` branch: full git history captures
+the development trajectory.
+
+**Tools (23 total across 6 categories)**
+
+**Utility (2)**: `swsd_get_server_info`, `swsd_health_check`
+
+**Incidents (7)**: `swsd_list_incidents`, `swsd_get_incident`,
+`swsd_create_incident`, `swsd_update_incident`, `swsd_assign_incident`,
+`swsd_update_incident_state`, `swsd_link_solution_to_incident`
+
+**Comments (3)**: `swsd_list_incident_comments`,
+`swsd_add_incident_comment`, `swsd_update_comment`
+
+**Solutions / KB (4)**: `swsd_search_solutions`, `swsd_get_solution`,
+`swsd_create_solution`, `swsd_update_solution`
+
+**Lookups (6)**: `swsd_list_categories`, `swsd_list_sites`,
+`swsd_list_departments`, `swsd_list_users`, `swsd_list_groups`,
+`swsd_list_roles`
+
+**Custom fields (1)**: `swsd_describe_custom_fields` (read-only;
+writes deferred per documented investigation)
+
+**Profiles**
+
+* `triage` (9 tools): first-line support workflow
+* `agent` (21 tools, default): full ticket-handler workflow
+* `knowledge` (11 tools): KB-author workflow
+* `full` (23 tools): every non-destructive validated tool
+
+**Architecture**
+
+* Dual transport: stdio (local agents) and Streamable HTTP (Copilot
+  Studio + hosted)
+* Zero credentials at rest: server never persists or logs tokens
+* Stateless HTTP transport (per-request token)
+* Origin validation, rate limiting (per token+IP), request timeout,
+  trust-proxy configurable
+* SWSD_BASE_URL hostname allowlist (`*.samanage.com`): SSRF defense
+* Defensive parsing for unknown SWSD response shapes
+* 146 unit tests, all hermetic (no live API)
+
+**Distribution**
+
+* npm: `swsd-mcp` (public, free)
+* Docker: `ghcr.io/mikimatsub/swsd-mcp:latest`
+* MIT license
+
+**Build & supply chain**
+
+* GitHub Actions pinned to commit SHAs
+* Dockerfile base image pinned by digest
+* npm OIDC trusted publishing: no long-lived NPM_TOKEN
+* SLSA build provenance attestations on every release
+* Dependabot for npm, GitHub Actions, Docker base
+* Branch protection on `main`
+
+**Documentation**
+
+* `README.md`: install, configuration, transports, distribution
+* `CONTRIBUTING.md`: bug reports, PR review criteria, local dev
+* `SECURITY.md`: vulnerability disclosure process (GitHub Security
+  Advisories), threat model summary
+* `docs/SECURITY-POSTURE.md`: comprehensive security posture write-up
+  (controls, supply chain hardening, standards alignment, verification
+  methods)
+* `copilot-studio/README.md`: per-profile Swagger 2.0 connector specs
+  with import procedure for Microsoft Copilot Studio
+
+**Empirically validated against live tenant**
+
+* All 23 tools exercised end-to-end (read + write smoke tests)
+* SWSD API behavior findings documented in tool descriptions:
+  - `?query=` is the canonical search parameter for solutions
+  - `solution_ids` (write) vs `solutions` (read) shape divergence
+  - `/custom_fields.json` ignores `per_page` (handled client-side)
+  - Custom-field values cannot be written via SWSD API in tested
+    payload variants: documented as known limitation
+
+**Known limitations**
+
+* Custom-field WRITES via incident/solution write tools are not
+  supported (SWSD returns 500 on every payload variant tested).
+  See `swsd_describe_custom_fields` description.
+* Independent third-party security audit not commissioned.
+* Source-code SAST (CodeQL) and Docker image scanning (Trivy) not
+  yet enabled: `npm audit` covers npm CVEs.
+
+**Pre-1.0 development history**
+
+Prior to v1.0, all work happened on `main` without published releases.
+Detailed history available via `git log`.
+
+* **2026-05-03**: `0.5.0`: link_solution_to_incident, update_comment;
+  custom-field writes investigated and reverted (SWSD API limitation)
+* **2026-05-03**: `0.4.0`: describe_custom_fields tool +
+  dump:custom-fields script
+* **2026-05-03**: `0.3.0`: solution / KB tools (search, get, create,
+  update); 20 tools total
+* **2026-05-03**: `0.2.0` (commit-tagged): incident writes, comments,
+  lookup readers; 16 tools total
+* **2026-05-03**: `0.1.0`: initial dual-transport foundation +
+  incident reads (4 tools)
+
+[unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.1.1...v3.2.0
+[3.1.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.1.0...v3.1.1
+[3.1.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.2...v3.1.0
+[3.0.2]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.1...v3.0.2
+[3.0.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.2...v3.0.0
+[2.3.2]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.1...v2.3.2
+[2.3.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.3.0...v2.3.1
+[2.3.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.1...v2.3.0
+[2.2.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.2.0...v2.2.1
+[2.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.1...v2.2.0
+[2.1.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.1.0...v2.1.1
+[2.1.0]: https://github.com/mikimatsub/swsd-mcp/compare/v2.0.2...v2.1.0
+[2.0.2]: https://github.com/mikimatsub/swsd-mcp/compare/v2.0.1...v2.0.2
+[2.0.1]: https://github.com/mikimatsub/swsd-mcp/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/mikimatsub/swsd-mcp/compare/v1.0.1...v2.0.0
+[1.0.1]: https://github.com/mikimatsub/swsd-mcp/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/mikimatsub/swsd-mcp/releases/tag/v1.0.0

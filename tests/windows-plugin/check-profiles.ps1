@@ -31,9 +31,76 @@ try {
     $rejected = $false
     try { Get-SwsdSettings | Out-Null } catch { $rejected = $true }
     if (-not $rejected) { throw 'Unsupported persisted profile was accepted.' }
-    Write-Output 'PASS: picker hides Full alias; profiles persist; region and empty credential target preserved without credential writes; defaults and invalid values verified.'
+    Save-SwsdSettings -BaseUrl 'https://apieu.samanage.com' -Profile agent -Theme system
+    $schema=Get-Content (Join-Path $PSScriptRoot '../../schemas/swsd-profile.schema.json') -Raw | ConvertFrom-Json
+    if ($schema.additionalProperties -ne $false -or $schema.properties.version.const -ne 1 -or $schema.properties.tools.maxItems -ne 512 -or $schema.properties.name.maxLength -ne 80) {throw 'Profile validation must be reviewed when the authoritative schema changes.'}
+    $fixture=[pscustomobject]@{name='Daily follow-up'; version=1; description='Incidents and comments'; tools=@('swsd_list_my_incidents','swsd_get_incident')}
+    $saved=Save-SwsdCustomProfile $fixture
+    if ([IO.Path]::GetDirectoryName($saved.path) -ne (Join-Path $script:SwsdHome 'profiles')) {throw 'Custom profile escaped its directory.'}
+    $loaded=Read-SwsdProfileFile $saved.path
+    if (($loaded | ConvertTo-Json -Compress) -cne ((ConvertTo-SwsdValidatedProfile $fixture) | ConvertTo-Json -Compress)) {throw 'Profile round trip changed data.'}
+    $export=Join-Path $script:SwsdHome 'export.json'
+    Export-SwsdCustomProfile $saved.path $export
+    foreach ($path in @($saved.path,$export)) {
+        $bytes=[IO.File]::ReadAllBytes($path)
+        if ($bytes.Length -ge 3 -and $bytes[0] -eq 239 -and $bytes[1] -eq 187 -and $bytes[2] -eq 191) {throw 'Saved and exported profiles must omit the UTF-8 BOM for Node JSON.parse.'}
+    }
+    $imported=Import-SwsdCustomProfile $export
+    if (($imported.profile | ConvertTo-Json -Compress) -cne ($loaded | ConvertTo-Json -Compress)) {throw 'Export/import changed schema data.'}
+    if (@($loaded.PSObject.Properties.Name | Where-Object {$_ -notin @($schema.properties.PSObject.Properties.Name)}).Count) {throw 'Saved profile has extra fields.'}
+    Save-SwsdSettings -BaseUrl 'https://apieu.samanage.com' -Profile custom -ProfileFile $saved.path
+    if ((Get-SwsdSettings).profile -ne 'custom' -or (Get-SwsdSettings).profileFile -ne $saved.path) {throw 'Custom selection did not save an absolute profile path.'}
+    Save-SwsdSettings -BaseUrl 'https://apieu.samanage.com' -Profile custom -Theme dark
+    if ((Get-SwsdSettings).profileFile -ne $saved.path) {throw 'Appearance save discarded the custom profile path.'}
+    if (@(Get-SwsdPickerProfiles | Where-Object {$_.name -eq $fixture.name}).Count -ne 1) {throw 'Saved custom profile missing from picker.'}
+    $fixture.name='Renamed follow-up'
+    $renamed=Save-SwsdCustomProfile $fixture -PreviousPath $saved.path
+    if ((Test-Path -LiteralPath $saved.path) -or (Get-SwsdSettings).profileFile -ne $renamed.path) {throw 'Rename left an old file or stale active setting.'}
+    $fixture.tools=@('swsd_get_incident','unknown_tool')
+    $unknown=Save-SwsdCustomProfile $fixture
+    if ($unknown.skipped -cnotcontains 'unknown_tool' -or $unknown.notice -notlike '*unknown_tool*' -or $unknown.profile.tools.Count -ne 1) {throw 'Unknown tools were not skipped with a notice.'}
+    $fixture | ConvertTo-Json | Set-Content -LiteralPath $export -Encoding UTF8
+    if ((Import-SwsdCustomProfile $export).notice -notlike '*unknown_tool*') {throw 'Import omitted the unknown-tool notice.'}
+    $invalid=@(
+        '{"name":"Valid","version":1,"tools":[],"extra":true}',
+        '{"Name":"Valid","version":1,"tools":[]}',
+        '{"name":"../escape","version":1,"tools":[]}',
+        '{"name":"","version":1,"tools":[]}',
+        '{"name":"Valid","version":"1","tools":[]}',
+        '{"name":"Valid","version":true,"tools":[]}',
+        '{"name":"Valid","version":[1],"tools":[]}',
+        '{"name":"Valid","version":2,"tools":[]}',
+        '{"name":"Valid","version":1,"tools":"swsd_get_incident"}',
+        '{"name":"Valid","version":1,"tools":[null]}',
+        '{"name":"Valid","version":1,"tools":[""]}',
+        '{"name":"Valid","version":1,"tools":[],"description":null}',
+        (@{name=('a'*81);version=1;tools=@()} | ConvertTo-Json),
+        (@{name='Valid';version=1;tools=@('a'*129)} | ConvertTo-Json),
+        (@{name='Valid';version=1;tools=@('swsd_get_incident')*513} | ConvertTo-Json),
+        (@{name='Valid';version=1;tools=@();description=('a'*2049)} | ConvertTo-Json)
+    )
+    foreach ($json in $invalid) {
+        $json | Set-Content -LiteralPath $export -Encoding UTF8
+        $rejected=$false
+        try {Import-SwsdCustomProfile $export | Out-Null} catch {if ($_.Exception.Message -notlike 'Profile JSON:*') {throw}; $rejected=$true}
+        if (-not $rejected) {throw 'Schema-invalid profile was accepted.'}
+    }
+    $boundary=Save-SwsdCustomProfile ([pscustomobject]@{name=('a'*80); version=1; tools=@('swsd_get_incident')*512;description=('b'*2048)})
+    if ($boundary.profile.tools.Count -ne 512) {throw 'Schema boundary was rejected.'}
+    Remove-SwsdCustomProfile $renamed.path
+    if ((Get-SwsdSettings).profile -ne 'agent') {throw 'Delete did not select a working built-in profile.'}
+    Save-SwsdSettings -BaseUrl 'https://api.samanage.com' -Profile agent
+    if ((Get-SwsdSettings).profileFile) {throw 'Built-in profile retained profileFile.'}
+    '{"baseUrl":"https://api.samanage.com","profile":"custom","profileFile":"missing.json"}' | Set-Content -LiteralPath (Join-Path $script:SwsdHome 'settings.json')
+    $damaged=Get-SwsdSettings
+    if (-not $damaged.profileError -or $damaged.profile -ne 'agent') {throw 'Invalid custom file must give a friendly fallback instead of crashing setup.'}
+    Write-Output 'PASS: hidden Full alias; built-in/custom persistence; schema-exact save/load/export/import and limits; unknown-tool notices; rename/delete; damaged-file fallback; region and credential preservation.'
+    & (Join-Path $PSScriptRoot 'check-launcher.ps1')
 } finally {
     $settingsPath = Join-Path $script:SwsdHome 'settings.json'
     if (Test-Path -LiteralPath $settingsPath) { Remove-Item -LiteralPath $settingsPath -Force }
-    if (Test-Path -LiteralPath $script:SwsdHome) { Remove-Item -LiteralPath $script:SwsdHome }
+    $resolved=[IO.Path]::GetFullPath($script:SwsdHome)
+    $tempRoot=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
+    if (-not $resolved.StartsWith($tempRoot,[StringComparison]::OrdinalIgnoreCase) -or [IO.Path]::GetFileName($resolved) -notmatch '^swsd-profile-test-[a-f0-9]{32}$') {throw 'Unsafe profile-test cleanup path.'}
+    if (Test-Path -LiteralPath $resolved) { Remove-Item -LiteralPath $resolved -Recurse -Force }
 }
