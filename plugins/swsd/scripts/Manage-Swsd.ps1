@@ -368,7 +368,7 @@ $xaml = @"
    <Border Name="toolDetail" Style="{StaticResource CardStyle}" Margin="0,10,0,0" Padding="16"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="320"/></Grid.ColumnDefinitions><StackPanel><TextBlock Name="detailTitle" FontSize="16" FontWeight="SemiBold"/><TextBlock Name="detailId" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,6,0,8"/><StackPanel Orientation="Horizontal"><ContentControl Name="detailBadge" Margin="0,0,8,0"/><TextBlock Name="detailProfiles" Style="{StaticResource Description}" TextWrapping="Wrap"/></StackPanel><TextBlock Name="detailDescription" Style="{StaticResource Description}" TextWrapping="Wrap" Margin="0,12,0,0"/><Border Name="deleteNotice" Background="{DynamicResource ErrorBackground}" CornerRadius="6" Padding="12,10" Margin="0,12,0,0" Visibility="Collapsed"><TextBlock Text="Destructive. Available in Operations. Preview the record first, then confirm its ID before deleting." Foreground="{DynamicResource Error}" FontSize="12.5" TextWrapping="Wrap"/></Border></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Example prompt" FontWeight="SemiBold" FontSize="12"/><Border Background="{DynamicResource IconBackground}" CornerRadius="6" Padding="12,10" Margin="0,6,0,10"><TextBlock Name="examplePrompt" FontSize="12.5" TextWrapping="Wrap"/></Border><Button Name="copyPrompt" Content="Copy prompt" Style="{StaticResource PrimaryButton}"/><Button Name="switchProfile" Content="Switch to Operations" Margin="0,8,0,0" Visibility="Collapsed"/></StackPanel></Grid></Border>
    <Expander Name="otherTools" IsExpanded="False" Foreground="{DynamicResource Muted}" Margin="0,14,0,0" Padding="12"><StackPanel Name="lockedTools"/></Expander>
   </StackPanel>
-  <StackPanel Name="whatsNewPage" Visibility="Collapsed"><Grid Margin="0,0,0,12"><TextBlock Text="Release notes" Style="{StaticResource Description}"/><Button Name="closeWhatsNew" Content="Back to Home" HorizontalAlignment="Right"/></Grid><Border Style="{StaticResource CardStyle}" Padding="22"><StackPanel Name="releaseNoteContent"/></Border></StackPanel>
+  <StackPanel Name="whatsNewPage" Visibility="Collapsed"><Grid Margin="0,0,0,12"><Button Name="closeWhatsNew" Content="Back to Home" HorizontalAlignment="Right"/></Grid><Border Style="{StaticResource CardStyle}" Padding="22"><StackPanel Name="releaseNoteContent"/></Border></StackPanel>
  </StackPanel>
  <Border Name="jwtFlyout" Style="{StaticResource CardStyle}" Background="{DynamicResource Flyout}" Padding="16,14" Margin="20,218,78,0" VerticalAlignment="Top" Visibility="Collapsed" Panel.ZIndex="10" AutomationProperties.Name="Get your JSON Web Token in SWSD"><StackPanel>
   <Grid><TextBlock Text="Get your JSON Web Token in SWSD" FontSize="13.5" FontWeight="SemiBold"/><Button Name="closeHelp" Content="×" Style="{StaticResource HelpButton}" HorizontalAlignment="Right" AutomationProperties.Name="Close JSON Web Token help"/></Grid>
@@ -760,16 +760,18 @@ function Set-SwsdPage {
 function Show-SwsdWhatsNew {
     Set-SwsdJwtHelp $false
     $homePage.Visibility='Collapsed'; $toolsPage.Visibility='Collapsed'; $whatsNewPage.Visibility='Visible'
-    $pageTitle.Text="What’s new"; $pageSubtitle.Text='Changes in SWSD'
+    $pageTitle.Text="What’s new"; $pageSubtitle.Text='Release notes for SWSD for AI apps'
     $releaseNoteContent.Children.Clear()
     foreach ($part in (Get-SwsdReleaseNotes -AssetRoot $script:SwsdAssetRoot)) {
         $block=New-Object Windows.Controls.TextBlock
-        # Explain historical alias references without exposing the retired picker label.
-        $block.Text=($part.text -creplace '\x60full\x60','the legacy complete profile' -creplace '\bprofile=full\b','the legacy profile setting' -creplace '\bFull\b','the legacy complete profile' -replace 'SolarWinds Service Desk','SWSD' -replace '`','')
+        $block.Text=($part.text -replace 'SolarWinds Service Desk','SWSD' -replace '`','')
         $block.TextWrapping='Wrap'
         $block.SetResourceReference([Windows.Controls.TextBlock]::ForegroundProperty,'Text')
         switch ($part.kind) {
-            version {$block.FontSize=22; $block.FontWeight='SemiBold'; $block.Margin='0,12,0,8'}
+            version {
+                if ($block.Text.StartsWith('Unreleased')) {$block.Text=$block.Text -replace '^Unreleased','Upcoming'}
+                $block.FontSize=22; $block.FontWeight='SemiBold'; $block.Margin='0,12,0,8'
+            }
             section {$block.FontSize=14; $block.FontWeight='SemiBold'; $block.Margin='0,12,0,6'}
             item {$block.Text='•  ' + $block.Text; $block.FontSize=12.5; $block.Margin='0,0,0,8'}
         }
@@ -1094,7 +1096,7 @@ function Get-SwsdControlText($Root) {
     }
 }
 function Assert-SwsdProfileLabels {
-    $texts = @(Get-SwsdControlText $form)
+    $texts = @($homePage,$toolsPage | ForEach-Object {Get-SwsdControlText $_})
     Assert-Swsd (@($texts | Where-Object {$_ -cmatch '\bFull\b' -or $_ -match '^[RED]\s*·'}).Count -eq 0) 'Control text must use visible profile names and plain Read/Edit/Delete badges.'
 }
 function Remove-SwsdUiFixture {
@@ -1221,6 +1223,8 @@ function Test-SwsdUiControls {
     Assert-Swsd ($status.Text -like '*Profile JSON:*Only*' -and $toast.Visibility -eq 'Visible') 'Invalid import must show a friendly banner.'
     Invoke-SwsdTestClick $releaseNotes
     Assert-Swsd ($whatsNewPage.Visibility -eq 'Visible' -and $releaseNoteContent.Children.Count -gt 5) 'What''s new must render bundled release notes in-app.'
+    Assert-Swsd ($releaseNoteContent.Children[0].Text -ceq 'Upcoming' -and $pageSubtitle.Text -ceq 'Release notes for SWSD for AI apps') 'What''s new must label bundled Unreleased notes as Upcoming and explain the page.'
+    Assert-Swsd (@($releaseNoteContent.Children | Where-Object {$_.Text -cmatch '\bFull\b'}).Count -gt 0) 'Release notes must retain the explanation of Full.'
     Assert-SwsdProfileLabels
     Invoke-SwsdTestClick $closeWhatsNew
     $script:SwsdOpenedUrls=@()

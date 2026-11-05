@@ -9,82 +9,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Custom profiles selected with `SWSD_PROFILE=custom`, using the union of trimmed
-  `SWSD_TOOLS` names and a bounded version-1 JSON `SWSD_PROFILE_FILE`. Unknown
-  tools warn and are skipped; an empty valid selection fails startup. Published
-  `schemas/swsd-profile.schema.json` matches runtime file validation.
-
-- Issue-form app, server, Windows, and profile fields support URL prefills, with a warning to omit secrets and use synthetic examples.
-- Changelog format validation through `npm run check:changelog` in the CI lint job.
-- Windows Tools profile builder with catalog checkboxes, named saves, rename,
-  delete, and schema-validated JSON import and export. Home and Tools pickers
-  include saved custom profiles and configure the server with their profile file.
-- In-app What's new with bundled, offline release notes grouped by version and
-  Keep a Changelog sections.
-- Report a bug and Request a feature buttons with version and profile prefills
-  that exclude credentials, personal details, and profile paths.
+- Custom profiles: pick exactly the tools your AI apps can use, save them by
+  name, and share them as a file.
+- On Windows, build custom profiles on the Tools page, then save, rename,
+  delete, import, or export them. Saved custom profiles appear in the Home and
+  Tools pickers.
+- What's new shows release notes offline inside the Windows app.
+- Report a bug and Request a feature open forms with app, server, Windows, and
+  profile details filled in. They never include credentials or personal details.
+- Issue forms accept optional app, server, Windows, and profile fields so
+  reports can be prefilled. Do not put secrets in those fields.
 
 ### Changed
 
-- `operations` now includes all 145 tools, including KB authoring. `full` remains
-  a backward-compatible alias with a once-per-process stderr deprecation notice;
-  profile tables, Registry metadata, and connector manifests use `operations`.
-- Delete tools require `operations` or explicit inclusion in a custom profile,
-  retaining preview, `confirm`, and matching `confirm_id` safety gates.
-
-- Rebuilt Windows setup in WPF/XAML for PowerShell 5.1 with the A3 Home shell,
-  top Home/Tools navigation, a searchable 145-tool browser with profile locks and
-  Read/Edit/Delete badges, and live, saved Match Windows / Light / Dark Appearance.
-  JSON Web Token help now embeds the User detail and Generate-only figures.
-  Credential isolation, background maintenance, diagnostics redaction, and
-  PerMonitorV2 monitor/DPI round-trip validation are retained.
-- Windows profiles are data-driven for the picker: Operations covers all tools,
-  Full remains a hidden alias for older installs that still store profile=full,
-  and lock pills show Operations instead of Full. Saved custom profiles appear
-  by name in both pickers.
-- The Windows JSON Web Token row shows a masked saved credential and
-  "Verified just now" after a successful connection test.
-- Windows Update installs the latest published server with npm integrity checks
-  in a separate runtime, activates it only after validation, and preserves the
-  previous runtime on failure. Newer active runtimes count as installed.
-- Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.2.0`.
-- Release tag pushes now publish the container image with `X.Y.Z` and `X.Y`
-  tags and a matching `org.opencontainers.image.version` label.
-
-- Changelog headings, categories, UTC publication dates, and version links follow Keep a Changelog 1.1.0 throughout the release history.
+- Operations now includes every tool. Full has been merged into Operations;
+  existing setups that use Full keep working.
+- Delete tools are only available in Operations, or when you add them to a
+  custom profile. Deletes still preview what would be removed and ask for
+  confirmation.
+- Windows app: Home and Tools pages, a searchable tool guide with Read, Edit,
+  and Delete badges, profile locks, and Match Windows / Light / Dark appearance.
+  JSON Web Token help shows how to generate a token in SWSD.
+- The profile picker shows Triage, Agent, Knowledge, Operations, and your saved
+  custom profiles.
+- After a successful connection test, the JSON Web Token row shows a masked
+  token and "Verified just now".
+- Update installs the newest published SWSD tools, checks them before switching
+  over, and keeps your previous tools if something goes wrong.
+- Release tags publish container images with matching version tags.
 
 ### Removed
 
-- Removed the README's obsolete `Upgrading to 3.0.0` section.
+- Removed the outdated "Upgrading to 3.0.0" section from the README.
 
 ### Fixed
 
-- Corrected the docs site and README against the current tool registry,
-  profiles, configuration, widget rendering, Windows setup, and transports.
-  Removed release-history prose and unsupported security, hosting, and client
-  compatibility claims from the docs pages.
-
-- Custom prompts and widgets require all their tools. A catalog lookup without
-  the service-request tool no longer advertises an unusable Submit form.
-  Catalog output validation accepts its documented passthrough fields.
-
-- Windows A3 setup now offers a primary Update action for newer tools, displays
-  plain Read/Edit/Delete pills, and uses friendlier catalog summaries. Profile
-  labels consistently use Operations, and Agent's 94 excluded tools remain
-  available to browse regardless of the selected area.
-- Windows update lookup now uses the PowerShell 5.1 Framework process API when
-  cleaning up its own timed-out lookup, fixing the unsupported overload fallback.
-- Documentation: the README widgets section now lists all ten widgets,
-  including `ticket-stats` and `swsd_my_queue`; the widgets reference describes
-  the incident-list title total (`matched_total`/`total_scope`) instead of a
-  footer chip. The 3.2.0 entry describes its system-DPI-aware implementation;
-  the Windows settings app now supports PerMonitorV2 as described below.
-- Windows settings: enable PerMonitorV2 before creating windows, with per-monitor
-  and system-aware fallbacks on older Windows. Moving between monitors reapplies
-  the suggested window bounds and rescales fonts, icons, spacing, inputs, buttons,
-  and fixed dashboard cells without cumulative rounding. Measure the dashboard's
-  full card width and use one column when needed, fixing overflow at 125% scaling.
-  DPI diagnostics and light/dark layout checks retain the `SWSD_UI_SCALE` test hook.
+- Docs site and README now match the current tools, profiles, configuration,
+  widgets, Windows setup, and connections.
+- Custom prompts and widgets only appear when all of their tools are available.
+- Windows Update action, clearer Read/Edit/Delete labels, and consistent
+  Operations naming.
+- Windows display scaling, including moving between monitors, keeps the layout
+  readable.
+- Documentation lists all ten widgets and clarifies the incident-list title
+  total.
 
 ## [3.2.0] - 2026-11-05
 
