@@ -310,6 +310,18 @@ function Get-SwsdStatus {
             $toolsInstalled = ($installedVersion -eq $script:SwsdPackageVersion)
         } catch { $toolsInstalled = $false }
     }
+    if (-not $installedVersion) {
+        # An older or newer runtime may be installed side by side; report it as needing repair, not missing.
+        try {
+            $other = Get-ChildItem -LiteralPath (Join-Path $script:SwsdHome 'runtime') -Directory -ErrorAction Stop |
+                Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'node_modules\swsd-mcp\dist\cli.js') -PathType Leaf } |
+                Select-Object -First 1
+            if ($other) {
+                $otherPkg = Get-Content -LiteralPath (Join-Path $other.FullName 'node_modules\swsd-mcp\package.json') -Raw | ConvertFrom-Json
+                if ([string]$otherPkg.version -match '^\d+\.\d+\.\d+$') { $installedVersion = [string]$otherPkg.version }
+            }
+        } catch {}
+    }
     $credentialSaved = $false
     $credentialAvailable = $true
     try { $credentialSaved = [SwsdDesktop.Credentials]::Exists($script:SwsdCredentialTarget) }

@@ -773,7 +773,7 @@ function Measure-SwsdGridText([string[]]$Texts, [Drawing.Font]$Font, [int]$Paddi
 }
 function Update-SwsdDashboardMetrics([Drawing.Font]$ValueFont, [Drawing.Font]$ChipFont) {
 $script:dashboardIconWidth = ScalePx 32
-$script:dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'Tools', 'Token', 'Region', 'Profile', 'Updates') $ValueFont 8
+$script:dashboardLabelWidth = Measure-SwsdGridText @('Node.js', 'SWSD tools', 'Token', 'Region', 'Profile', 'Updates') $ValueFont 8
 $script:dashboardValueWidth = [Math]::Max((ScalePx 144), (Measure-SwsdGridText (@('Not installed', 'Unavailable', ('swsd-mcp ' + $script:SwsdPackageVersion)) + @($script:SwsdProfiles | ForEach-Object { $_.name })) $ValueFont 8))
 $script:dashboardChipWidth = Measure-SwsdGridText $dashboardChipTexts $ChipFont 16
 # A chip is exactly one measured line plus 4 logical pixels above and below.
@@ -853,7 +853,7 @@ function New-StatusRow([string]$AccessibleName, [string]$IconGlyph, [string]$Lab
 }
 
 $srNode = New-StatusRow 'Node.js' (Get-SwsdIconGlyph 'Node') 'Node.js'
-$srTools = New-StatusRow 'Tools installed' (Get-SwsdIconGlyph 'Tools') 'Tools'
+$srTools = New-StatusRow 'SolarWinds Service Desk tools installed' (Get-SwsdIconGlyph 'Tools') 'SWSD tools'
 $srToken = New-StatusRow 'Token saved' (Get-SwsdIconGlyph 'Key') 'Token'
 $srRegion = New-StatusRow 'Region' (Get-SwsdIconGlyph 'Region') 'Region'
 $srProfile = New-StatusRow 'Profile' (Get-SwsdIconGlyph 'Profile') 'Profile'
@@ -2180,7 +2180,7 @@ public static class SwsdDpiProbe {
         if (-not $tokenBox.UseSystemPasswordChar) { throw 'Token field must be masked.' }
         if ($profile.Items.Count -ne 5) { throw 'Five profile choices are required.' }
         if ($profile.SelectedItem -ne 'Agent') { throw 'New installations must default to Agent.' }
-        foreach ($expectedName in @('Status Node.js','Status Tools installed','Status Token saved','Status Region','Status Profile','Status Updates')) {
+        foreach ($expectedName in @('Status Node.js','Status SolarWinds Service Desk tools installed','Status Token saved','Status Region','Status Profile','Status Updates')) {
             if (@($statusRows | Where-Object { $_.Panel.AccessibleName -eq $expectedName }).Count -ne 1) { throw "Status row '$expectedName' is missing." }
         }
         if ($copyDiagnostics.AccessibleName -ne 'Copy diagnostics' -or -not $statusButtonRow.Controls.Contains($copyDiagnostics) -or $statusButtonRow.WrapContents) { throw 'Copy diagnostics button or non-wrapping row is missing.' }
