@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the Windows plugin runtime recipe to the published `swsd-mcp@3.2.0`.
+
 ## [3.2.0] - 2026-11-04
 
 ### Added
