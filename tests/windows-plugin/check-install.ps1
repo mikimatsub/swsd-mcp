@@ -43,6 +43,9 @@ try {
     foreach ($name in @('package.json','package-lock.json')) {
         if ((Get-FileHash -LiteralPath (Join-Path $root "runtime/$name")).Hash -ne (Get-FileHash -LiteralPath (Join-Path $client "runtime/$name")).Hash) { throw "Repair recipe $name differs from source." }
     }
+    foreach ($name in @('tool-catalog.json','jwt-help/jwt-help-profile-crop.png','jwt-help/jwt-help-actions-crop.png')) {
+        if ((Get-FileHash -LiteralPath (Join-Path $root "assets/$name")).Hash -ne (Get-FileHash -LiteralPath (Join-Path $client "assets/$name")).Hash) { throw "Installed WPF asset $name differs from source." }
+    }
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut((Join-Path $shortcuts 'SolarWinds Service Desk Setup.lnk'))
     if ($shortcut.TargetPath -ne (Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe')) { throw 'Shortcut targets the wrong executable.' }
@@ -55,10 +58,14 @@ try {
     New-Item -ItemType Directory -Path (Join-Path $repair 'runtime') -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $client 'Common.ps1'), (Join-Path $client 'Manage-Swsd.ps1'), (Join-Path $client 'Start-Swsd.ps1') -Destination (Join-Path $repair 'scripts')
     Copy-Item -LiteralPath (Join-Path $client 'runtime/package.json'), (Join-Path $client 'runtime/package-lock.json') -Destination (Join-Path $repair 'runtime')
+    Copy-Item -LiteralPath (Join-Path $client 'assets') -Destination $repair -Recurse
     Save-SwsdSettings -BaseUrl 'https://apieu.samanage.com' -Profile 'knowledge'
     $settingsHash = (Get-FileHash -LiteralPath (Join-Path $script:SwsdHome 'settings.json')).Hash
     Install-SwsdTools -SourceRoot $repair -ShortcutDirectory $shortcuts
     if ((Get-FileHash -LiteralPath (Join-Path $script:SwsdHome 'settings.json')).Hash -ne $settingsHash) { throw 'Repair changed saved settings.' }
+    $env:PSModulePath=$null
+    $uiOutput=& powershell.exe -NoProfile -NonInteractive -STA -File (Join-Path $client 'Manage-Swsd.ps1') -ValidateUi
+    if ($LASTEXITCODE -ne 0 -or -not ($uiOutput -match '^PASS:')) { throw 'Installed WPF client could not load its retained assets and controls.' }
     Write-Output "PASS: isolated install and repair preserve settings, install server $script:SwsdPackageVersion and client $script:SwsdClientVersion, retain exact repair files and create the expected shortcut without credential access or policy overrides."
 } finally {
     $resolved = [IO.Path]::GetFullPath($temporary)

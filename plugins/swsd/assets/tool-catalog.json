@@ -1,0 +1,2844 @@
+[
+  {
+    "name": "swsd_add_contract_item",
+    "description": "Add an SWSD contract item. Requires internal contract_id. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Add contract item",
+    "short": "Add an SWSD contract item",
+    "kind": "edit",
+    "example": "Add contract item in SWSD"
+  },
+  {
+    "name": "swsd_add_group_member",
+    "description": "Add one user to an SWSD group. Requires internal group_id and user_id. Returns membership_id for removal. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Add group member",
+    "short": "Add one user to an SWSD group",
+    "kind": "edit",
+    "example": "Add group member in SWSD"
+  },
+  {
+    "name": "swsd_add_hardware_warranty",
+    "description": "Add an SWSD hardware warranty. Requires internal hardware_id. Required: service. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Add hardware warranty",
+    "short": "Add an SWSD hardware warranty",
+    "kind": "edit",
+    "example": "Add hardware warranty in SWSD"
+  },
+  {
+    "name": "swsd_add_incident_comment",
+    "description": "Add a comment to a SWSD incident. Set `is_private: true` to make the comment internal-only (default false = visible to the requester). To edit a comment after posting, use `swsd_update_comment`. WRITE — does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Add incident comment",
+    "short": "Add a comment to a SWSD incident",
+    "kind": "edit",
+    "example": "Add incident comment in SWSD"
+  },
+  {
+    "name": "swsd_add_record_comment",
+    "description": "Add a comment to a SWSD problem, change, or release. Set `is_private: true` to make the comment internal-only (default false = visible to the requester). WRITE — does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Add record comment",
+    "short": "Add a comment to a SWSD problem, change, or release",
+    "kind": "edit",
+    "example": "Add record comment in SWSD"
+  },
+  {
+    "name": "swsd_assign_incident",
+    "description": "Assign an SWSD incident to an agent by email. Safer wrapper around swsd_update_incident — narrows the agent decision surface to \"who gets this ticket.\" Use swsd_list_users with available_for_assignment_only=true to find valid assignees first. WRITE — does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Assign incident",
+    "short": "Assign an SWSD incident to an agent by email",
+    "kind": "edit",
+    "example": "Assign incident in SWSD"
+  },
+  {
+    "name": "swsd_change_calendar",
+    "description": "Show a UTC change/release calendar widget and shared-CI/group scheduling conflicts. Fetches up to max_pages per kind (default 3, maximum 10); ONLY page/per_page are sent to SWSD. All date, state, assignee, group and name-search filters are client-side, over scanned rows only. Defaults to today at UTC midnight through 30 days later. Windows use overlap, with an exclusive end; missing, invalid or non-positive planned ends use start + 1 hour. Rows without a valid planned start are excluded and counted as unscheduled. Conflicts cover only returned items, not the whole tenant. At most 200 conflict details are returned; conflict_count counts all pairs and conflicts_truncated flags omitted details. scan reports pages_fetched per kind, rows_scanned, unscheduled and truncated; when truncated is true, unscanned records may contain more matches or conflicts. No server-side search or date ordering is assumed.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Changes",
+    "friendly": "Change calendar",
+    "short": "Show a UTC change/release calendar widget and shared-CI/group scheduling conflicts",
+    "kind": "read",
+    "example": "Change calendar in SWSD"
+  },
+  {
+    "name": "swsd_create_catalog_item",
+    "description": "Create a SWSD catalog item. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "Create catalog item",
+    "short": "Create a SWSD catalog item",
+    "kind": "edit",
+    "example": "Create catalog item in SWSD"
+  },
+  {
+    "name": "swsd_create_category",
+    "description": "Create a SWSD category. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Create category",
+    "short": "Create a SWSD category",
+    "kind": "edit",
+    "example": "Create category in SWSD"
+  },
+  {
+    "name": "swsd_create_change",
+    "description": "Create a SWSD change. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Changes",
+    "friendly": "Create change",
+    "short": "Create a SWSD change",
+    "kind": "edit",
+    "example": "Create change in SWSD"
+  },
+  {
+    "name": "swsd_create_change_catalog",
+    "description": "Create a SWSD change catalog. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "Create change catalog",
+    "short": "Create a SWSD change catalog",
+    "kind": "edit",
+    "example": "Create change catalog in SWSD"
+  },
+  {
+    "name": "swsd_create_configuration_item",
+    "description": "Create a SWSD configuration item. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Create configuration item",
+    "short": "Create a SWSD configuration item",
+    "kind": "edit",
+    "example": "Create configuration item in SWSD"
+  },
+  {
+    "name": "swsd_create_contract",
+    "description": "Create a SWSD contract. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Create contract",
+    "short": "Create a SWSD contract",
+    "kind": "edit",
+    "example": "Create contract in SWSD"
+  },
+  {
+    "name": "swsd_create_department",
+    "description": "Create a SWSD department. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Create department",
+    "short": "Create a SWSD department",
+    "kind": "edit",
+    "example": "Create department in SWSD"
+  },
+  {
+    "name": "swsd_create_group",
+    "description": "Create a SWSD group. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Create group",
+    "short": "Create a SWSD group",
+    "kind": "edit",
+    "example": "Create group in SWSD"
+  },
+  {
+    "name": "swsd_create_hardware_asset",
+    "description": "Create a SWSD hardware asset. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Create hardware asset",
+    "short": "Create a SWSD hardware asset",
+    "kind": "edit",
+    "example": "Create hardware asset in SWSD"
+  },
+  {
+    "name": "swsd_create_incident",
+    "description": "Create a new SWSD incident. Required: `name`. Strongly recommended: `description`, `requester_email`, `priority`, `category_name`. The created incident's ID is returned for follow-up calls (swsd_assign_incident, swsd_add_incident_comment, etc.). WRITE — does not retry on transient failure; the agent should verify with swsd_get_incident before retrying. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Create incident",
+    "short": "Create a new SWSD incident",
+    "kind": "edit",
+    "example": "Create incident in SWSD"
+  },
+  {
+    "name": "swsd_create_incident_task",
+    "description": "Create a new sub-task on a SWSD incident. Required: `incident_id`, `name`. Optional: `description` (plain text or HTML), `due_at` (ISO 8601), `assignee_email`. The created task is returned for follow-up calls. WRITE — does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Create incident task",
+    "short": "Create a new sub-task on a SWSD incident",
+    "kind": "edit",
+    "example": "Create incident task in SWSD"
+  },
+  {
+    "name": "swsd_create_mobile_device",
+    "description": "Create a SWSD mobile device. Required: manufacturer and model. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Create mobile device",
+    "short": "Create a SWSD mobile device",
+    "kind": "edit",
+    "example": "Create mobile device in SWSD"
+  },
+  {
+    "name": "swsd_create_other_asset",
+    "description": "Create a SWSD other asset. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Create other asset",
+    "short": "Create a SWSD other asset",
+    "kind": "edit",
+    "example": "Create other asset in SWSD"
+  },
+  {
+    "name": "swsd_create_problem",
+    "description": "Create a new SWSD problem (ITIL problem record). Required: `name`. Strongly recommended: `description`, `priority`, `category`. The created problem's id is returned for follow-up calls. Use this when promoting a recurring incident to a problem record so root-cause analysis and known-error tracking can be tied to multiple incidents. WRITE — does not retry on transient failure; the agent should verify with swsd_get_problem before retrying.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Problems",
+    "friendly": "Create problem",
+    "short": "Create a new SWSD problem (ITIL problem record)",
+    "kind": "edit",
+    "example": "Create problem in SWSD"
+  },
+  {
+    "name": "swsd_create_purchase_order",
+    "description": "Create a SWSD purchase order. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Create purchase order",
+    "short": "Create a SWSD purchase order",
+    "kind": "edit",
+    "example": "Create purchase order in SWSD"
+  },
+  {
+    "name": "swsd_create_record_task",
+    "description": "Create a new sub-task on a SWSD problem, change, or release. Required: `record_type`, `record_id`, `name`. Optional: `due_at` (ISO 8601), `assignee_email`. The created task is returned for follow-up calls. WRITE — does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Create record task",
+    "short": "Create a new sub-task on a SWSD problem, change, or release",
+    "kind": "edit",
+    "example": "Create record task in SWSD"
+  },
+  {
+    "name": "swsd_create_release",
+    "description": "Create a SWSD release. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Releases",
+    "friendly": "Create release",
+    "short": "Create a SWSD release",
+    "kind": "edit",
+    "example": "Create release in SWSD"
+  },
+  {
+    "name": "swsd_create_role",
+    "description": "Create a SWSD role. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Create role",
+    "short": "Create a SWSD role",
+    "kind": "edit",
+    "example": "Create role in SWSD"
+  },
+  {
+    "name": "swsd_create_service_request",
+    "description": "Submit a SWSD catalog request, creating an incident with `is_service_request: true` (auto-set by SWSD on this endpoint) and the supplied form variable values. Use `swsd_list_catalog_items` to find the right `catalog_item_id` and `swsd_get_catalog_item` to inspect its variables before filling. Each `request_variables` entry needs `custom_field_id` (= the catalog item variable's `id`) and `value` (stringified to match the variable's `kind` — for dropdowns, one of the `options` choices). The created incident's id is returned for follow-up calls (swsd_get_incident, swsd_assign_incident, etc.). WRITE — does not retry on transient failure; the agent should verify with swsd_get_incident before retrying. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "Create service request",
+    "short": "Submit a SWSD catalog request, creating an incident with `is_service_request: true`…",
+    "kind": "edit",
+    "example": "Create service request in SWSD"
+  },
+  {
+    "name": "swsd_create_site",
+    "description": "Create a SWSD site. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Create site",
+    "short": "Create a SWSD site",
+    "kind": "edit",
+    "example": "Create site in SWSD"
+  },
+  {
+    "name": "swsd_create_solution",
+    "description": "Create a new SWSD knowledge-base solution article. Required: `name` (title). Strongly recommended: `description` (article body — HTML supported), `state` (common values: \"Internal\", \"Published\", \"Draft\" — tenant-specific). Returns the created solution's ID for follow-up calls. WRITE — does not retry on transient failure; verify with swsd_get_solution before retrying. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Solutions require `name` keying (custom_field_id alone is rejected with HTTP 400). Validated for Text, Dropdown, Number, Checkbox, and Date types.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "knowledge",
+      "full"
+    ],
+    "area": "Knowledge",
+    "friendly": "Create solution",
+    "short": "Create a new SWSD knowledge-base solution article",
+    "kind": "edit",
+    "example": "Create solution in SWSD"
+  },
+  {
+    "name": "swsd_create_user",
+    "description": "Create a SWSD user. Required: name and email. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Create user",
+    "short": "Create a SWSD user",
+    "kind": "edit",
+    "example": "Create user in SWSD"
+  },
+  {
+    "name": "swsd_create_vendor",
+    "description": "Create a SWSD vendor. Required: name. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Create vendor",
+    "short": "Create a SWSD vendor",
+    "kind": "edit",
+    "example": "Create vendor in SWSD"
+  },
+  {
+    "name": "swsd_delete_catalog_item",
+    "description": "DESTRUCTIVE — delete an SWSD catalog item. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "Delete catalog item",
+    "short": "Permanently delete this catalog item after preview",
+    "kind": "delete",
+    "example": "Preview: delete catalog item in SWSD"
+  },
+  {
+    "name": "swsd_delete_category",
+    "description": "DESTRUCTIVE — delete an SWSD category. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Delete category",
+    "short": "Permanently delete this category after preview",
+    "kind": "delete",
+    "example": "Preview: delete category in SWSD"
+  },
+  {
+    "name": "swsd_delete_change",
+    "description": "DESTRUCTIVE — delete an SWSD change. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Changes",
+    "friendly": "Delete change",
+    "short": "Permanently delete this change after preview",
+    "kind": "delete",
+    "example": "Preview: delete change in SWSD"
+  },
+  {
+    "name": "swsd_delete_change_catalog",
+    "description": "DESTRUCTIVE — delete an SWSD change catalog. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "Delete change catalog",
+    "short": "Permanently delete this change catalog after preview",
+    "kind": "delete",
+    "example": "Preview: delete change catalog in SWSD"
+  },
+  {
+    "name": "swsd_delete_comment",
+    "description": "DESTRUCTIVE — delete an SWSD incident comment. Accepts an incident internal id (>=7 digits) or human-facing number (<=6 digits), and the internal comment_id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed sub-record id, not the incident id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Delete comment",
+    "short": "Permanently delete this comment after preview",
+    "kind": "delete",
+    "example": "Preview: delete comment in SWSD"
+  },
+  {
+    "name": "swsd_delete_configuration_item",
+    "description": "DESTRUCTIVE — delete an SWSD configuration item. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Delete configuration item",
+    "short": "Permanently delete this configuration item after preview",
+    "kind": "delete",
+    "example": "Preview: delete configuration item in SWSD"
+  },
+  {
+    "name": "swsd_delete_contract",
+    "description": "DESTRUCTIVE — delete an SWSD contract. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Delete contract",
+    "short": "Permanently delete this contract after preview",
+    "kind": "delete",
+    "example": "Preview: delete contract in SWSD"
+  },
+  {
+    "name": "swsd_delete_department",
+    "description": "DESTRUCTIVE — delete an SWSD department. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Delete department",
+    "short": "Permanently delete this department after preview",
+    "kind": "delete",
+    "example": "Preview: delete department in SWSD"
+  },
+  {
+    "name": "swsd_delete_group",
+    "description": "DESTRUCTIVE — delete an SWSD group. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Delete group",
+    "short": "Permanently delete this group after preview",
+    "kind": "delete",
+    "example": "Preview: delete group in SWSD"
+  },
+  {
+    "name": "swsd_delete_hardware_asset",
+    "description": "DESTRUCTIVE — delete an SWSD hardware asset. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Delete hardware asset",
+    "short": "Permanently delete this hardware asset after preview",
+    "kind": "delete",
+    "example": "Preview: delete hardware asset in SWSD"
+  },
+  {
+    "name": "swsd_delete_hardware_warranty",
+    "description": "DESTRUCTIVE — delete an SWSD hardware warranty. Requires internal hardware_id and warranty_id. First call without confirmation to preview the record from its parent. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed child id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Delete hardware warranty",
+    "short": "Permanently delete this hardware warranty after preview",
+    "kind": "delete",
+    "example": "Preview: delete hardware warranty in SWSD"
+  },
+  {
+    "name": "swsd_delete_incident",
+    "description": "DESTRUCTIVE — delete an SWSD incident. Accepts an internal id (>=7 digits) or human-facing number (<=6 digits). First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Delete incident",
+    "short": "Permanently delete this incident after preview",
+    "kind": "delete",
+    "example": "Preview deleting test incident 48213"
+  },
+  {
+    "name": "swsd_delete_mobile_device",
+    "description": "DESTRUCTIVE — delete an SWSD mobile device. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Delete mobile device",
+    "short": "Permanently delete this mobile device after preview",
+    "kind": "delete",
+    "example": "Preview: delete mobile device in SWSD"
+  },
+  {
+    "name": "swsd_delete_other_asset",
+    "description": "DESTRUCTIVE — delete an SWSD other asset. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Delete other asset",
+    "short": "Permanently delete this other asset after preview",
+    "kind": "delete",
+    "example": "Preview: delete other asset in SWSD"
+  },
+  {
+    "name": "swsd_delete_problem",
+    "description": "DESTRUCTIVE — delete an SWSD problem. Accepts an internal id (>=7 digits) or human-facing number (<=6 digits). First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Problems",
+    "friendly": "Delete problem",
+    "short": "Permanently delete this problem after preview",
+    "kind": "delete",
+    "example": "Preview: delete problem in SWSD"
+  },
+  {
+    "name": "swsd_delete_purchase_order",
+    "description": "DESTRUCTIVE — delete an SWSD purchase order. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Delete purchase order",
+    "short": "Permanently delete this purchase order after preview",
+    "kind": "delete",
+    "example": "Preview: delete purchase order in SWSD"
+  },
+  {
+    "name": "swsd_delete_release",
+    "description": "DESTRUCTIVE — delete an SWSD release. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Releases",
+    "friendly": "Delete release",
+    "short": "Permanently delete this release after preview",
+    "kind": "delete",
+    "example": "Preview: delete release in SWSD"
+  },
+  {
+    "name": "swsd_delete_role",
+    "description": "DESTRUCTIVE — delete an SWSD role. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Delete role",
+    "short": "Permanently delete this role after preview",
+    "kind": "delete",
+    "example": "Preview: delete role in SWSD"
+  },
+  {
+    "name": "swsd_delete_site",
+    "description": "DESTRUCTIVE — delete an SWSD site. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Delete site",
+    "short": "Permanently delete this site after preview",
+    "kind": "delete",
+    "example": "Preview: delete site in SWSD"
+  },
+  {
+    "name": "swsd_delete_solution",
+    "description": "DESTRUCTIVE — delete an SWSD solution. Accepts an internal id (>=7 digits) or human-facing number (<=6 digits). First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Knowledge",
+    "friendly": "Delete solution",
+    "short": "Permanently delete this solution after preview",
+    "kind": "delete",
+    "example": "Preview: delete solution in SWSD"
+  },
+  {
+    "name": "swsd_delete_task",
+    "description": "DESTRUCTIVE — delete an SWSD incident task. Accepts an incident internal id (>=7 digits) or human-facing number (<=6 digits), and the internal task_id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed sub-record id, not the incident id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Delete task",
+    "short": "Permanently delete this task after preview",
+    "kind": "delete",
+    "example": "Preview: delete task in SWSD"
+  },
+  {
+    "name": "swsd_delete_time_track",
+    "description": "DESTRUCTIVE — delete an SWSD incident time track. Accepts an incident internal id (>=7 digits) or human-facing number (<=6 digits), and the internal time_track_id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed sub-record id, not the incident id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Delete time track",
+    "short": "Permanently delete this time track after preview",
+    "kind": "delete",
+    "example": "Preview: delete time track in SWSD"
+  },
+  {
+    "name": "swsd_delete_user",
+    "description": "DESTRUCTIVE — delete an SWSD user. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Delete user",
+    "short": "Permanently delete this user after preview",
+    "kind": "delete",
+    "example": "Preview: delete user in SWSD"
+  },
+  {
+    "name": "swsd_delete_vendor",
+    "description": "DESTRUCTIVE — delete an SWSD vendor. Requires the internal record id. First call without confirmation to preview the record. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to the previewed internal id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Delete vendor",
+    "short": "Permanently delete this vendor after preview",
+    "kind": "delete",
+    "example": "Preview: delete vendor in SWSD"
+  },
+  {
+    "name": "swsd_describe_custom_fields",
+    "description": "List the SWSD tenant's custom-field schema. Returns id, name, type (e.g. \"Text\", \"Dropdown\", \"Date\"), required, scope, module, allowed `values` for dropdown fields, and help_text. Useful for understanding tenant configuration and documenting integrations. Default returns active fields only — pass `active_only: false` to see retired ones too. Filter by `scope` or `module` to narrow the surface (the tenant may have 100+ fields). v2 NOTE: custom field WRITES are now supported via the `custom_fields` parameter on swsd_create_incident, swsd_update_incident, swsd_create_solution, and swsd_update_solution. Pass `custom_fields: [{name, value}]` (name-keyed for portability). Validated field types: Text, Dropdown, Number, Checkbox, Date. Multi_picklist and User-type writes are not yet supported — set those via the SWSD UI.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Utilities",
+    "friendly": "Describe custom fields",
+    "short": "List the SWSD tenant's custom-field schema",
+    "kind": "read",
+    "example": "Describe custom fields in SWSD"
+  },
+  {
+    "name": "swsd_get_catalog_item",
+    "description": "Get a single SWSD catalog item by id, including its `variables` (the form schema for service requests). Use the variables to know which fields to populate when submitting a service request. Each variable has an `id` (pass through to the create-service-request tool as `custom_field_id`), a `name`, a `kind` (free_text / drop_down_menu / multi_select / date / user / null), and `options` (newline-separated allowed values for dropdowns). The full top-level item is passed through for power users (description, category, etc.).",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "Get catalog item",
+    "short": "Get a single SWSD catalog item by id, including its `variables` (the form schema for…",
+    "kind": "read",
+    "example": "Get catalog item in SWSD"
+  },
+  {
+    "name": "swsd_get_category",
+    "description": "Fetch one SWSD category by id, with its subcategories (children), parent_id and default_assignee_id. Use swsd_list_categories first to find the id.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Get category",
+    "short": "Fetch one SWSD category by id, with its subcategories (children), parent_id and…",
+    "kind": "read",
+    "example": "Get category in SWSD"
+  },
+  {
+    "name": "swsd_get_change",
+    "description": "Fetch one SWSD change by internal id. Pass detail_level: \"long\" for SWSD layout=long extras. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Changes",
+    "friendly": "Get change",
+    "short": "Fetch one SWSD change by internal id",
+    "kind": "read",
+    "example": "Get change in SWSD"
+  },
+  {
+    "name": "swsd_get_change_catalog",
+    "description": "Fetch one SWSD change catalog by internal id. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "Get change catalog",
+    "short": "Fetch one SWSD change catalog by internal id",
+    "kind": "read",
+    "example": "Get change catalog in SWSD"
+  },
+  {
+    "name": "swsd_get_configuration_item",
+    "description": "Fetch one SWSD configuration item by internal id. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Get configuration item",
+    "short": "Fetch one SWSD configuration item by internal id",
+    "kind": "read",
+    "example": "Get configuration item in SWSD"
+  },
+  {
+    "name": "swsd_get_contract",
+    "description": "Fetch one SWSD contract by internal id. Pass detail_level: \"long\" for SWSD layout=long extras. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Get contract",
+    "short": "Fetch one SWSD contract by internal id",
+    "kind": "read",
+    "example": "Get contract in SWSD"
+  },
+  {
+    "name": "swsd_get_department",
+    "description": "Fetch one SWSD department by id. Returns name and description. Use swsd_list_departments first to find the id.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Get department",
+    "short": "Fetch one SWSD department by id",
+    "kind": "read",
+    "example": "Get department in SWSD"
+  },
+  {
+    "name": "swsd_get_group",
+    "description": "Fetch one SWSD group (assignment team) by id, including its members (membership_id, name, and user id/email when available). Answers \"who is on this team?\". Use swsd_list_groups first to find the id.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Get group",
+    "short": "Fetch one SWSD group (assignment team) by id, including its members (membership_id,…",
+    "kind": "read",
+    "example": "Get group in SWSD"
+  },
+  {
+    "name": "swsd_get_hardware_asset",
+    "description": "Fetch one SWSD hardware asset by internal id. Pass detail_level: \"long\" for SWSD layout=long extras. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Get hardware asset",
+    "short": "Fetch one SWSD hardware asset by internal id",
+    "kind": "read",
+    "example": "Get hardware asset in SWSD"
+  },
+  {
+    "name": "swsd_get_incident",
+    "description": "Fetch one SWSD incident by numeric ID. Returns the full incident detail as returned by SWSD (passthrough), including custom_fields_values when present. Use swsd_list_incidents first if you only have a name or filter — IDs are not guessable. Pass detail_level: \"long\" to include comments, attachments, audits, SLA data, and resolution in one call.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Get incident",
+    "short": "Open one incident by ID",
+    "kind": "read",
+    "example": "Get incident in SWSD"
+  },
+  {
+    "name": "swsd_get_me",
+    "description": "Get the SWSD user record for the token's owner — id, email, name, title, role, department, site, group_ids, and assignment status. **Call this first** when the request mentions \"me\", \"my\", or \"I\" (e.g. \"my tickets\", \"tickets in my group\", \"tickets assigned to me\"), then pass the returned id/email to assignee_email or requester_email filters on swsd_list_incidents (or use swsd_list_my_incidents which does this in one call). Without this step, \"my X\" queries cannot be answered correctly.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Get me",
+    "short": "Get the SWSD user record for the token's owner — id, email, name, title, role,…",
+    "kind": "read",
+    "example": "Get me in SWSD"
+  },
+  {
+    "name": "swsd_get_mobile_device",
+    "description": "Fetch one SWSD mobile device by internal id. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Get mobile device",
+    "short": "Fetch one SWSD mobile device by internal id",
+    "kind": "read",
+    "example": "Get mobile device in SWSD"
+  },
+  {
+    "name": "swsd_get_other_asset",
+    "description": "Fetch one SWSD other asset by internal id. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Get other asset",
+    "short": "Fetch one SWSD other asset by internal id",
+    "kind": "read",
+    "example": "Get other asset in SWSD"
+  },
+  {
+    "name": "swsd_get_printer",
+    "description": "Fetch one SWSD printer by internal id. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Get printer",
+    "short": "Fetch one SWSD printer by internal id",
+    "kind": "read",
+    "example": "Get printer in SWSD"
+  },
+  {
+    "name": "swsd_get_problem",
+    "description": "Fetch one SWSD problem (ITIL problem record) by id or number. Returns the full problem detail as returned by SWSD (passthrough). Use swsd_list_problems first if you only have a name or filter — IDs are not guessable. Pass detail_level: \"long\" to include comments, audits, tasks, and time_tracks in one call.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Problems",
+    "friendly": "Get problem",
+    "short": "Fetch one SWSD problem (ITIL problem record) by id or number",
+    "kind": "read",
+    "example": "Get problem in SWSD"
+  },
+  {
+    "name": "swsd_get_purchase_order",
+    "description": "Fetch one SWSD purchase order by internal id. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Get purchase order",
+    "short": "Fetch one SWSD purchase order by internal id",
+    "kind": "read",
+    "example": "Get purchase order in SWSD"
+  },
+  {
+    "name": "swsd_get_record_audits",
+    "description": "List the audit log for a SWSD record. Each audit entry captures one change: action (\"Update\"/\"Create\"/\"Delete\"), message (\"State changed from New to Assigned\"), the user who performed it, and the timestamp. Use this to answer \"who changed this ticket?\" or \"what happened since I last looked?\". Cheaper than swsd_get_incident with detail_level=long when you only need the audit history. object_type accepts incidents, problems, changes, releases, solutions, hardwares, other_assets.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Utilities",
+    "friendly": "Get record audits",
+    "short": "List the audit log for a SWSD record",
+    "kind": "read",
+    "example": "Get record audits in SWSD"
+  },
+  {
+    "name": "swsd_get_release",
+    "description": "Fetch one SWSD release by internal id. Pass detail_level: \"long\" for SWSD layout=long extras. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Releases",
+    "friendly": "Get release",
+    "short": "Fetch one SWSD release by internal id",
+    "kind": "read",
+    "example": "Get release in SWSD"
+  },
+  {
+    "name": "swsd_get_role",
+    "description": "Fetch one SWSD role by id. Returns name and description. Use swsd_list_roles first to find the id.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Get role",
+    "short": "Fetch one SWSD role by id",
+    "kind": "read",
+    "example": "Get role in SWSD"
+  },
+  {
+    "name": "swsd_get_server_info",
+    "description": "Return the SWSD MCP server's name, version, configured profile, enabled tools, and the SWSD base URL host. Local-only — does not call SWSD. Includes documented SWSD upstream rate limits (the model can reference these without guessing).",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Utilities",
+    "friendly": "Get server info",
+    "short": "Return the SWSD MCP server's name, version, configured profile, enabled tools, and the…",
+    "kind": "read",
+    "example": "Get server info in SWSD"
+  },
+  {
+    "name": "swsd_get_site",
+    "description": "Fetch one SWSD site (office/branch location) by id. Returns name, location code, description, time_zone. Use swsd_list_sites first to find the id.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Get site",
+    "short": "Fetch one SWSD site (office/branch location) by id",
+    "kind": "read",
+    "example": "Get site in SWSD"
+  },
+  {
+    "name": "swsd_get_software_asset",
+    "description": "Fetch one SWSD software asset by internal id. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Get software asset",
+    "short": "Fetch one SWSD software asset by internal id",
+    "kind": "read",
+    "example": "Get software asset in SWSD"
+  },
+  {
+    "name": "swsd_get_solution",
+    "description": "Fetch one SWSD solution. Accepts an internal id (>=7 digits) or human-facing number (<=6 digits). Returns the full solution as returned by SWSD (passthrough), including both `description` (HTML) and `description_no_html` (plain text) fields, custom_fields_values, comments count, and attachment metadata. Use swsd_search_solutions first if you only have a topic — IDs are not guessable. Pass detail_level: \"long\" to include attachments, audits, and tags in one call.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Knowledge",
+    "friendly": "Get solution",
+    "short": "Fetch one SWSD solution",
+    "kind": "read",
+    "example": "Get solution in SWSD"
+  },
+  {
+    "name": "swsd_get_user",
+    "description": "Fetch one SWSD user by id. Returns name, email, role, site, department, title, disabled/assignable flags, and group_ids (teams the user belongs to). Use swsd_list_users first to find the id by name or email.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Get user",
+    "short": "Fetch one SWSD user by id",
+    "kind": "read",
+    "example": "Get user in SWSD"
+  },
+  {
+    "name": "swsd_get_vendor",
+    "description": "Fetch one SWSD vendor by internal id. Returns the upstream detail payload defensively parsed as a JSON object.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Get vendor",
+    "short": "Fetch one SWSD vendor by internal id",
+    "kind": "read",
+    "example": "Get vendor in SWSD"
+  },
+  {
+    "name": "swsd_health_check",
+    "description": "Verify connectivity and authentication to SWSD by making a minimal request. Returns ok=true on success, otherwise an error explaining the failure (401 = bad token, 403 = insufficient permission, network error = unreachable).",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Utilities",
+    "friendly": "Health check",
+    "short": "Verify connectivity and authentication to SWSD by making a minimal request",
+    "kind": "read",
+    "example": "Health check in SWSD"
+  },
+  {
+    "name": "swsd_link_solution_to_incident",
+    "description": "Attach a knowledge-base solution to an incident. Fetches the incident first, reads its existing linked solutions, appends the new one (preserving others), then PUTs with `solution_ids` (the SWSD write shape — distinct from the read shape `solutions`). Idempotent — if the solution is already linked, returns success without modifying the record. WRITE — does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Link solution to incident",
+    "short": "Attach a knowledge-base solution to an incident",
+    "kind": "edit",
+    "example": "Link solution to incident in SWSD"
+  },
+  {
+    "name": "swsd_list_catalog_items",
+    "description": "List catalog items available in SolarWinds Service Desk. Each item represents an offerable service request template (e.g., \"New Employee Onboarding\", \"Software Request\") with a defined set of input variables (form fields). Use swsd_get_catalog_item to inspect a single item's variables, then swsd_create_service_request to submit a request.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "List catalog items",
+    "short": "List catalog items available in SolarWinds Service Desk",
+    "kind": "read",
+    "example": "List catalog items in SWSD"
+  },
+  {
+    "name": "swsd_list_categories",
+    "description": "List SWSD incident/solution categories. Returns id, name, parent_id, immediate children, and default_assignee_id. Categories form a hierarchy (parent_id links). Use this to validate category_name before swsd_create_incident or swsd_update_incident.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "List categories",
+    "short": "List SWSD incident/solution categories",
+    "kind": "read",
+    "example": "List categories in SWSD"
+  },
+  {
+    "name": "swsd_list_change_catalogs",
+    "description": "List SWSD change catalogs. Use for change catalog template lookup. Returns compact summaries; call swsd_get_change_catalog for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "List change catalogs",
+    "short": "List SWSD change catalogs",
+    "kind": "read",
+    "example": "List change catalogs in SWSD"
+  },
+  {
+    "name": "swsd_list_changes",
+    "description": "List SWSD changes. Use for change-management review and change planning. Returns compact summaries; call swsd_get_change for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Changes",
+    "friendly": "List changes",
+    "short": "List SWSD changes",
+    "kind": "read",
+    "example": "List changes in SWSD"
+  },
+  {
+    "name": "swsd_list_configuration_items",
+    "description": "List SWSD configuration items. Use for CMDB context and dependency review before changes. Returns compact summaries; call swsd_get_configuration_item for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "List configuration items",
+    "short": "List SWSD configuration items",
+    "kind": "read",
+    "example": "List configuration items in SWSD"
+  },
+  {
+    "name": "swsd_list_contracts",
+    "description": "List SWSD contracts. Use for support, warranty, and procurement context. Returns compact summaries; call swsd_get_contract for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "List contracts",
+    "short": "List SWSD contracts",
+    "kind": "read",
+    "example": "List contracts in SWSD"
+  },
+  {
+    "name": "swsd_list_departments",
+    "description": "List SWSD departments (organizational divisions). Returns id, name, description. Use this to validate department_name before incident write tools.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "List departments",
+    "short": "List SWSD departments (organizational divisions)",
+    "kind": "read",
+    "example": "List departments in SWSD"
+  },
+  {
+    "name": "swsd_list_groups",
+    "description": "List SWSD groups (assignment teams). Returns id, name, description, disabled, member_count. Useful for understanding team structure when triaging tickets.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "List groups",
+    "short": "List SWSD groups (assignment teams)",
+    "kind": "read",
+    "example": "List groups in SWSD"
+  },
+  {
+    "name": "swsd_list_hardware_assets",
+    "description": "List SWSD hardware assets. Use for ITAM hardware inventory lookup before incident/change work. Returns compact summaries; call swsd_get_hardware_asset for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "List hardware assets",
+    "short": "List SWSD hardware assets",
+    "kind": "read",
+    "example": "List hardware assets in SWSD"
+  },
+  {
+    "name": "swsd_list_hardware_warranties",
+    "description": "List warranties for an SWSD hardware asset by internal hardware_id.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "List hardware warranties",
+    "short": "List warranties for an SWSD hardware asset by internal hardware_id",
+    "kind": "read",
+    "example": "List hardware warranties in SWSD"
+  },
+  {
+    "name": "swsd_list_incident_comments",
+    "description": "List comments on a SWSD incident. Returns id, body, is_private, author_email, author_name, created_at. Use swsd_add_incident_comment to add a new comment.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "List incident comments",
+    "short": "List comments on a SWSD incident",
+    "kind": "read",
+    "example": "List incident comments in SWSD"
+  },
+  {
+    "name": "swsd_list_incident_tasks",
+    "description": "List sub-tasks on a SWSD incident. Returns id, name, description, state (\"New\" / \"In Progress\" / \"Completed\"), completed boolean, position, assignee, due_at, created_at, updated_at. Use swsd_create_incident_task to add a sub-task and swsd_update_task_state to mark one complete. Sub-tasks also appear inline in `swsd_get_incident detail_level: \"long\"`.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "List incident tasks",
+    "short": "List sub-tasks on a SWSD incident",
+    "kind": "read",
+    "example": "List incident tasks in SWSD"
+  },
+  {
+    "name": "swsd_list_incidents",
+    "description": "List SWSD incidents with structured filters and pagination. Returns compact summaries (id, name, state, priority, assignee_email, requester_email, category, updated_at) — call swsd_get_incident for the full detail of any one row. Filters use SWSD repeated-key array semantics (multiple values within a filter are OR-ed). NOTE: assignee_email and requester_email are applied CLIENT-SIDE because SWSD /incidents.json silently ignores them server-side (verified 2026-05-08 against the live API). Other filters (state, category, dates, sites, departments, assigned_to_group, query) DO narrow server-side and are passed through.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "List incidents",
+    "short": "Search and browse incidents",
+    "kind": "read",
+    "example": "List incidents in SWSD"
+  },
+  {
+    "name": "swsd_list_mobile_devices",
+    "description": "List SWSD mobile devices. Use for mobile-device inventory lookup. Returns compact summaries; call swsd_get_mobile_device for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "List mobile devices",
+    "short": "List SWSD mobile devices",
+    "kind": "read",
+    "example": "List mobile devices in SWSD"
+  },
+  {
+    "name": "swsd_list_my_incidents",
+    "description": "List incidents assigned to the authenticated user. Internally calls swsd_get_me to discover the user's email, then calls /incidents.json with the OTHER server-side filters applied (state, priority, etc.) and narrows the response client-side by assignee.email — because SWSD's /incidents.json endpoint silently ignores assignee_email / requester_email filters (verified 2026-05-08 against the live API: a fake email returns the entire tenant). The client-side filter is the only correct way to scope to a specific user. For broader queries use swsd_list_incidents with assigned_to_group=<group_id> (group filtering does work server-side).",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "List my incidents",
+    "short": "Incidents assigned to you",
+    "kind": "read",
+    "example": "Show my open P1 incidents"
+  },
+  {
+    "name": "swsd_list_other_assets",
+    "description": "List SWSD other assets. Use for non-hardware/non-software asset lookup. Returns compact summaries; call swsd_get_other_asset for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "List other assets",
+    "short": "List SWSD other assets",
+    "kind": "read",
+    "example": "List other assets in SWSD"
+  },
+  {
+    "name": "swsd_list_printers",
+    "description": "List SWSD printers. Use for printer inventory lookup. Returns compact summaries; call swsd_get_printer for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "List printers",
+    "short": "List SWSD printers",
+    "kind": "read",
+    "example": "List printers in SWSD"
+  },
+  {
+    "name": "swsd_list_problems",
+    "description": "List SWSD problems (ITIL problem records) with structured filters and pagination. Returns compact summaries (id, name, state, priority, category, requester, assignee, updated_at) — call swsd_get_problem for the full detail of any one row. Filters use SWSD repeated-key array semantics (multiple values within a filter are OR-ed). Use this when investigating recurring incidents or identifying root causes that span multiple tickets.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Problems",
+    "friendly": "List problems",
+    "short": "Search and browse problems",
+    "kind": "read",
+    "example": "List problems in SWSD"
+  },
+  {
+    "name": "swsd_list_purchase_orders",
+    "description": "List SWSD purchase orders. Use for procurement context. Returns compact summaries; call swsd_get_purchase_order for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "List purchase orders",
+    "short": "List SWSD purchase orders",
+    "kind": "read",
+    "example": "List purchase orders in SWSD"
+  },
+  {
+    "name": "swsd_list_record_comments",
+    "description": "List comments on a SWSD problem, change, or release. Returns id, body, is_private, author_email, author_name, created_at. Use swsd_add_record_comment to add a new comment.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "List record comments",
+    "short": "List comments on a SWSD problem, change, or release",
+    "kind": "read",
+    "example": "List record comments in SWSD"
+  },
+  {
+    "name": "swsd_list_record_tasks",
+    "description": "List sub-tasks on a SWSD problem, change, or release. Returns id, name, description, state, completed boolean, position, assignee, due_at, created_at, updated_at. Use swsd_create_record_task to add a sub-task.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "List record tasks",
+    "short": "List sub-tasks on a SWSD problem, change, or release",
+    "kind": "read",
+    "example": "List record tasks in SWSD"
+  },
+  {
+    "name": "swsd_list_releases",
+    "description": "List SWSD releases. Use for release-management planning and deployment review. Returns compact summaries; call swsd_get_release for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Releases",
+    "friendly": "List releases",
+    "short": "List SWSD releases",
+    "kind": "read",
+    "example": "List releases in SWSD"
+  },
+  {
+    "name": "swsd_list_risks",
+    "description": "List SWSD risks. Use for risk context surfaced by SWSD. Returns compact summaries. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "List risks",
+    "short": "List SWSD risks",
+    "kind": "read",
+    "example": "List risks in SWSD"
+  },
+  {
+    "name": "swsd_list_roles",
+    "description": "List SWSD roles (permission profiles). Returns id, name, description. Useful for understanding what users can do in SWSD when triaging permission-related tickets.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "List roles",
+    "short": "List SWSD roles (permission profiles)",
+    "kind": "read",
+    "example": "List roles in SWSD"
+  },
+  {
+    "name": "swsd_list_sites",
+    "description": "List SWSD sites (physical office/branch locations). Returns id, name, location code, description, time_zone. Use this to validate site_name before incident write tools.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "List sites",
+    "short": "List SWSD sites (physical office/branch locations)",
+    "kind": "read",
+    "example": "List sites in SWSD"
+  },
+  {
+    "name": "swsd_list_software_assets",
+    "description": "List SWSD software assets. Use for software inventory and license context. Returns compact summaries; call swsd_get_software_asset for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "List software assets",
+    "short": "List SWSD software assets",
+    "kind": "read",
+    "example": "List software assets in SWSD"
+  },
+  {
+    "name": "swsd_list_time_tracks",
+    "description": "List SWSD time entries for an incident, problem, change, or release. Use this before adding/updating time when you need existing work-log context.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "List time tracks",
+    "short": "List SWSD time entries for an incident, problem, change, or release",
+    "kind": "read",
+    "example": "List time tracks in SWSD"
+  },
+  {
+    "name": "swsd_list_users",
+    "description": "List SWSD users. Returns id, name, email, disabled, available_for_assignment, role, site, department, title. Set `available_for_assignment_only: true` to find valid assignees for swsd_assign_incident. Set `email` to look up one user exactly.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "List users",
+    "short": "List SWSD users",
+    "kind": "read",
+    "example": "List users in SWSD"
+  },
+  {
+    "name": "swsd_list_vendors",
+    "description": "List SWSD vendors. Use for vendor/contact lookup. Returns compact summaries; call swsd_get_vendor for full detail. Only documented pagination/layout parameters are exposed for this endpoint.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "List vendors",
+    "short": "List SWSD vendors",
+    "kind": "read",
+    "example": "List vendors in SWSD"
+  },
+  {
+    "name": "swsd_log_time",
+    "description": "Log time against a SWSD incident, problem, change, or release. Required: object_type, id, name, minutes_parsed. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Log time",
+    "short": "Log time against a SWSD incident, problem, change, or release",
+    "kind": "edit",
+    "example": "Log time in SWSD"
+  },
+  {
+    "name": "swsd_my_queue",
+    "description": "Work-queue view for the authenticated user (or a given assignee/group). Defaults to open incidents assigned to you, sorted by due_at ascending. Each row includes a computed SLA risk level for at-a-glance triage. Supports assignee_email override (client-side filter), assigned_to_group (server-side), states/priorities filters, and sort_by options.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "My queue",
+    "short": "Your work queue (or another assignee or group)",
+    "kind": "read",
+    "example": "My queue in SWSD"
+  },
+  {
+    "name": "swsd_remove_group_member",
+    "description": "DESTRUCTIVE — remove an SWSD group membership by membership_id, not user id. First call without confirmation to preview the supplied membership id; the API has no documented membership GET. Ask the user to confirm, then re-call with confirm:true and confirm_id equal to that membership id. Dry-run mode always previews; disabled mode blocks. Does not retry DELETE requests.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Remove group member",
+    "short": "Remove someone from a group after preview",
+    "kind": "delete",
+    "example": "Preview: remove group member in SWSD"
+  },
+  {
+    "name": "swsd_search_solutions",
+    "description": "Search SWSD knowledge-base solution articles. Pass `query` for free-text search across titles and descriptions; pass `category` to filter to a category name. Returns compact summaries with truncated excerpts (240 chars). Use swsd_get_solution for the full HTML body of any one result. NOTE: search is asynchronously indexed — articles created or updated in the last few minutes (sometimes hours) may not appear yet. To verify a just-created article, use swsd_get_solution with the ID returned by swsd_create_solution.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "knowledge",
+      "full"
+    ],
+    "area": "Knowledge",
+    "friendly": "Search solutions",
+    "short": "Search SWSD knowledge-base solution articles",
+    "kind": "read",
+    "example": "Search solutions in SWSD"
+  },
+  {
+    "name": "swsd_sla_risk",
+    "description": "List open incidents ranked by SLA breach risk. Computes a risk level for each incident based on due_at and sla_violations: \"breached\" (overdue or has violations), \"critical\" (due within 4 hours), \"warning\" (due within at_risk_within_hours), \"ok\", or \"no_due_date\". Results are sorted with breached first (most overdue first), then by time-to-breach ascending, no_due_date last. Defaults to excluding Resolved and Closed states. Limitation: incident list rows only normally include due_at. The sla_violations[] array is only present on the long incident layout, so rows are ranked primarily by due_at and violations are counted only when SWSD happens to include them on the row. Use swsd_get_incident with detail_level long for a complete per-incident SLA picture.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "SLA risk",
+    "short": "List open incidents ranked by SLA breach risk",
+    "kind": "read",
+    "example": "Which tickets are about to breach SLA today?"
+  },
+  {
+    "name": "swsd_ticket_stats",
+    "description": "Summarize scanned tickets created OR last updated in [from, to), defaulting to the last seven days. Alternates created and updated incident-list queries, deduplicates IDs, and shares max_pages across both scans. Totals and breakdowns cover only scanned matching rows, not the tenant backlog or a historical state snapshot. Open excludes Resolved/Closed; unassigned means no individual assignee. Breached uses computeSlaRisk on open tickets at scan time, using due_at and any returned sla_violations (list rows may omit violations). Resolution counts and median elapsed hours use valid resolved_at timestamps in the window only; rows without resolved_at are excluded, never approximated with updated_at. The list API may omit resolved_at, so resolution metrics may be incomplete. An older ticket resolved during the window but last updated afterward can also be absent from these date-filtered scans. Median is null if no valid nonnegative created_at-to-resolved_at durations exist. Assignee/category breakdowns return the top ten.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Ticket stats",
+    "short": "Counts for tickets created or updated in a date range",
+    "kind": "read",
+    "example": "Ticket stats in SWSD"
+  },
+  {
+    "name": "swsd_update_catalog_item",
+    "description": "Update a SWSD catalog item by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "Update catalog item",
+    "short": "Update a SWSD catalog item by internal id",
+    "kind": "edit",
+    "example": "Update catalog item in SWSD"
+  },
+  {
+    "name": "swsd_update_category",
+    "description": "Update a SWSD category by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Update category",
+    "short": "Update a SWSD category by internal id",
+    "kind": "edit",
+    "example": "Update category in SWSD"
+  },
+  {
+    "name": "swsd_update_change",
+    "description": "Update a SWSD change. Pass only fields to change. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Changes",
+    "friendly": "Update change",
+    "short": "Update a SWSD change",
+    "kind": "edit",
+    "example": "Update change in SWSD"
+  },
+  {
+    "name": "swsd_update_change_catalog",
+    "description": "Update a SWSD change catalog by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Service catalog",
+    "friendly": "Update change catalog",
+    "short": "Update a SWSD change catalog by internal id",
+    "kind": "edit",
+    "example": "Update change catalog in SWSD"
+  },
+  {
+    "name": "swsd_update_comment",
+    "description": "Update the body of an existing SWSD incident comment. Pass `incident_id`, `comment_id`, and the new `body`. The is_private flag cannot be changed by this tool — to change visibility, delete and re-create. WRITE — does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Update comment",
+    "short": "Update the body of an existing SWSD incident comment",
+    "kind": "edit",
+    "example": "Update comment in SWSD"
+  },
+  {
+    "name": "swsd_update_configuration_item",
+    "description": "Update a SWSD configuration item by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Update configuration item",
+    "short": "Update a SWSD configuration item by internal id",
+    "kind": "edit",
+    "example": "Update configuration item in SWSD"
+  },
+  {
+    "name": "swsd_update_contract",
+    "description": "Update a SWSD contract by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Update contract",
+    "short": "Update a SWSD contract by internal id",
+    "kind": "edit",
+    "example": "Update contract in SWSD"
+  },
+  {
+    "name": "swsd_update_department",
+    "description": "Update a SWSD department by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Update department",
+    "short": "Update a SWSD department by internal id",
+    "kind": "edit",
+    "example": "Update department in SWSD"
+  },
+  {
+    "name": "swsd_update_group",
+    "description": "Update a SWSD group by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Update group",
+    "short": "Update a SWSD group by internal id",
+    "kind": "edit",
+    "example": "Update group in SWSD"
+  },
+  {
+    "name": "swsd_update_hardware_asset",
+    "description": "Update a SWSD hardware asset by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Update hardware asset",
+    "short": "Update a SWSD hardware asset by internal id",
+    "kind": "edit",
+    "example": "Update hardware asset in SWSD"
+  },
+  {
+    "name": "swsd_update_hardware_warranty",
+    "description": "Update an SWSD hardware warranty. Requires internal hardware_id and warranty_id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Update hardware warranty",
+    "short": "Update an SWSD hardware warranty",
+    "kind": "edit",
+    "example": "Update hardware warranty in SWSD"
+  },
+  {
+    "name": "swsd_update_incident",
+    "description": "Update an existing SWSD incident. Pass `id` and any fields to change. Only fields you provide are sent — others stay as-is. For state transitions prefer swsd_update_incident_state (safer wrapper); for assignment prefer swsd_assign_incident; for comments use swsd_add_incident_comment. WRITE — does not retry on transient failure. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Update incident",
+    "short": "Update an existing SWSD incident",
+    "kind": "edit",
+    "example": "Update incident in SWSD"
+  },
+  {
+    "name": "swsd_update_incident_state",
+    "description": "Transition an SWSD incident to a new state (e.g., \"Assigned\", \"Resolved\", \"Closed\"). Safer wrapper around swsd_update_incident — narrows the agent decision surface. State names are tenant-specific; common ones: \"New - Unassigned\", \"Assigned\", \"In Progress\", \"Awaiting Input\", \"Resolved\", \"Closed\". Call swsd_get_incident first to see the current state. WRITE — does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Incidents",
+    "friendly": "Update incident state",
+    "short": "Transition an SWSD incident to a new state (e.g., \"Assigned\", \"Resolved\", \"Closed\")",
+    "kind": "edit",
+    "example": "Update incident state in SWSD"
+  },
+  {
+    "name": "swsd_update_mobile_device",
+    "description": "Update a SWSD mobile device by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Update mobile device",
+    "short": "Update a SWSD mobile device by internal id",
+    "kind": "edit",
+    "example": "Update mobile device in SWSD"
+  },
+  {
+    "name": "swsd_update_other_asset",
+    "description": "Update a SWSD other asset by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Update other asset",
+    "short": "Update a SWSD other asset by internal id",
+    "kind": "edit",
+    "example": "Update other asset in SWSD"
+  },
+  {
+    "name": "swsd_update_printer",
+    "description": "Update a SWSD printer by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Assets & CMDB",
+    "friendly": "Update printer",
+    "short": "Update a SWSD printer by internal id",
+    "kind": "edit",
+    "example": "Update printer in SWSD"
+  },
+  {
+    "name": "swsd_update_problem",
+    "description": "Update an existing SWSD problem. Pass `id` and any fields to change. Only provided fields are sent — others stay as-is. To replace the description entirely, pass the full new body. WRITE — does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Problems",
+    "friendly": "Update problem",
+    "short": "Update an existing SWSD problem",
+    "kind": "edit",
+    "example": "Update problem in SWSD"
+  },
+  {
+    "name": "swsd_update_purchase_order",
+    "description": "Update a SWSD purchase order by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Update purchase order",
+    "short": "Update a SWSD purchase order by internal id",
+    "kind": "edit",
+    "example": "Update purchase order in SWSD"
+  },
+  {
+    "name": "swsd_update_release",
+    "description": "Update a SWSD release. Pass only fields to change. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Releases",
+    "friendly": "Update release",
+    "short": "Update a SWSD release",
+    "kind": "edit",
+    "example": "Update release in SWSD"
+  },
+  {
+    "name": "swsd_update_role",
+    "description": "Update a SWSD role by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Update role",
+    "short": "Update a SWSD role by internal id",
+    "kind": "edit",
+    "example": "Update role in SWSD"
+  },
+  {
+    "name": "swsd_update_site",
+    "description": "Update a SWSD site by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Update site",
+    "short": "Update a SWSD site by internal id",
+    "kind": "edit",
+    "example": "Update site in SWSD"
+  },
+  {
+    "name": "swsd_update_solution",
+    "description": "Update an existing SWSD knowledge-base solution. Accepts an internal id (>=7 digits) or human-facing number (<=6 digits). Pass `id` and any fields to change. Only provided fields are sent — others stay as-is. To replace the description entirely, pass the full new body. WRITE — does not retry on transient failure. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]` — call swsd_describe_custom_fields first to discover field names and (for Dropdowns) allowed values. Solutions require `name` keying (custom_field_id alone is rejected with HTTP 400). Validated for Text, Dropdown, Number, Checkbox, and Date types.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "knowledge",
+      "full"
+    ],
+    "area": "Knowledge",
+    "friendly": "Update solution",
+    "short": "Update an existing SWSD knowledge-base solution",
+    "kind": "edit",
+    "example": "Update solution in SWSD"
+  },
+  {
+    "name": "swsd_update_task",
+    "description": "Update a SWSD incident sub-task. Pass incident_id (internal id or incident number), task_id, and name, assignee_email, due_at (ISO datetime), and/or is_complete. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Update task",
+    "short": "Update a SWSD incident sub-task",
+    "kind": "edit",
+    "example": "Update task in SWSD"
+  },
+  {
+    "name": "swsd_update_task_state",
+    "description": "Mark a SWSD incident sub-task as complete or incomplete. Pass `completed: true` to set the task to \"Completed\", or `completed: false` to revert to \"New\". For finer state control (e.g., \"In Progress\"), use the SWSD UI directly — this tool is the safer wrapper for the common done/not-done transition. WRITE — idempotent: re-applying the same value is a no-op on SWSD.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Update task state",
+    "short": "Mark a SWSD incident sub-task as complete or incomplete",
+    "kind": "edit",
+    "example": "Update task state in SWSD"
+  },
+  {
+    "name": "swsd_update_time_track",
+    "description": "Update an existing SWSD time entry on an incident, problem, change, or release. Pass name and/or minutes_parsed. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Update time track",
+    "short": "Update an existing SWSD time entry on an incident, problem, change, or release",
+    "kind": "edit",
+    "example": "Update time track in SWSD"
+  },
+  {
+    "name": "swsd_update_user",
+    "description": "Update a SWSD user by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Directory",
+    "friendly": "Update user",
+    "short": "Update a SWSD user by internal id",
+    "kind": "edit",
+    "example": "Update user in SWSD"
+  },
+  {
+    "name": "swsd_update_vendor",
+    "description": "Update a SWSD vendor by internal id. Only provided fields are sent. WRITE — honors SWSD_WRITE_MODE and does not retry on transient failure.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "operations",
+      "full"
+    ],
+    "area": "Contracts & vendors",
+    "friendly": "Update vendor",
+    "short": "Update a SWSD vendor by internal id",
+    "kind": "edit",
+    "example": "Update vendor in SWSD"
+  },
+  {
+    "name": "swsd_upload_attachment",
+    "description": "Upload an attachment to a SWSD incident, problem, change, release, solution, hardware asset, other asset, or configuration item. Use content_base64 for hosted/HTTP clients; file_path is allowed only on stdio. WRITE — honors SWSD_WRITE_MODE.",
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": false
+    },
+    "profiles": [
+      "agent",
+      "operations",
+      "full"
+    ],
+    "area": "Comments & tasks",
+    "friendly": "Upload attachment",
+    "short": "Upload an attachment to a SWSD incident, problem, change, release, solution, hardware…",
+    "kind": "edit",
+    "example": "Upload attachment in SWSD"
+  }
+]
