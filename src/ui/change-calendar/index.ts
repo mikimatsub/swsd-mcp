@@ -1,6 +1,6 @@
 import { mountApp } from '../shared/host.js';
 import { el, clear } from '../shared/dom.js';
-import { renderError } from '../shared/error.js';
+import { clearError, renderError } from '../shared/error.js';
 import { isSafeHttpUrl } from '../shared/format.js';
 import type { CalendarConflict, CalendarItem, ChangeCalendarOutput } from '../../schemas/changeCalendar.js';
 import { conflictReasons, formatDay, formatTimeRange, formatWindow, groupDays } from './logic.js';
@@ -88,7 +88,10 @@ const targets: RenderTargets = { title, window: windowText, chips, days, empty, 
 // Host-mediated links work inside sandboxed MCP Apps frames.
 void mountApp<Payload>({
   name: 'swsd-mcp/change-calendar', version: '1.0.0',
-  onResult: data => renderPayload(targets, data),
+  onResult: data => {
+    clearError(root);
+    renderPayload(targets, data);
+  },
   onError: ({ message }) => renderError(root, message),
 }).then(app => {
   root.addEventListener('click', event => {

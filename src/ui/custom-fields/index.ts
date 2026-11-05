@@ -1,6 +1,6 @@
 import { mountApp } from '../shared/host.js';
 import { el, clear } from '../shared/dom.js';
-import { renderError } from '../shared/error.js';
+import { clearError, renderError } from '../shared/error.js';
 import {
   filterFields,
   extractFilterOptions,
@@ -74,6 +74,7 @@ mountApp<Payload>({
   name: 'swsd-mcp/custom-fields',
   version: '2.0.1',
   onResult: (data) => {
+    clearError(rootEl);
     if (Array.isArray(data?.custom_fields)) {
       all = data.custom_fields;
     }

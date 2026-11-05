@@ -94,6 +94,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- MCP Registry profile descriptions now match the tool counts in `PROFILE_TOOLS`,
+  with an offline metadata regression check to prevent drift.
+- Widgets recover from errors when a later successful result arrives in the same
+  iframe, preserving cached render targets and interactive controls.
+- `swsd_sla_risk_review` accepts a numeric group ID directly, so group-scoped
+  reviews work in every supported profile without a group lookup tool.
 - Widgets now follow the host's light or dark theme. The UI build had been lowering
   CSS `light-dark()` to the OS color-scheme preference, so eight widgets ignored
   the host theme. The incident list also keeps numbers and words whole in narrow

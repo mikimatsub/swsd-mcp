@@ -1,6 +1,6 @@
 import { mountApp } from '../shared/host.js';
 import { el, clear } from '../shared/dom.js';
-import { renderError } from '../shared/error.js';
+import { clearError, renderError } from '../shared/error.js';
 import {
   pickString,
   pickNumber,
@@ -90,6 +90,7 @@ mountApp<Payload>({
   name: 'swsd-mcp/incident-list',
   version: '2.0.1',
   onResult: (data) => {
+    clearError(rootEl);
     if (Array.isArray(data?.incidents)) {
       all = data.incidents;
     }
