@@ -7,11 +7,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Provenance](https://img.shields.io/badge/Provenance-SLSA-blue.svg)](https://www.npmjs.com/package/swsd-mcp)
 
-**MCP server for SolarWinds Service Desk (SWSD / Samanage).** Works with any [Model Context Protocol](https://modelcontextprotocol.io) client to handle tickets, service requests, knowledge-base work, change/release workflows, assets/CMDB context, procurement records, risks, time entries, and attachments using each user's own SWSD API token. See the [client compatibility matrix](https://mcp-swsd.pages.dev/compatibility/) for the tested list.
+**MCP server for SolarWinds Service Desk (SWSD / Samanage).** Works with any [Model Context Protocol](https://modelcontextprotocol.io) client to handle tickets, service requests, knowledge-base work, change/release workflows, assets/CMDB context, procurement records, risks, time entries, and attachments using each user's own SWSD JSON Web Token. See the [client compatibility matrix](https://mcp-swsd.pages.dev/compatibility/) for transport and widget guidance.
 
 📖 **Full docs:** [mcp-swsd.pages.dev](https://mcp-swsd.pages.dev)
 
-The server holds **zero credentials at rest**. Tokens are forwarded per-request, never persisted, never logged, and only sent to the configured SWSD API host.
+The server holds **zero credentials at rest**. HTTP tokens are supplied per request; stdio keeps the configured token for the process lifetime. The Windows companion saves the user's JSON Web Token in Windows Credential Manager, and the MCP server does not save it to disk.
 
 ---
 
@@ -19,8 +19,9 @@ The server holds **zero credentials at rest**. Tokens are forwarded per-request,
 
 You need:
 
-- An MCP client installed: any MCP-compatible client works ([compatibility matrix](https://mcp-swsd.pages.dev/compatibility/))
-- A SolarWinds Service Desk **admin token (JWT)**: generate one in the SWSD UI: **Setup → Users & Groups → Users** → click your user → **Actions** → **Generate JSON Web Token** (Service Desk administrator rights required)
+- An MCP client installed: the client must support stdio or Streamable HTTP ([compatibility matrix](https://mcp-swsd.pages.dev/compatibility/))
+- Node.js 24.x, at least 24.15.0 and below 25, for local npm/`npx` installs
+- An SWSD **JSON Web Token**: in **Setup → Users & Groups → Users**, open your User detail page and copy the existing token. Use **Actions → Generate JSON Web Token** only when no token is shown (SWSD administrator rights required to generate)
 
 ### VS Code
 
@@ -43,7 +44,7 @@ You need:
 
 ### 1. Add the config
 
-The non-VS-Code clients listed below use this common JSON shape. Add it under `mcpServers` in your client's config file:
+Claude Desktop and Cursor use this JSON shape. Add the `swsd` entry inside the `mcpServers` object in your client's config file:
 
 ```json
 {
@@ -68,22 +69,21 @@ Replace `your-jwt-here` with your token. EU tenants use `https://apieu.samanage.
 |---|---|
 | Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
 | Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
-| Claude Desktop (Linux) | `~/.config/Claude/claude_desktop_config.json` |
 | Claude Code | `~/.claude.json` (or use the shortcut below) |
 | Cursor | `~/.cursor/mcp.json` |
-| Continue, Cline, other clients | check your client's docs: same JSON shape |
+| Continue, Cline, other clients | check your client's docs for its configuration format |
 
 Create the file if it doesn't exist. Then restart your client.
 
-**Windows plugin setup:** the WPF settings window has Home and Tools tabs.
+**Windows plugin setup:** after installing the Windows `swsd` plugin, start a new local chat and ask to set up SWSD on this computer. Reopen setup from the Windows Start menu. The WPF settings window has Home and Tools tabs.
 Appearance offers **Match Windows**, **Light**, and **Dark**, saved on this PC.
 Browse tools by area, search with **Ctrl+F**, inspect Read/Edit/Delete badges and
 example prompts, and select a profile to change the available tool set. The **?**
 beside **JSON Web Token** shows the SWSD User detail screen and **Actions →
 Generate JSON Web Token**, used only when no token is shown. Test verifies the
-connection and stores the JSON Web Token in Windows Credential Manager.
+connection and stores the JSON Web Token in Windows Credential Manager. Home also provides tool installation/repair, update checks, and US/EU region selection. The picker offers Triage, Agent, Knowledge, and Operations; custom profiles use the server configuration below, with no custom builder in the Windows app. Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`. Restart the desktop app and start a new chat after a profile change.
 
-**Claude Code shortcut**: skip editing the file by hand. This single line pastes verbatim into any shell (bash, zsh, PowerShell, cmd):
+**Claude Code shortcut**: skip editing the file by hand. This saves a private entry for the current project in `~/.claude.json`:
 
 ```bash
 claude mcp add swsd --env SWSD_TOKEN="your-jwt-here" --env SWSD_BASE_URL="https://api.samanage.com" -- npx -y swsd-mcp
@@ -99,9 +99,9 @@ In your MCP client, ask:
 
 The agent should call `swsd_health_check` and report success. If it does, you're set up. Try a few more:
 
-- _"Show me incident 60310"_: id-keyed tools accept either the internal id (≥7 digits) or the human-facing number visible in the SWSD UI (≤6 digits).
+- _"Show me incident 60310"_: incident reference tools accept either the internal id (≥7 digits) or the human-facing number visible in the SWSD UI (≤6 digits); other tools may require internal ids.
 - _"List incidents updated in the last 7 days"_: `updated_within: "7d"` (also `"24h"`, `"1w"`, `"30d"`).
-- _"What tickets are assigned to me?"_: `swsd_list_my_incidents` calls `swsd_get_me` internally, so you don't have to spell out an email.
+- _"What tickets are assigned to me?"_: `swsd_list_my_incidents` resolves your email from the JWT and user record, then filters each fetched page locally. Scan metadata reports any remaining candidates.
 
 ---
 
@@ -125,13 +125,13 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 | **Custom fields** | `swsd_describe_custom_fields` |
 | **Audits** | `swsd_get_record_audits` |
 
-Each tool's input schema, description, and output shape is auto-discovered by your MCP client at runtime. See the [Tools reference](https://mcp-swsd.pages.dev/tools/) for full per-tool documentation.
+Each tool's input schema and description are discovered by your MCP client at runtime; calls return structured results. See the [Tools reference](https://mcp-swsd.pages.dev/tools/) for full per-tool documentation.
 
 ---
 
 ## MCP Apps widgets (rich UI)
 
-Ten interactive UI bundles ship with read tools using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25). On capable hosts (Claude Desktop, Claude Web, VS Code Copilot Chat, ChatGPT, Goose, Postman), the tool returns a rendered widget alongside the structured response. On text-only hosts (Claude Code, LM Studio), the same tools return their normal structured payload.
+Ten interactive UI bundles ship with read tools using the [MCP Apps extension](https://modelcontextprotocol.io/extensions/apps/overview). On hosts that support MCP Apps, the tool returns a rendered widget alongside the structured response. On hosts without a widget surface, the same tools return their normal structured payload.
 
 ![incident-list widget rendering a sortable table of synthetic Acme Corp tickets](docs-site/public/widgets/incident-list-dark.png)
 
@@ -139,25 +139,25 @@ Ten interactive UI bundles ship with read tools using the [MCP Apps capability](
 
 | Tool | Widget | What it renders |
 |---|---|---|
-| `swsd_get_incident` | `incident-detail` | Single-record card (description, due date, SLA, resolution, custom fields) |
+| `swsd_get_incident` | `incident-detail` | Single-record card (description, due date, SLA-violation count, resolution) |
 | `swsd_get_solution` | `solution-detail` | Knowledge-base article with sanitized HTML body |
 | `swsd_list_incidents`, `swsd_list_my_incidents`, `swsd_my_queue` | `incident-list` | Filterable, sortable table |
 | `swsd_sla_risk` | `sla-risk` | Risk-count chips + color-coded table with due countdowns |
-| `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips, public/private badges |
+| `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips and private badges |
 | `swsd_get_record_audits` | `audit-timeline` | Timeline grouped by day with action chips and field diffs |
 | `swsd_get_catalog_item` | `catalog-item-form` | Form that submits via `swsd_create_service_request` |
 | `swsd_describe_custom_fields` | `custom-fields` | Searchable explorer with scope/module filters |
 | `swsd_change_calendar` | `change-calendar` | Local-time day sections for changes/releases with shared-CI/group conflict badges |
 | `swsd_ticket_stats` | `ticket-stats` | Summary tiles, median resolution time, and state/priority/assignee/category breakdowns |
 
-`swsd_change_calendar` is read-only and available in Agent, Operations and Full.
+`swsd_change_calendar` is read-only and available in Agent and Operations, or a custom selection.
 It defaults to the next 30 days from UTC midnight today and scans up to three
 100-row pages per kind (maximum ten pages). All window, state, assignee, group
 and name-search filters are **client-side**; only pagination is sent to SWSD.
 The response reports scanned pages/rows, unscheduled records and truncation.
 Conflicts cover returned items only; unscanned or filtered-out records can hide
 additional conflicts. Touching window edges do not overlap; missing ends assume
-one hour. See the [tool reference](https://mcp-swsd.pages.dev/tools/#change--release-9)
+one hour. See the [tool reference](https://mcp-swsd.pages.dev/tools/#change--release-11)
 for inputs, UTC window semantics and scan accounting.
 
 See the [Widgets reference](https://mcp-swsd.pages.dev/widgets/) for screenshots and per-widget detail.
@@ -170,7 +170,7 @@ Most users only need `SWSD_TOKEN` and `SWSD_BASE_URL`:
 
 | Variable | Default | Notes |
 |---|---|---|
-| `SWSD_TOKEN` | None | Required. Your SWSD admin token (JWT). |
+| `SWSD_TOKEN` | None | Required for stdio. Your SWSD JSON Web Token; HTTP uses a per-request authorization header. |
 | `SWSD_BASE_URL` | `https://api.samanage.com` | EU tenant: `https://apieu.samanage.com` |
 | `SWSD_PROFILE` | `agent` | `triage`, `agent`, `knowledge`, `operations`, or `custom`: see [Profiles](https://mcp-swsd.pages.dev/configuration/#profiles) |
 | `SWSD_TOOLS` | _(empty)_ | With `custom`, comma-separated tool names; whitespace is trimmed |
@@ -223,9 +223,9 @@ Paths may be absolute or relative to the server's startup working directory; sym
 
 Prompts and widgets appear only when all their required tools are selected. The catalog form requires both `swsd_get_catalog_item` and `swsd_create_service_request`; without the latter, the lookup remains available as text and structured data. Custom selections are fixed at startup; restart after changing the file or environment.
 
-Delete tools require `operations` or explicit inclusion in the custom CSV/file; `SWSD_ENABLE_EXTRAS` cannot add them to other profiles. Deletes retain their dry-run preview and `confirm` + matching `confirm_id` gates. `SWSD_WRITE_MODE` and SWSD permissions still apply.
+Delete tools require `operations` or explicit inclusion in the custom CSV/file; `SWSD_ENABLE_EXTRAS` cannot add them to other profiles. Call a delete tool without confirmation to preview, then re-call after the user confirms with `confirm: true` and a matching `confirm_id`. Dry-run always previews; `disabled` blocks. `SWSD_WRITE_MODE` and SWSD permissions still apply.
 
-Use `SWSD_ENABLE_EXTRAS=swsd_foo,swsd_bar` to add specific tools on top of a profile.
+Use `SWSD_ENABLE_EXTRAS=swsd_search_solutions,swsd_get_solution` to add specific tools on top of a profile.
 
 ---
 
@@ -239,7 +239,7 @@ Set up an HTTP-mode server only if you need:
 - **One shared instance for a team**: one deploy, many users, each providing their own token per-request
 - **Stricter network control**: private VNet, IP allowlist, custom domain
 
-The Docker image runs anywhere: Azure, AWS, GCP, Render, Fly.io, your own VM. See [Deployment](https://mcp-swsd.pages.dev/deployment/) for the full guide and the [Azure Container Apps recipe](./docs/deployment/azure-container-apps.md) (recommended for Copilot Studio; scale-to-zero pricing).
+The Docker image supports container hosting, including Azure Container Apps and a Docker-capable VM. Main builds publish `:latest` and `:sha-XXXXXXX`; release tag builds publish `:X.Y.Z` and `:X.Y`. See [Deployment](https://mcp-swsd.pages.dev/deployment/) for the full guide and the [Azure Container Apps recipe](./docs/deployment/azure-container-apps.md) (recommended for Copilot Studio; scale-to-zero pricing).
 
 ---
 

@@ -1,9 +1,9 @@
 ---
 title: Architecture
-description: How swsd-mcp connects MCP clients to the SolarWinds Service Desk API across two transports, with zero credentials at rest.
+description: How swsd-mcp connects MCP clients to the SolarWinds Service Desk API across stdio and Streamable HTTP transports.
 ---
 
-swsd-mcp is a thin, stateless wrapper around SolarWinds Service Desk's REST API, exposed via the Model Context Protocol. The whole system consists of three boxes (a client, the MCP server, and the upstream API) connected by two possible transports.
+swsd-mcp is a thin wrapper around the SWSD REST API, exposed via the Model Context Protocol. The whole system consists of three boxes (a client, the MCP server, and the upstream API) connected by two possible transports.
 
 ## Request flow
 
@@ -44,15 +44,15 @@ Two categories, distinguished by where the swsd-mcp process actually runs:
 
 ### swsd-mcp
 
-The middle box. Single Node.js process, TypeScript, seven direct production dependencies (`@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, `dompurify`, `express`, `express-rate-limit`, `helmet`, `zod`). Exposes [145 tools](/tools/) organized into [profiles](/configuration/#profiles).
+The middle box. Single Node.js process, TypeScript, 11 direct production dependencies (`@hono/node-server`, `@modelcontextprotocol/client`, `@modelcontextprotocol/core`, `@modelcontextprotocol/node`, `@modelcontextprotocol/server`, `@modelcontextprotocol/ext-apps`, `dompurify`, `express`, `express-rate-limit`, `helmet`, `zod`). Exposes [145 tools](/tools/) organized into [profiles](/configuration/#profiles).
 
-The server itself has no SWSD identity: every API call is made using the *caller's* token. The token exists in process memory only for the lifetime of a single request. There's no token cache, no session store, no persistence layer. See [Security → Zero credentials at rest](/security/#zero-credentials-at-rest).
+The server itself has no SWSD identity: every API call is made using the *caller's* token. HTTP creates a server and SWSD client per request without a session store. Stdio keeps the configured token for the process lifetime. The MCP server has no credential store; the Windows companion saves the user's JSON Web Token in Windows Credential Manager and supplies it to the local process. See [Security → Zero credentials at rest](/security/#zero-credentials-at-rest).
 
 ### SWSD REST API
 
-The upstream. `api.samanage.com` for US tenants, `apieu.samanage.com` for EU. Shared endpoint: tenant identity rides in the JWT, not in the URL. Custom domains like `support.yourcompany.com` are vanity CNAMEs for the SWSD web UI only; the API endpoint is the regional one.
+The upstream. `api.samanage.com` for US tenants, `apieu.samanage.com` for EU. Each request uses the supplied user's JSON Web Token at the configured regional API URL.
 
-The `SWSD_BASE_URL` env var is validated at startup against `*.samanage.com`. SSRF defense: if an attacker ever influences the env var, they can't redirect tokens to a server they control.
+The `SWSD_BASE_URL` env var is validated at startup: HTTPS on `samanage.com` or a subdomain, without embedded credentials. This restricts the configured upstream API URL.
 
 ## Transport choice
 
@@ -60,11 +60,11 @@ The transport you pick depends entirely on the client's capability:
 
 | If your client... | Use transport | Why |
 |---|---|---|
-| Spawns local subprocesses (Claude Desktop, Code, Cursor, Continue, Cline) | **stdio** | Simplest, no hosting, each user's token stays local |
+| Spawns local subprocesses (Claude Desktop, Code, Cursor, Continue, Cline) | **stdio** | Simplest, no hosting, no inbound HTTP listener is needed |
 | Can only call HTTP endpoints (Copilot Studio, custom integrations) | **Streamable HTTP** | Required because the client can't spawn the server itself |
 | You want one shared instance for a team | **Streamable HTTP** | Many users, one deploy, each providing their own token per request |
 
-Both transports run the same tool handlers and produce identical results: the wire protocol is the only difference.
+Both transports register the same profile-selected tool handlers. Local attachment paths are accepted only in stdio mode; HTTP clients supply base64 content.
 
 ## Request lifecycle
 
@@ -72,22 +72,22 @@ What happens when an MCP client calls a tool like `swsd_list_incidents`:
 
 1. **Client packages the call** as MCP JSON-RPC: `{ "method": "tools/call", "params": { "name": "swsd_list_incidents", "arguments": {...} } }`
 2. **Transport delivers it**: stdin (stdio) or POST `/mcp` body (HTTP)
-3. **swsd-mcp validates** input via [Zod](https://zod.dev/) schemas (tight types, descriptive errors)
-4. **Token resolution**: `SWSD_TOKEN` env var (stdio) or request header (HTTP)
-5. **Outbound request** to SWSD with the resolved token, 30-second timeout, automatic retry on 5xx for read-only calls
-6. **Response mapping**: SWSD's full payload is projected into a compact, agent-friendly shape (every field that lands in the agent's context is tokens spent)
+3. **Token resolution**: `SWSD_TOKEN` env var (stdio) or request header (HTTP)
+4. **swsd-mcp validates** input via [Zod](https://zod.dev/) schemas (tight types, descriptive errors)
+5. **Outbound request** to SWSD with the resolved token, 30-second timeout per fetch attempt, automatic GET retries on 429, 5xx, and network/timeout errors
+6. **Response mapping**: list payloads are projected into compact summaries; detail tools retain the record fields, with credential redaction
 7. **Structured MCP response** returned to the client, with both human-readable text and structured data
 
-For HTTP transport specifically, additional steps run between (2) and (3): rate-limit check (per-`(token, IP)` hashed key), `Origin` header validation against allowlist, and Express trust-proxy resolution for accurate `req.ip`.
+For HTTP transport specifically, additional steps run between (2) and (3): rate limiting by hashed token and normalized IP, `Origin` and optional `Host` validation, and protocol-version checks. Express trust-proxy settings determine the client IP.
 
 ## What's intentionally not in this picture
 
-- **No backing store.** swsd-mcp has no database, no Redis, no file cache. Restarting the process loses nothing because there's nothing to lose.
-- **No queueing.** Every tool call is synchronous request → SWSD → response. Long-running operations are SWSD's problem, not ours.
-- **No multi-tenant routing.** The server is single-tenant: your `SWSD_BASE_URL` is the one tenant it talks to. Multi-tenancy happens by running multiple instances, not by routing within one.
+- **No record backing store.** swsd-mcp has no database or record cache. UI HTML is cached in memory, and custom profile selections are read once per server. Restarting reloads configuration.
+- **No background job queue.** Tool handlers await SWSD requests and return results; no durable work queue is maintained.
+- **One configured upstream URL.** Requests use the same `SWSD_BASE_URL` with each caller's token. A separate instance is needed for a different regional API URL.
 - **No webhook ingress.** swsd-mcp is purely a request-response server. SWSD doesn't push events to it.
 
-These are deliberate constraints: they keep the attack surface small, the operational story trivial, and the deployment cost near-zero.
+These are deliberate constraints: they keep the attack surface small, the operational story trivial, and the deployment requirements small.
 
 ## See also
 

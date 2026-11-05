@@ -1,27 +1,27 @@
 ---
 title: Quick start
-description: Install and configure swsd-mcp in any MCP client in under five minutes.
+description: Install and configure swsd-mcp in an MCP client.
 ---
 
 This guide gets swsd-mcp running locally via `npx`. For Microsoft Copilot Studio, see [Deployment → Copilot Studio](/deployment/#microsoft-copilot-studio), which uses the HTTP transport and requires a different setup.
 
 ## What you need
 
-- An MCP client installed: any MCP-compatible client works ([client compatibility matrix](/compatibility/))
-- Node.js 24.15.0 or newer (for `npx`; current LTS line, matches `package.json` engines)
-- A SolarWinds Service Desk **admin token**: see below
+- An MCP client installed with stdio or Streamable HTTP support ([client compatibility matrix](/compatibility/))
+- Node.js 24.x, at least 24.15.0 and below 25 (for `npx`)
+- An SWSD **JSON Web Token**: see below
 
-## Generate an SWSD admin token
+## Get an SWSD JSON Web Token
 
 In the SWSD web UI, navigate:
 
 1. **Setup → Users & Groups → Users**
 2. Click your user to open the detail page
-3. Click **Actions → Generate JSON Web Token**
-4. Copy the token (it's a long JWT string)
+3. Under **JSON Web Token**, choose **Copy** (or **Show Token**, then **Copy**)
+4. If no token is shown, click **Actions → Generate JSON Web Token**, then copy it
 
-:::caution[Service Desk administrator rights required]
-Only users with a Service Desk administrator license can generate tokens. If you don't have admin rights, your administrator needs to generate one for you. The token inherits *your* permissions, so its permissions change whenever your role changes.
+:::caution[SWSD administrator rights required to generate a token]
+If the Generate action is unavailable, ask your SWSD administrator for help. SWSD account permissions determine what the token can access.
 :::
 
 ## Install in VS Code
@@ -66,7 +66,7 @@ After choosing a name and scope, add the per-user token as an authorization head
     {
       "type": "promptString",
       "id": "swsd-token",
-      "description": "SolarWinds Service Desk admin JWT",
+      "description": "SWSD JSON Web Token",
       "password": true
     }
   ],
@@ -105,7 +105,7 @@ For a Global install, run **MCP: Open User Configuration**. For a Workspace inst
     {
       "type": "promptString",
       "id": "swsd-token",
-      "description": "SolarWinds Service Desk admin JWT",
+      "description": "SWSD JSON Web Token",
       "password": true
     }
   ],
@@ -125,11 +125,21 @@ For a Global install, run **MCP: Open User Configuration**. For a Workspace inst
 
 EU tenants should use `https://apieu.samanage.com` for `SWSD_BASE_URL`. A Workspace file containing this placeholder is safe to commit because the JWT itself is not in the JSON.
 
+## Windows companion app
+
+The Windows `swsd` plugin includes a setup app. After installing the plugin, start a new local chat and ask to set up SWSD on this computer. You can reopen setup from the Windows Start menu.
+
+On **Home**, install or repair the tools, choose **United States** or **Europe**, paste your **JSON Web Token**, and select **Test** to verify the connection and save the token in Windows Credential Manager. The **?** beside the token field shows the User detail page and the Generate action; generate only when no token is shown.
+
+The profile picker offers **Triage** (21 tools), **Agent** (51), **Knowledge** (17), and **Operations** (145). The **Tools** tab browses all 145 tools by area, with search (**Ctrl+F**), Read/Edit/Delete badges, example prompts, and locks for tools outside the selected profile. Changing the profile updates the saved selection; restart the desktop app and start a new chat to apply it. [Custom profiles](/configuration/#custom-profiles) use server configuration; the Windows picker has no custom builder.
+
+**Appearance** offers **Match Windows**, **Light**, and **Dark**, saved on this PC. Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`; the token stays in Windows Credential Manager rather than the settings file.
+
 ## Other MCP clients
 
 ### Add the MCP config
 
-The clients listed below use this common JSON shape. Add it under `mcpServers` in your client's config file:
+Claude Desktop and Cursor use this JSON shape. Add the `swsd` entry inside the `mcpServers` object in your client's config file:
 
 ```json
 {
@@ -168,22 +178,21 @@ When testing write-heavy workflows, add `SWSD_WRITE_MODE: "dry-run"` to preview 
 |---|---|
 | Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
 | Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
-| Claude Desktop (Linux) | `~/.config/Claude/claude_desktop_config.json` |
 | Claude Code | `~/.claude.json` (or use the [shortcut below](#claude-code-shortcut)) |
 | Cursor | `~/.cursor/mcp.json` |
-| Continue, Cline, other clients | check your client's docs: same JSON shape |
+| Continue, Cline, other clients | check your client's docs for its configuration format |
 
 Create the file if it doesn't exist. Then **restart your client** so it picks up the new server.
 
 ### Claude Code shortcut
 
-Skip editing the file manually. This single line pastes verbatim into any shell (bash, zsh, PowerShell, cmd):
+Skip editing the file manually:
 
 ```bash
 claude mcp add swsd --env SWSD_TOKEN="your-jwt-here" --env SWSD_BASE_URL="https://api.samanage.com" -- npx -y swsd-mcp
 ```
 
-This writes the same config block as above to `~/.claude.json`.
+This saves a private, project-scoped entry in `~/.claude.json`. The [Claude Code MCP guide](https://code.claude.com/docs/en/mcp#local-scope) explains the available scopes and platform setup.
 
 ## Verify it works
 
@@ -200,9 +209,9 @@ If something doesn't work, see [Configuration](/configuration/) for the full env
 Try asking the agent things like:
 
 - _"What tickets are assigned to me?"_ → calls `swsd_get_me` + `swsd_list_my_incidents` (the agent identifies you from the JWT, no manual email entry; renders the incident-list widget in MCP Apps-capable hosts)
-- _"Show me incident 60310 with comments and audit trail."_ → calls `swsd_get_incident` + `swsd_list_incident_comments` + `swsd_get_record_audits`. Id-keyed tools accept either the internal id or the human-facing number visible in the SWSD UI.
+- _"Show me incident 60310 with comments and audit trail."_ → calls `swsd_get_incident` + `swsd_list_incident_comments` + `swsd_get_record_audits`. Incident references accept either the internal id or the human-facing number visible in the SWSD UI.
 - _"List incidents updated in the last 7 days."_ → uses `swsd_list_incidents` with `updated_within: "7d"` (also `"24h"`, `"1w"`, `"30d"`).
-- _"What's blocking ticket 60310?"_ → calls `swsd_list_incident_tasks` (sub-tasks new in v2.1).
+- _"What's blocking ticket 60310?"_ → calls `swsd_list_incident_tasks`.
 - _"Search the knowledge base for 'VPN troubleshooting'."_ → calls `swsd_search_solutions`.
 - _"What services can I request through the catalog?"_ → calls `swsd_list_catalog_items`.
 - _"Submit a Software Request for Adobe Acrobat Pro."_ → calls `swsd_get_catalog_item` to read the form schema; in MCP Apps-capable hosts the catalog-item-form widget submits via `swsd_create_service_request` directly.
