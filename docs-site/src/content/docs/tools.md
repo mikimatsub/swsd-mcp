@@ -3,7 +3,7 @@ title: Tools reference
 description: All 145 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **145 tools** across 15 categories. Each tool's input schema, full description, and output shape is auto-discovered by your MCP client at runtime: ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **145 tools** across 15 categories. Each tool's input schema and full description are discovered by your MCP client at runtime; calls return structured results. Ask your agent _"what swsd tools are available?"_ for the live list.
 
 `operations` exposes every tool in these tables. With [`custom`](/configuration/#custom-profiles), availability follows the explicit CSV/file selection; prompts and widgets also require all tools they use. The catalog form requires the service-request write tool as well as the catalog lookup.
 
@@ -11,35 +11,34 @@ This page is the at-a-glance summary: what each tool does and which [profile](/c
 
 ## MCP Apps UI bundles
 
-Nine interactive UI bundles ship with read tools using the [MCP Apps capability](https://modelcontextprotocol.io/specification/2025-11-25) (SEP-1865). Hosts that support MCP Apps render rich UI alongside the structured response, including single-record detail views, filterable and sortable tables, comment threads, audit timelines, searchable explorers, submit-ready forms, SLA risk dashboards, and change/release calendars. This UI appears instead of, or in addition to, plain text. Hosts without MCP Apps support are unaffected: the same tools continue to return their normal text and structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
+Ten interactive UI bundles ship with read tools using the [MCP Apps extension](https://modelcontextprotocol.io/extensions/apps/overview) (SEP-1865). Hosts that support MCP Apps render rich UI alongside the structured response, including single-record detail views, filterable and sortable tables, comment threads, audit timelines, searchable explorers, submit-ready forms, SLA risk dashboards, and change/release calendars. This UI appears instead of, or in addition to, plain text. Hosts without MCP Apps support are unaffected: the same tools continue to return their normal text and structured output, and the `_meta.ui.resourceUri` advertisement is silently ignored.
 
 | Tool | Widget | UI |
 |---|---|---|
-| `swsd_get_incident` | `incident-detail` | Single-record detail view (description, due date, SLA, resolution, custom fields) |
+| `swsd_get_incident` | `incident-detail` | Single-record detail view (description, due date, SLA-violation count, resolution) |
 | `swsd_get_solution` | `solution-detail` | Single-record detail view with sanitized HTML body |
-| `swsd_list_incidents`, `swsd_list_my_incidents` | `incident-list` | Filterable, sortable table with overflow scroll |
+| `swsd_list_incidents`, `swsd_list_my_incidents`, `swsd_my_queue` | `incident-list` | Filterable, sortable table with overflow scroll |
 | `swsd_sla_risk` | `sla-risk` | Risk-count chips + color-coded table with due countdowns |
-| `swsd_ticket_stats` | R, UI | ✓ | ✓ |   | ✓ |
-| `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips, timestamps, public/private badges, sanitized HTML bodies |
+| `swsd_ticket_stats` | `ticket-stats` | Summary tiles, median resolution time, and breakdowns |
+| `swsd_change_calendar` | `change-calendar` | Changes/releases grouped by viewer-local day, with conflict badges |
+| `swsd_list_incident_comments` | `comment-thread` | Vertical conversation with author chips, timestamps, private badges, sanitized HTML bodies |
 | `swsd_get_record_audits` | `audit-timeline` | Vertical timeline grouped by day with action chips and field-level diffs |
 | `swsd_get_catalog_item` | `catalog-item-form` | Renders catalog variables as a form; submits via `swsd_create_service_request` (calls back into the server through `app.callServerTool`) |
-| `swsd_create_catalog_item` | W |   |   |   | ✓ |
-| `swsd_update_catalog_item` | W |   |   |   | ✓ |
-| `swsd_delete_catalog_item` | W |   |   |   | ✓ |
 | `swsd_describe_custom_fields` | `custom-fields` | Searchable explorer with scope/module filters |
 
-HTML content (solution bodies, incident descriptions, comment bodies, catalog helptext) is sanitized client-side via DOMPurify before insertion: no external network access, no third-party scripts. Tools with a UI bundle are marked **UI** in the Type column below.
+HTML content (solution bodies, incident descriptions, comment bodies, catalog helptext) is sanitized client-side via DOMPurify before insertion. Widget scripts and styles are bundled into the HTML; the host controls network access. Tools with a UI bundle are marked **UI** in the Type column below.
 
-## v2.1: id-or-number friendly inputs
+## Record references
 
-Every id-keyed tool now accepts **either** the internal id (≥7 digits, the SWSD primary key) **or** the human-facing number visible in the SWSD UI (≤6 digits for incidents, ≤4 digits for solutions). The disambiguator looks at digit count first; ambiguous inputs trigger a single targeted list lookup. Affected tools:
+Incident, solution, and problem reference tools accept **either** the internal id (≥7 digits) **or** the human-facing number (≤6 digits). Smaller values trigger one list lookup with an exact number match in the returned page; other tools require internal ids. Examples:
 
 - `swsd_get_incident`, `swsd_update_incident`, `swsd_assign_incident`, `swsd_update_incident_state`, `swsd_link_solution_to_incident`
 - `swsd_list_incident_comments`, `swsd_add_incident_comment`, `swsd_update_comment`
-- `swsd_get_solution`, `swsd_update_solution`
+- `swsd_get_solution`, `swsd_update_solution`, `swsd_delete_solution`
+- `swsd_get_problem`, `swsd_update_problem`, `swsd_delete_problem`
 - `swsd_get_record_audits` (when `object_type` is `incidents` or `solutions`; other types remain id-only)
 
-This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smoke testing surfaced: agents can paste the number from a SWSD email or browser tab directly.
+Use the reference accepted by each tool's input schema; an asset, directory, catalog, change, or release id is not interchangeable with a displayed number.
 
 ## Legend
 
@@ -47,7 +46,7 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 |---|---|
 | ✓ | Tool is registered in this profile |
 | W | Write tool: modifies SWSD state. Does not retry on transient failure (avoids duplicate writes). Honors `SWSD_WRITE_MODE`. |
-| R | Read tool: safe to retry; auto-retries up to `SWSD_RETRY_MAX_ATTEMPTS` on 5xx/network errors. |
+| R | Read tool: safe to retry; auto-retries up to `SWSD_RETRY_MAX_ATTEMPTS` additional times on 429, 5xx, and network/timeout errors. |
 | UI | Ships an [MCP Apps](#mcp-apps-ui-bundles) UI bundle (SEP-1865). Capable hosts render a rich interactive view; text-only clients are unaffected. |
 
 ---
@@ -60,21 +59,22 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 | `swsd_health_check` | R | ✓ | ✓ | ✓ | ✓ |
 | `swsd_get_me` | R | ✓ | ✓ | ✓ | ✓ |
 
-`swsd_get_server_info` returns the version, profile, transport, base URL, and list of enabled tools, making it useful for verifying server configuration from inside the MCP client. It also includes documented SWSD upstream rate limits (`upstream_rate_limit`: 1000 calls/min on Advanced, 1500 on Premier; signal: `429 + Retry-After` only, because SWSD does not return `X-RateLimit-*` headers) so the model can reference these without guessing.
+`swsd_get_server_info` returns the name/version, profile, base URL host, API version, and list of enabled tools, making it useful for verifying server configuration from inside the MCP client. It also includes documented SWSD upstream rate limits (`upstream_rate_limit`: 1000 calls/min on Advanced, 1500 on Premier; signal: `429 + Retry-After` only, because SWSD does not return `X-RateLimit-*` headers) so the model can reference these without guessing.
 
-`swsd_health_check` performs a live API call to SWSD (lightweight read against `/users/me.json`) and returns connectivity + auth status. Use this as the first call to confirm your token works.
+`swsd_health_check` performs a live API call to SWSD (a read against `/incidents.json` with `per_page: 1`) and returns connectivity + auth status. Use this as the first call to confirm your token works.
 
-`swsd_get_me` returns the SWSD user record for the token's owner: `id`, `email`, `name`, `title`, `role`, `department`, `site`, `group_ids`, and assignment status. Combines three identity paths: JWT payload decode (zero-cost, always works), `GET /users/{user_ic}.json` (documented endpoint), and `GET /profile.json` (optional fallback that adds `last_login`). **Call this first** when the request mentions "me", "my", or "I" (e.g. "my tickets", "tickets in my group", "tickets assigned to me"), then pass the returned `id`/`email` to `assignee_email` or `requester_email` filters on `swsd_list_incidents`.
+`swsd_get_me` returns the SWSD user record for the token's owner: `id`, `email`, `name`, `title`, `role`, `department`, `site`, `group_ids`, and assignment status. Combines three identity paths: JWT payload decode (`user_id`, falling back to `user_ic`), `GET /users/{id}.json`, and `GET /profile.json` (optional enrichment that can add `last_login`). Malformed claims or a failed user lookup return an error. **Call this first** when the request mentions "me", "my", or "I" (e.g. "my tickets", "tickets in my group", "tickets assigned to me"), then pass the returned email to `assignee_email` or `requester_email` filters on `swsd_list_incidents`.
 
 ---
 
-## Incidents (11)
+## Incidents (12)
 
 | Tool | Type | triage | agent | knowledge | operations |
 |---|---|---|---|---|---|
 | `swsd_list_incidents` | R, UI | ✓ | ✓ | ✓ | ✓ |
 | `swsd_list_my_incidents` | R, UI | ✓ | ✓ | ✓ | ✓ |
 | `swsd_sla_risk` | R, UI | ✓ | ✓ |   | ✓ |
+| `swsd_ticket_stats` | R, UI | ✓ | ✓ |   | ✓ |
 | `swsd_my_queue` | R, UI | ✓ | ✓ |   | ✓ |
 | `swsd_get_incident` | R, UI | ✓ | ✓ | ✓ | ✓ |
 | `swsd_create_incident` | W |   | ✓ |   | ✓ |
@@ -84,41 +84,40 @@ This eliminates the 4-round-trip "find then fetch" pattern that v2.0.2 user smok
 | `swsd_link_solution_to_incident` | W |   | ✓ |   | ✓ |
 | `swsd_delete_incident` | W |   |   |   | ✓ |
 
-- **`swsd_list_incidents`**: paginated list with structured filters using SWSD repeated-key array semantics (multiple values within a filter are OR-ed). Filters: `states`, `priorities`, `categories`, `assignee_email`, `requester_email`, `sites`, `departments`, `assigned_to_group` (group ID, not user ID), `created_from`/`created_to`, `updated_from`/`updated_to`, `updated_within` (date-natural-language alias, such as `"24h"`, `"7d"`, `"1w"`, or `"30d"`), `state_is_not` (negative state filter, such as `["Resolved", "Closed"]` to see only open work), `sort_by` (`created_at`, `updated_at`, `priority`, `name`, `due_at`), `sort_order` (`ASC`/`DESC`), and `query` (free-text across title and description). Returns compact summaries (id, name, state, priority, assignee_email, requester_email, category, updated_at); call `swsd_get_incident` for full detail of any one row.
-- **`swsd_list_my_incidents`**: thin wrapper over `swsd_list_incidents` that auto-resolves the authenticated user's email (via JWT decode + `/users/{user_ic}.json`) and applies it as `assignee_email`. One round-trip instead of two for first-person queries ("my tickets", "tickets assigned to me"). Same input shape as `swsd_list_incidents` minus `assignee_email`. Renders the same `incident-list` widget as `swsd_list_incidents` in MCP Apps-capable hosts. For tenant-wide queries use `swsd_list_incidents` with explicit filters.
+- **`swsd_list_incidents`**: paginated list with structured filters using SWSD repeated-key array semantics (multiple values within a filter are OR-ed). Assignee/requester email filters are applied locally to each fetched page, so a page can contain fewer matches than `per_page`; scan metadata reports remaining candidates. Filters: `states`, `priorities`, `categories`, `assignee_email`, `requester_email`, `sites`, `departments`, `assigned_to_group` (group ID, not user ID), `created_from`/`created_to`, `updated_from`/`updated_to`, `updated_within` (date-natural-language alias, such as `"24h"`, `"7d"`, `"1w"`, or `"30d"`), `state_is_not` (negative state filter, such as `["Resolved", "Closed"]` to see only open work), `sort_by` (`created_at`, `updated_at`, `priority`, `name`, `due_at`), `sort_order` (`ASC`/`DESC`), and `query` (free-text across title and description). Returns compact summaries (id, name, state, priority, assignee_email, requester_email, category, updated_at); call `swsd_get_incident` for full detail of any one row.
+- **`swsd_list_my_incidents`**: thin wrapper over `swsd_list_incidents` that auto-resolves the authenticated user's email (via JWT decode + `/users/{id}.json`) and applies it as `assignee_email`. One tool call for first-person queries ("my tickets", "tickets assigned to me"). Same input shape as `swsd_list_incidents` minus `assignee_email`. Renders the same `incident-list` widget as `swsd_list_incidents` in MCP Apps-capable hosts. For tenant-wide queries use `swsd_list_incidents` with explicit filters.
 - **`swsd_sla_risk`**: lists open incidents ranked by SLA breach risk. Computes a risk level for each incident based on `due_at` and `sla_violations`: "breached" (overdue or has violations), "critical" (due within 4 hours), "warning" (due within `at_risk_within_hours`, default 24h), "ok", or "no_due_date". Results are sorted breached-first (most overdue first), then by time-to-breach ascending, no_due_date last. Defaults to excluding Resolved and Closed states. Supports `assignee_email` (client-side filter), `assigned_to_group` (server-side), `include_no_due_date`, and `max_results`. Renders the `sla-risk` widget in MCP Apps-capable hosts (risk-count chips + color-coded table with due countdowns). Limitation: list rows normally only include `due_at`; `sla_violations[]` is only present on SWSD's long incident layout, so rows are ranked primarily by `due_at` and violations are counted only when SWSD includes them on the row. Use `swsd_get_incident` with `detail_level: "long"` for full per-incident SLA detail.
-- **`swsd_ticket_stats`**: summary of incidents created or updated in a window (`from`/`to`, default the last 7 days). Returns totals (open, created, resolved, breached, unassigned), breakdowns by state, priority, top-10 assignee and top-10 category, and the median resolution time. Scans up to `max_pages` pages and reports `scan.truncated` when more tickets may exist. Optional `assigned_to_group`. Renders the `ticket-stats` widget in MCP Apps-capable hosts (KPI tiles and breakdown tables, viewer-local times).
+- **`swsd_ticket_stats`**: summary of incidents created or updated in a window (`from`/`to`, default the last 7 days). Returns totals (open, created, resolved, breached, unassigned), breakdowns by state, priority, top-10 assignee and top-10 category, and the median resolution time. Scans up to `max_pages` pages and reports `scan.truncated` when more tickets may exist. Optional `assigned_to_group`. Renders the `ticket-stats` widget in MCP Apps-capable hosts (KPI tiles and breakdown tables). Counts cover scanned matches and current states; missing `resolved_at` timestamps make resolution metrics incomplete.
 - **`swsd_my_queue`**: work-queue view for the authenticated user (or a given assignee/group). Defaults to open incidents assigned to you, sorted by `due_at` ascending. Each row includes a computed SLA risk level for at-a-glance triage. Supports `assignee_email` override (client-side filter), `assigned_to_group` (server-side), `states`/`priorities` filters, and `sort_by` options (`due_at`, `updated_at`, `priority`, `created_at`). Reuses the `incident-list` widget.
 - **`swsd_get_incident`**: full incident detail as returned by SWSD (passthrough), including custom-field values. Accepts the incident's `id` or human-facing `number`. Pass `detail_level: "long"` to include comments, attachments, audits, SLA data, tags, statistics, satisfaction, and resolution detail in one call. Default `"short"` is faster and cheaper; recommend `"long"` when the user asks "show me everything about ticket X" or wants comments/attachments/audits. Renders the `incident-detail` widget in MCP Apps-capable hosts (description, due date with Overdue badge, SLA violations, resolution body, custom fields).
-- **`swsd_create_incident`**: minimum required: `name`. Strongly recommended: `description`, `requester`, `category`, `site`. Returns the created incident's full payload. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`: call `swsd_describe_custom_fields` first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.
-- **`swsd_update_incident`**: partial-update semantics: pass only the fields you want to change. Accepts the incident's `id` or human-facing `number`. To clear a field, pass `null`. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`: call `swsd_describe_custom_fields` first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types.
-- **`swsd_assign_incident`**: convenience wrapper for changing the assignee (user or group). Accepts the incident's `id` or human-facing `number`. Validates that the assignee exists.
-- **`swsd_update_incident_state`**: state transition with optional resolution comment. Accepts the incident's `id` or human-facing `number`. Validates against your tenant's allowed states.
+- **`swsd_create_incident`**: minimum required: `name`. Strongly recommended: `description`, `requester_email`, `category_name`, `site_name`. Returns the created incident's full payload. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`: call `swsd_describe_custom_fields` first to discover field names and (for Dropdowns) allowed values. Values may be strings, numbers, or booleans; SWSD validates tenant-specific field rules.
+- **`swsd_update_incident`**: partial-update semantics: pass only the fields you want to change. Accepts the incident's `id` or human-facing `number`. The schema accepts optional values, not `null`; use the dedicated assignment and state tools for those changes. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`: call `swsd_describe_custom_fields` first to discover field names and (for Dropdowns) allowed values. Values may be strings, numbers, or booleans; SWSD validates tenant-specific field rules.
+- **`swsd_assign_incident`**: assign an incident by `assignee_email`. Accepts the incident's `id` or human-facing `number`. Use `swsd_list_users` first to find an available assignee; SWSD validates the write.
+- **`swsd_update_incident_state`**: state transition using `id` and `state`. Accepts the incident's `id` or human-facing `number`. SWSD validates the tenant-specific state name.
 - **`swsd_link_solution_to_incident`**: append-only solution linking. Accepts both ids/numbers (incident and solution) in either form. Fetches existing links, adds the new one, PUTs the merged set so existing links aren't dropped.
 
-:::note[v2: list responses echo your filters and discriminate scope]
-As of v2, `swsd_list_incidents` and `swsd_list_my_incidents` return an `applied_filters` block (a verbatim echo of the filters used, or an empty object if none) and a `pagination.total_scope` discriminator (`"filtered"` | `"tenant"` | `"unknown"`). Use these together to determine whether a 25-incident result is "page 1 of 87 matching your filters" or "page 1 of 56,800 tenant-wide" without guessing. `"unknown"` means SWSD did not return `X-Total-Count` for this query.
+:::note[List response scope]
+ `swsd_list_incidents` and `swsd_list_my_incidents` return an `applied_filters` block (a verbatim echo of the filters used, or an empty object if none) and a `pagination.total_scope` discriminator (`"filtered"` | `"tenant"` | `"upstream"` | `"unknown"`). Use these together to determine whether a 25-incident result is "page 1 of 87 matching your filters" or "page 1 of 56,800 tenant-wide" without guessing. `"upstream"` means the upstream count precedes local filtering; `matched_total` is null unless a reliable match total is known. `"unknown"` means neither `X-Total-Count` nor `X-Total` supplied a total.
 :::
 
 ---
 
-## Service Catalog (3)
+## Service Catalog (6)
 
 | Tool | Type | triage | agent | knowledge | operations |
 |---|---|---|---|---|---|
 | `swsd_list_catalog_items` | R | ✓ | ✓ | ✓ | ✓ |
 | `swsd_get_catalog_item` | R, UI | ✓ | ✓ | ✓ | ✓ |
 | `swsd_create_service_request` | W |   | ✓ |   | ✓ |
+| `swsd_create_catalog_item` | W |   |   |   | ✓ |
+| `swsd_update_catalog_item` | W |   |   |   | ✓ |
+| `swsd_delete_catalog_item` | W |   |   |   | ✓ |
 
 Use the catalog flow instead of `swsd_create_incident` when the user asks to **request** something, such as new hardware, software access, an account, or a file restore. SWSD's catalog items carry pre-defined approval routing, request variables (form fields), category/subcategory defaults, and SLA targets that a free-form incident misses. The server `instructions` advertise this preference order so capable agents pick the catalog flow automatically.
 
 - **`swsd_list_catalog_items`**: paginated list of catalog items with `state`, `department`, `site`, and free-text `query` filters. Returns compact summaries (id, name, state, category/subcategory, request_count, updated_at, variable_count). Carries the same `applied_filters` echo + `pagination.total_scope` discriminator as `swsd_list_incidents`. Call this first when you need to find the right catalog item.
-- **`swsd_get_catalog_item`**: single-item lookup that exposes the full `variables` array (the request form schema). Each variable carries `id` (consume as `custom_field_id` when submitting), `name`, `kind` (`free_text` / `drop_down_menu` / `multi_select` / `date` / `user`), `field_type` (numeric SAManage code), `options` (newline-separated allowed values for dropdowns), `required`, and `helptext`. Inspect the variables before filling them. For dropdowns, the `value` you submit must match one of the `options` verbatim. **Renders the `catalog-item-form` widget** in MCP Apps-capable hosts: variables become a form whose Submit button calls `swsd_create_service_request` directly via `app.callServerTool`, collapsing the 4-round-trip request workflow to 2.
-- **`swsd_create_service_request`**: submits a request via `POST /catalog_items/{id}/service_requests.json`. The endpoint auto-sets `is_service_request: true` and inherits the catalog item's category/subcategory. Each `request_variables` entry maps a catalog variable's `id` (as `custom_field_id`) to a string `value`. Requester defaults to the JWT-authenticated user; pass `requester_id` to file the request on behalf of someone else. Optionally accepts `description` (initial comment) and `custom_fields_values` (SWSD-level custom fields, separate from the catalog's `request_variables`).
-
-:::note[v2.5 deferred: `swsd_list_my_service_requests`]
-A "list my service requests" wrapper is not shipped. The SAManage REST API has no documented filter parameter that narrows `/incidents.json` to service-request rows (we probed 14 candidates including `is_service_request=true`, `sub_type=*`, `request_type=*`, all silently ignored). A wrapper that paginated through tens of thousands of incidents to find the few service-request rows would be a bad tool. Will revisit once SWSD documents the correct filter mechanism.
-:::
+- **`swsd_get_catalog_item`**: single-item lookup that exposes the full `variables` array (the request form schema). Each variable carries `id` (consume as `custom_field_id` when submitting), `name`, `kind` (`free_text` / `drop_down_menu` / `multi_select` / `date` / `user`), `field_type` (numeric SAManage code), `options` (newline-separated allowed values for dropdowns), `required`, and `helptext`. Inspect the variables before filling them. For dropdowns, the `value` you submit must match one of the `options` verbatim. **Renders the `catalog-item-form` widget** in MCP Apps-capable hosts when `swsd_create_service_request` is also enabled: variables become a form whose Submit button invokes that tool through the host.
+- **`swsd_create_service_request`**: submits a request via `POST /catalog_items/{id}/service_requests.json`. The endpoint auto-sets `is_service_request: true` and inherits the catalog item's category/subcategory. Each `request_variables` entry maps a catalog variable's `id` (as `custom_field_id`) to a string `value`. Requester defaults to the JWT-authenticated user; pass `requester_email` to file the request on behalf of someone else. Optionally accepts `description` (replaces the catalog description) and `custom_fields: [{name, value}]` (SWSD-level custom fields, separate from the catalog's `request_variables`).
 
 ---
 
@@ -133,7 +132,7 @@ A "list my service requests" wrapper is not shipped. The SAManage REST API has n
 | `swsd_add_record_comment` | W |   |   |   | ✓ |
 | `swsd_delete_comment` | W |   |   |   | ✓ |
 
-- **`swsd_list_incident_comments`**: paginated comment thread for an incident, including private/internal comments if your token has permission. Accepts the incident's `id` or human-facing `number`. Renders the `comment-thread` widget in MCP Apps-capable hosts (vertical conversation with author chips, timestamps, public/private badges, sanitized HTML bodies).
+- **`swsd_list_incident_comments`**: paginated comment thread for an incident, including private/internal comments if your token has permission. Accepts the incident's `id` or human-facing `number`. Renders the `comment-thread` widget in MCP Apps-capable hosts (vertical conversation with author chips, timestamps, private badges, sanitized HTML bodies).
 - **`swsd_add_incident_comment`**: post a new comment. Set `is_private: true` for internal-only comments (default `false` = visible to the requester). Accepts the incident's `id` or human-facing `number`. To edit later, use `swsd_update_comment`.
 - **`swsd_update_comment`**: edit an existing comment's body or visibility. Accepts the parent incident's `id` or human-facing `number`.
 
@@ -151,11 +150,11 @@ A "list my service requests" wrapper is not shipped. The SAManage REST API has n
 | `swsd_update_task` | W |   | ✓ |   | ✓ |
 | `swsd_delete_task` | W |   |   |   | ✓ |
 
-SWSD incident sub-tasks are inline-only: they exist as ordered children of a parent incident, not as first-class records, so every tool here takes an `incident_id_or_number`.
+Incident task tools take `incident_id` (internal id or human-facing number) and, for updates/deletes, an internal `task_id`. The record-task tools instead take `record_type` (`problems`, `changes`, or `releases`) and an internal `record_id`.
 
-- **`swsd_list_incident_tasks`**: paginated task list for one incident. Returns id, title, completion status, assignee, position (display order), and timestamps. Use this to see open work without opening the parent incident.
-- **`swsd_create_incident_task`**: create a sub-task on the parent incident. Required: `title`. Optional: `assignee_id`, `position`, `description`. Posted via `POST /incidents/{id}/tasks.json`.
-- **`swsd_update_task_state`**: toggle a task's completion. `complete: true` marks done (sets `completion_date`); `complete: false` reopens. PUTs to `/incidents/{incident_id}/tasks/{task_id}.json`.
+- **`swsd_list_incident_tasks`**: task list for one incident. Returns id, name, completion status, assignee, position (display order), and timestamps. Use this to see open work without opening the parent incident.
+- **`swsd_create_incident_task`**: create a sub-task on the parent incident. Required: `incident_id` and `name`. Optional: `assignee_email`, `due_at`, `description`. Posted via `POST /incidents/{id}/tasks.json`.
+- **`swsd_update_task_state`**: toggle a task's completion. `completed: true` sets state to `Completed`; `completed: false` sets state to `New`. PUTs to `/incidents/{incident_id}/tasks/{task_id}.json`.
 
 ---
 
@@ -198,11 +197,11 @@ Time entries are scoped to a parent `incident`, `problem`, `change`, or `release
 
 ITIL problem records: separate from incidents, scoped to root-cause investigation across recurring incidents. Read-only visibility ships in the `triage` profile so first-line support can see open root-cause work without granting promote/create rights.
 
-- **`swsd_list_problems`**: paginated browse with `state`, `priority`, `assignee_email`, `category`, `created_from`/`created_to`, free-text `query`, and standard sort/page filters. Returns compact summaries (id, name, state, priority, assignee, updated_at).
+- **`swsd_list_problems`**: paginated browse with `state`, `state_is_not`, `priority`, `assignee_email`, `requester_email`, free-text `query`, `page`, and `per_page`. Returns compact summaries (id, name, state, priority, assignee, updated_at).
 - **`swsd_get_problem`**: full problem detail as returned by SWSD (passthrough), including custom-field values and any linked incidents.
-- **`swsd_create_problem`**: create a new problem record. Required: `name`. Strongly recommended: `description`, `requester`, `category`. Use this when an agent recognizes that several incidents share a common root cause.
+- **`swsd_create_problem`**: create a new problem record. Required: `name`. Strongly recommended: `description`, `requester_email`, `category`. Use this when an agent recognizes that several incidents share a common root cause.
 - **`swsd_update_problem`**: update an existing problem. Pass `id` plus any of `name`, `description`, `priority`, `category`, `subcategory`, `assignee_email`, `requester_email`, `state`, `root_cause`, `symptoms`, `workaround`. Only provided fields are sent.
-- **`swsd_delete_*`** (incident, problem, change, release, solution): Operations and Full only. The first call previews the record and sends nothing; the real DELETE runs only on a re-call with `confirm: true` and `confirm_id` equal to the previewed id. Dry-run always previews and `disabled` blocks.
+- **`swsd_delete_*`** (incident, problem, change, release, solution): Operations or explicit custom selection. Call without confirmation to preview, ask the user to confirm, then re-call with `confirm: true` and `confirm_id` equal to the previewed internal id. Dry-run always previews and `disabled` blocks.
 
 ---
 
@@ -210,7 +209,7 @@ ITIL problem records: separate from incidents, scoped to root-cause investigatio
 
 | Tool | Type | triage | agent | knowledge | operations |
 |---|---|---|---|---|---|
-| `swsd_change_calendar` | R |   | ✓ |   | ✓ |
+| `swsd_change_calendar` | R, UI |   | ✓ |   | ✓ |
 | `swsd_list_changes` | R |   |   |   | ✓ |
 | `swsd_get_change` | R |   |   |   | ✓ |
 | `swsd_create_change` | W |   |   |   | ✓ |
@@ -277,10 +276,11 @@ Use these for ITSM lifecycle work that needs change/release records instead of f
 | `swsd_update_configuration_item` | W |   |   |   | ✓ |
 | `swsd_delete_configuration_item` | W |   |   |   | ✓ |
 
-These read tools expose asset and CMDB context without adding asset mutation risk.
+These tools expose asset and CMDB reads plus create/update/delete operations. Software assets remain read-only, printers support updates, and deletes use preview and confirmation.
 
 - **Hardware, mobile, printer, software, and other asset tools**: compact list views plus single-record passthrough detail for asset investigation.
-- **Configuration item tools**: CMDB lookup for change planning and dependency review.
+- **Configuration item tools**: CMDB lookup and maintenance for change planning and dependency review.
+- **Hardware warranties**: list, add, update, or confirm deletion of a hardware warranty.
 
 ---
 
@@ -313,7 +313,7 @@ These read tools expose asset and CMDB context without adding asset mutation ris
 
 Procurement context helps agents answer warranty, vendor, and purchase-history questions without opening a separate system.
 
-- **Contract, purchase order, and vendor tools**: list and inspect procurement records tied to operational work.
+- **Contract, purchase order, and vendor tools**: list, inspect, create, update, and confirm deletion of procurement records tied to operational work. `swsd_add_contract_item` adds a contract line item; change-catalog tools browse and maintain change templates.
 - **`swsd_list_risks`**: browse documented SWSD risk records.
 
 ---
@@ -330,14 +330,14 @@ Procurement context helps agents answer warranty, vendor, and purchase-history q
 
 - **`swsd_search_solutions`**: full-text search across titles and descriptions. Pass `category` to filter to a specific KB section.
 - **`swsd_get_solution`**: full solution as returned by SWSD (passthrough), including both `description` (HTML) and `description_no_html` (plain text), custom-field values, comments count, and attachment metadata. Accepts the solution's `id` or human-facing `number`. Pass `detail_level: "long"` to include attachments, audits, tags, and full statistics in one call. Default `"short"` is faster. Renders the `solution-detail` widget in MCP Apps-capable hosts with the full sanitized HTML body rather than just an excerpt, which is the purpose of opening a KB article.
-- **`swsd_create_solution`**: requires `title`; `description` (HTML supported), `state`, and `category` are strongly recommended. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`; call `swsd_describe_custom_fields` first to discover field names and allowed values for dropdowns. Solutions require `name` keying (`custom_field_id` alone is rejected with HTTP 400). Validated for Text, Dropdown, Number, Checkbox, and Date types.
-- **`swsd_update_solution`**: partial update. Accepts the solution's `id` or human-facing `number`. To replace the description entirely, pass the full new body. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`; call `swsd_describe_custom_fields` first to discover field names and allowed values for dropdowns. Solutions require `name` keying (`custom_field_id` alone is rejected with HTTP 400). Validated for Text, Dropdown, Number, Checkbox, and Date types.
+- **`swsd_create_solution`**: requires `name`; `description` (HTML supported), `state`, and `category_name` are strongly recommended. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`; call `swsd_describe_custom_fields` first to discover field names and allowed values for dropdowns. Solutions require `name` keying (`custom_field_id` alone is rejected with HTTP 400). Values may be strings, numbers, or booleans; SWSD validates tenant-specific field rules.
+- **`swsd_update_solution`**: partial update. Accepts the solution's `id` or human-facing `number`. To replace the description entirely, pass the full new body. To set tenant-specific custom field values, pass `custom_fields: [{name, value}]`; call `swsd_describe_custom_fields` first to discover field names and allowed values for dropdowns. Solutions require `name` keying (`custom_field_id` alone is rejected with HTTP 400). Values may be strings, numbers, or booleans; SWSD validates tenant-specific field rules.
 
 ---
 
 ## Lookups (32)
 
-All lookup tools are read-only. They exist to validate IDs/names before passing to write tools (e.g., look up a site name before creating an incident with `site_name`).
+List/get lookups validate IDs/names before writes (e.g., look up a site name before creating an incident with `site_name`). Operations also includes directory create/update/delete tools and group-membership changes. Deletion and membership removal use preview and confirmation.
 
 | Tool | Type | triage | agent | knowledge | operations |
 |---|---|---|---|---|---|
@@ -374,7 +374,7 @@ All lookup tools are read-only. They exist to validate IDs/names before passing 
 | `swsd_update_role` | W |   |   |   | ✓ |
 | `swsd_delete_role` | W |   |   |   | ✓ |
 
-Each returns `id`, `name`, plus type-specific fields (e.g., `time_zone` for sites, `disabled` for groups). The `swsd_get_*` lookups fetch one record by id: `swsd_get_user` adds `group_ids`, and `swsd_get_group` adds its `members` (id, name, email).
+List/get lookups return `id`, `name`, plus type-specific fields (e.g., `time_zone` for sites, `disabled` for groups). The `swsd_get_*` lookups fetch one record by id: `swsd_get_user` adds `group_ids`, and `swsd_get_group` adds its `members` (membership id and, when supplied, user id, name, email).
 
 ---
 
@@ -384,10 +384,10 @@ Each returns `id`, `name`, plus type-specific fields (e.g., `time_zone` for site
 |---|---|---|---|---|---|
 | `swsd_describe_custom_fields` | R, UI |   | ✓ | ✓ | ✓ |
 
-- **`swsd_describe_custom_fields`**: schema introspection for custom fields defined in your tenant. Returns each field's `name`, `type`, `category`, allowed values (for picklists), and which entity types it applies to.
+- **`swsd_describe_custom_fields`**: schema introspection for custom fields defined in your tenant. Returns each field's `name`, `type`, scope/module, required/active/searchable flags, help text, and allowed values (for picklists).
 
-:::note[v2: custom-field writes are now supported]
-As of v2, the four write tools (`swsd_create_incident`, `swsd_update_incident`, `swsd_create_solution`, `swsd_update_solution`) accept a `custom_fields: [{name, value}]` parameter. Call `swsd_describe_custom_fields` first to discover field names and (for Dropdowns) allowed values. Validated for Text, Dropdown, Number, Checkbox, and Date types. Solutions require `name` keying (`custom_field_id` alone is rejected with HTTP 400).
+:::note[Custom-field writes]
+The write tools (`swsd_create_incident`, `swsd_update_incident`, `swsd_create_solution`, `swsd_update_solution`, and supported catalog/lifecycle writes) accept a `custom_fields: [{name, value}]` parameter. Call `swsd_describe_custom_fields` first to discover field names and (for Dropdowns) allowed values. Values may be strings, numbers, or booleans; SWSD validates tenant-specific field rules. Solutions require `name` keying (`custom_field_id` alone is rejected with HTTP 400).
 :::
 
 ---
@@ -413,7 +413,7 @@ Built-in MCP prompts (`prompts/list`, `prompts/get`). A prompt is offered only w
 | `swsd_weekly_change_review` | `swsd_change_calendar`, `swsd_list_changes`, `swsd_get_change` |   |   |   | ✓ |
 
 - **`swsd_morning_triage`**: start-of-day brief of my queue. Arguments: `group` (group name), `since_hours` (1-168, default 16).
-- **`swsd_sla_risk_review`**: at-risk incidents grouped by risk level with a next action per ticket. Arguments: `within_hours` (1-168, default 24), `group`.
+- **`swsd_sla_risk_review`**: at-risk incidents grouped by risk level with a next action per ticket. Arguments: `within_hours` (1-168, default 24), `group` (positive numeric group ID).
 - **`swsd_weekly_change_review`**: the change calendar for one week, with overlaps, unapproved changes and missing plans. Argument: `week_start` (ISO date; default the next 7 days).
 
 ---

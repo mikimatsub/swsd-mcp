@@ -14,7 +14,7 @@ Include:
 - **What you tried**: exact tool call, environment (stdio vs http), profile in use
 - **What happened**: actual response or error, with sensitive data redacted
 - **What you expected**: what behavior you were aiming for
-- **Version**: `npm view swsd-mcp version` or commit SHA
+- **Version**: the installed version from `swsd_get_server_info`, or the commit SHA; include the app, Windows version, and profile where relevant
 
 For **security issues**, see [Security → Vulnerability reporting](/security/#vulnerability-reporting). Do not file public issues for vulnerabilities.
 
@@ -35,12 +35,13 @@ PRs are welcome. Before submitting:
 1. **Open an issue first** for non-trivial changes so we can discuss the approach.
 2. **Run the full local check:**
    ```bash
-   npm install
+   npm ci
+   npm run check:changelog
    npm run typecheck
    npm run test:coverage
    npm run lint
    ```
-3. **Add tests** for new behavior. The existing test suite is hermetic (no live API calls); follow that pattern.
+3. **Add tests** for new behavior. Tests mock SWSD interactions and use synthetic fixtures. The plugin runtime-version test also checks the public npm registry; follow the existing patterns.
 4. **Smoke against your tenant** for changes touching SWSD interactions. Use the `[MCP-VAL]` prefix convention for any test data you create, and clean up after yourself.
 5. **Commit messages** follow conventional-commit style (`feat:`, `fix:`, `ci:`, `docs:`, etc.) and include a clear "why" in the body.
 6. **Don't bump the package version** in your PR: releases are tagged separately.
@@ -60,7 +61,7 @@ The repo uses `husky` + `lint-staged` to run `eslint --fix` on staged TS/JS file
 ### What blocks a PR
 
 - Hardcoded tenant data in tests or fixtures (use synthetic names like `Alice`, `Office One`, `example.com`)
-- Logging of API tokens or response bodies
+- Logging of JSON Web Tokens or response bodies
 - New install scripts (`postinstall`, etc.)
 - New dependencies that do not follow the repo's `package.json` plus lockfile convention
 - Lockfile changes that look unrelated to your stated change
@@ -70,13 +71,14 @@ The repo uses `husky` + `lint-staged` to run `eslint --fix` on staged TS/JS file
 ```bash
 git clone https://github.com/mikimatsub/swsd-mcp.git
 cd swsd-mcp
-npm install
+npm ci
 
-npm run build         # compile TypeScript to dist/
+npm run build         # build UI bundles and compile TypeScript to dist/
 npm test              # run unit tests (vitest)
 npm run test:coverage # run tests and enforce the measured coverage baseline
+npm run check:changelog # validate Keep a Changelog structure
 npm run lint          # eslint
-npm run typecheck     # tsc --noEmit
+npm run typecheck     # check server and UI TypeScript
 
 # Run against your own tenant
 export SWSD_TOKEN="your-token"
@@ -84,7 +86,7 @@ export SWSD_BASE_URL="https://api.samanage.com"
 npm run inspect:stdio
 ```
 
-`npm run inspect:stdio` opens the MCP Inspector (Anthropic's web UI for testing MCP servers) connected to your local build over stdio. Useful for clicking through tool calls during development.
+`npm run inspect:stdio` opens the MCP Inspector (the MCP project's tool for testing servers) connected to your local build over stdio. Useful for clicking through tool calls during development.
 
 For HTTP-transport development:
 
@@ -99,7 +101,7 @@ SWSD_TRANSPORT=http npm run dev
 
 The docs site (this site!) lives under [`docs-site/`](https://github.com/mikimatsub/swsd-mcp/tree/main/docs-site): see [`docs-site/README.md`](https://github.com/mikimatsub/swsd-mcp/blob/main/docs-site/README.md) for dev/build commands.
 
-Cloudflare Pages auto-deploys every push to `main`. PRs get preview URLs commented automatically.
+Run `npm ci` and `npm run build` in `docs-site/` to validate documentation changes. Cloudflare Pages deployment and preview URLs depend on the hosting project's settings.
 
 ## Code of conduct
 

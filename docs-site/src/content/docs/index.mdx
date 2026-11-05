@@ -3,7 +3,7 @@ title: swsd-mcp
 description: MCP server for SolarWinds Service Desk (SWSD / Samanage). Lets AI assistants work with tickets, service catalog, KB articles, changes, releases, assets, CMDB, procurement, risk, time tracking, and attachments.
 template: splash
 hero:
-  tagline: Plug SolarWinds Service Desk into any Model Context Protocol client. Zero credentials at rest.
+  tagline: Plug SolarWinds Service Desk into your Model Context Protocol client. No server-side credential storage.
   actions:
     - text: Quick start
       link: /quickstart/
@@ -19,22 +19,22 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
   <Card title="Any MCP client" icon="puzzle">
-    Standard Model Context Protocol: works wherever MCP works. [See the compatibility matrix →](/compatibility/)
+    Standard Model Context Protocol over stdio or Streamable HTTP. [See the compatibility matrix →](/compatibility/)
   </Card>
   <Card title="Zero credentials at rest" icon="seti:lock">
-    Each user's SWSD token is forwarded per-request, never persisted, never logged.
+    The MCP server uses each user's JSON Web Token without saving it to disk. The Windows companion saves it in Windows Credential Manager.
   </Card>
   <Card title="Profile-scoped tools" icon="setting">
     Pick `triage`, `agent`, `knowledge`, `operations`, or `custom` to control which of the 145 tools across 15 categories each deployment exposes.
   </Card>
   <Card title="Operations workflow" icon="seti:config">
-    The `operations` profile adds change/release management, ITAM, CMDB lookup, procurement context, risk lookup, work logs, and attachments and KB authoring, exposing every tool with guarded deletes.
+    The `operations` profile adds change/release management, ITAM, CMDB, procurement, risk lookup, work logs, attachments, and KB authoring, exposing every tool with guarded deletes.
   </Card>
   <Card title="Write safety controls" icon="seti:lock">
     Set `SWSD_WRITE_MODE` to `dry-run` to preview write payloads or `disabled` to block write tools while keeping read-only context available.
   </Card>
   <Card title="MCP Apps UI" icon="laptop">
-    Eight rich UI bundles accompany read tools on capable hosts: incident detail, solution detail, incident list, comment thread, audit timeline, catalog-item form, custom-field explorer, and change calendar. Text-only clients are unaffected.
+    Ten rich UI bundles accompany read tools on capable hosts: incident detail, solution detail, incident list, SLA risk, ticket stats, comment thread, audit timeline, catalog-item form, custom-field explorer, and change calendar. Text-only clients are unaffected.
   </Card>
   <Card title="Service Catalog" icon="add-document">
     Browse, inspect, and submit catalog requests with `swsd_list_catalog_items`, `swsd_get_catalog_item`, and `swsd_create_service_request`.
@@ -43,13 +43,13 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
     Stdio for local agents, Streamable HTTP for hosted/Copilot Studio. Docker image and Azure Container Apps recipe included.
   </Card>
   <Card title="Listed on the MCP Registry" icon="seti:json">
-    Find `swsd-mcp` in MCP host install pickers via [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.mikimatsub/swsd).
+    Published as `io.github.mikimatsub/swsd` on [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.mikimatsub/swsd).
   </Card>
 </CardGrid>
 
 ## See it in action
 
-The nine MCP Apps widgets render rich UI alongside structured tool output. Below: a few captured with synthetic example data ("Acme Corp"). The full gallery + per-widget detail lives on the [Widgets reference](/widgets/).
+The ten MCP Apps widgets render rich UI alongside structured tool output. Below: a few captured with synthetic example data ("Acme Corp"). The full gallery + per-widget detail lives on the [Widgets reference](/widgets/).
 
 ![incident-list widget showing a sortable table of Acme Corp tickets](/widgets/incident-list-dark.png)
 

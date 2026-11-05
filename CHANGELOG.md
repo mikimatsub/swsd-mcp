@@ -59,6 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Corrected the docs site and README against the current tool registry,
+  profiles, configuration, widget rendering, Windows setup, and transports.
+  Removed release-history prose and unsupported security, hosting, and client
+  compatibility claims from the docs pages.
+
 - Custom prompts and widgets require all their tools. A catalog lookup without
   the service-request tool no longer advertises an unusable Submit form.
   Catalog output validation accepts its documented passthrough fields.
