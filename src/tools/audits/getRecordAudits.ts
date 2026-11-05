@@ -9,6 +9,7 @@ import { GetRecordAuditsInput } from '../../schemas/audit.js';
 import { PaginationOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
 import { toAuditSummary } from '../../swsd/mappers/audit.js';
 import { resolveIncidentRef, resolveSolutionRef } from '../../utils/idResolver.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
@@ -84,7 +85,7 @@ export function registerGetRecordAudits(server: McpServer, ctx: ToolContext): vo
         };
         const path = `/${input.object_type}/${String(resolvedId)}/audits.json`;
         const { body, pagination } = await ctx.client.get<unknown>(path, params);
-        const raw = Array.isArray(body) ? body : [];
+        const raw = requireListArray(body);
         const audits = raw
           .map(toAuditSummary)
           .filter((a): a is NonNullable<typeof a> => a !== null);

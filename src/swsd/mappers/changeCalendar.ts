@@ -1,6 +1,7 @@
 import type { CalendarConflict, CalendarItem, ChangeCalendarInput } from '../../schemas/changeCalendar.js';
 
 const HOUR = 60 * 60 * 1000;
+const MAX_CONFLICT_DETAILS = 200;
 
 function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -87,8 +88,8 @@ export function itemKey(item: Pick<CalendarItem, 'kind' | 'id'>): string {
   return `${item.kind}:${String(item.id)}`;
 }
 
-/** One conflict per pair, even when several CIs and the group are shared. */
-export function findCalendarConflicts(items: readonly CalendarItem[]): CalendarConflict[] {
+/** One conflict per pair; count all pairs but retain only bounded details. */
+export function findCalendarConflicts(items: readonly CalendarItem[], onConflict?: (a: CalendarItem, b: CalendarItem) => void): CalendarConflict[] {
   const conflicts: CalendarConflict[] = [];
   for (let i = 0; i < items.length; i++) {
     const a = items[i]!;
@@ -107,10 +108,13 @@ export function findCalendarConflicts(items: readonly CalendarItem[]): CalendarC
         reasons.push(`same group: ${a.group_assignee.name}`);
       }
       if (reasons.length > 0) {
-        conflicts.push({
-          a: { kind: a.kind, id: a.id }, b: { kind: b.kind, id: b.id }, reasons,
-          overlap_start: new Date(start).toISOString(), overlap_end: new Date(end).toISOString(),
-        });
+        onConflict?.(a, b);
+        if (conflicts.length < MAX_CONFLICT_DETAILS) {
+          conflicts.push({
+            a: { kind: a.kind, id: a.id }, b: { kind: b.kind, id: b.id }, reasons,
+            overlap_start: new Date(start).toISOString(), overlap_end: new Date(end).toISOString(),
+          });
+        }
       }
     }
   }
@@ -119,18 +123,19 @@ export function findCalendarConflicts(items: readonly CalendarItem[]): CalendarC
 
 export function buildCalendar(candidates: readonly CalendarItem[]): {
   items: CalendarItem[]; conflicts: CalendarConflict[]; days: { date: string; items: CalendarItem[] }[];
+  conflict_count: number; conflicts_truncated: boolean;
 } {
   // Pagination can repeat records if the upstream collection moves during a scan.
   const items = [...new Map(candidates.map(item => [itemKey(item), item])).values()]
     .map(item => ({ ...item, conflict_count: 0 }))
     .sort((a, b) => Date.parse(a.planned_start_at) - Date.parse(b.planned_start_at)
       || a.kind.localeCompare(b.kind) || a.id - b.id);
-  const conflicts = findCalendarConflicts(items);
-  const byKey = new Map(items.map(item => [itemKey(item), item]));
-  for (const conflict of conflicts) {
-    byKey.get(itemKey(conflict.a))!.conflict_count++;
-    byKey.get(itemKey(conflict.b))!.conflict_count++;
-  }
+  let conflictCount = 0;
+  const conflicts = findCalendarConflicts(items, (a, b) => {
+    conflictCount++;
+    a.conflict_count++;
+    b.conflict_count++;
+  });
   const days = new Map<string, CalendarItem[]>();
   for (const item of items) {
     const date = new Date(item.planned_start_at).toISOString().slice(0, 10);
@@ -138,5 +143,6 @@ export function buildCalendar(candidates: readonly CalendarItem[]): {
     day.push(item);
     days.set(date, day);
   }
-  return { items, conflicts, days: [...days].map(([date, dayItems]) => ({ date, items: dayItems })) };
+  return { items, conflicts, conflict_count: conflictCount, conflicts_truncated: conflictCount > conflicts.length,
+    days: [...days].map(([date, dayItems]) => ({ date, items: dayItems })) };
 }

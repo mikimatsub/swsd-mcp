@@ -71,10 +71,24 @@ export function formatWindow(window?: { from: string; to: string }, timeZone = v
   return `${a === b ? a : `${a} – ${b}`} · ${tz}`;
 }
 
-export function conflictReasons(item: Pick<CalendarItem, 'kind' | 'id'>, conflicts: readonly CalendarConflict[]): string[] {
-  return [...new Set(conflicts.filter(c =>
-    (c.a.kind === item.kind && c.a.id === item.id) || (c.b.kind === item.kind && c.b.id === item.id))
-    .flatMap(c => c.reasons))];
+export type ConflictReasonIndex = ReadonlyMap<string, readonly string[]>;
+
+export function indexConflictReasons(conflicts: readonly CalendarConflict[]): ConflictReasonIndex {
+  const byRecord = new Map<string, Set<string>>();
+  for (const conflict of conflicts) {
+    const reasons = conflict.reasons;
+    for (const item of [conflict.a, conflict.b]) {
+      const key = `${item.kind}:${String(item.id)}`;
+      const unique = byRecord.get(key) ?? new Set<string>();
+      for (const reason of reasons) unique.add(reason);
+      byRecord.set(key, unique);
+    }
+  }
+  return new Map([...byRecord].map(([key, reasons]) => [key, [...reasons]]));
+}
+
+export function conflictReasons(item: Pick<CalendarItem, 'kind' | 'id'>, index: ConflictReasonIndex): readonly string[] {
+  return index.get(`${item.kind}:${String(item.id)}`) ?? [];
 }
 
 /** Groups by the viewer-local start date. */

@@ -4,6 +4,7 @@ import { ListProblemsInput } from '../../schemas/problem.js';
 import { PaginationWithScopeOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
 import { toProblemSummary } from '../../swsd/mappers/problem.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
@@ -76,7 +77,7 @@ export function registerListProblems(server: McpServer, ctx: ToolContext): void 
         if (input.query) params.query = input.query;
 
         const { body, pagination } = await ctx.client.get<unknown>('/problems.json', params);
-        const raw = Array.isArray(body) ? body : [];
+        const raw = requireListArray(body);
         const problems = raw
           .map(toProblemSummary)
           .filter((x): x is NonNullable<typeof x> => x !== null);

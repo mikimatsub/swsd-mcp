@@ -124,25 +124,32 @@ function nestedString(parent: unknown, key: string): string | undefined {
 }
 
 export interface GroupMember {
-  id: number;
+  membership_id: number;
+  id?: number;
   name: string;
   email?: string;
 }
 
 /**
  * Members of a group from `GET /groups/{id}.json`. Per the SWSD API spec
- * (apidoc.samanage.com, Group → getGroupById) each `memberships[]` entry is
- * a user-like object: `{ id, name, email, is_user, group_id, avatar }`.
- * Non-user entries (`is_user: false`) and entries without an id are skipped.
+ * (apidoc.samanage.com, Group → getGroupById) `memberships[]` contains
+ * `{ id, user: "Name" }`: id identifies the membership, not the user.
+ * Only an explicit user_id or nested user.id identifies the user.
  */
 export function toGroupMembers(raw: unknown): GroupMember[] {
   if (!isPlainObject(raw) || !Array.isArray(raw.memberships)) return [];
   const out: GroupMember[] = [];
   for (const m of raw.memberships) {
     if (!isPlainObject(m) || m.is_user === false) continue;
-    const id = numberOrNull(m.id);
-    if (id === null) continue;
-    out.push({ id, name: stringOrEmpty(m.name), email: stringOrUndefined(m.email) });
+    const membership_id = numberOrNull(m.id);
+    if (membership_id === null) continue;
+    const user = isPlainObject(m.user) ? m.user : undefined;
+    out.push({
+      membership_id,
+      id: numberOrUndefined(m.user_id) ?? numberOrUndefined(user?.id),
+      name: stringOrUndefined(m.user) ?? stringOrUndefined(user?.name) ?? stringOrEmpty(m.name),
+      email: stringOrUndefined(user?.email) ?? stringOrUndefined(m.email),
+    });
   }
   return out;
 }

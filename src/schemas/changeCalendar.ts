@@ -47,7 +47,9 @@ const CalendarConflictOutput = z.object({
 export type CalendarConflict = z.infer<typeof CalendarConflictOutput>;
 export const ChangeCalendarOutput = z.object({
   items: z.array(CalendarItemOutput),
-  conflicts: z.array(CalendarConflictOutput),
+  conflicts: z.array(CalendarConflictOutput).max(200).describe('At most 200 conflict details between returned items.'),
+  conflict_count: z.number().int().nonnegative().describe('Total conflicting pairs between returned items, including omitted details.'),
+  conflicts_truncated: z.boolean().describe('True when some conflict details are omitted; aggregate and per-item counts remain complete for returned items.'),
   days: z.array(z.object({ date: z.string(), items: z.array(CalendarItemOutput) })),
   window: z.object({ from: z.string(), to: z.string() }),
   scan: z.object({

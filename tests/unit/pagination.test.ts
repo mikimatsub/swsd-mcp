@@ -1,11 +1,33 @@
 import { describe, it, expect } from 'vitest';
-import { parseLinkHeader, extractPagination } from '../../src/swsd/pagination.js';
+import { parseLinkHeader, extractPagination, withTotalScope } from '../../src/swsd/pagination.js';
 
 function makeHeaders(init: Record<string, string>): Headers {
   const h = new Headers();
   for (const [k, v] of Object.entries(init)) h.set(k, v);
   return h;
 }
+
+describe('withTotalScope', () => {
+  it.each([
+    { local: false, server: false, scope: 'tenant', matched: 200 },
+    { local: false, server: true, scope: 'filtered', matched: 200 },
+    { local: true, server: false, scope: 'upstream', matched: null },
+    { local: true, server: true, scope: 'upstream', matched: null },
+  ])('keeps upstream totals honest for local=$local and server=$server', ({ local, server, scope, matched }) => {
+    expect(withTotalScope({ page: 1, per_page: 25, total: 200, has_more: true }, local, server, 2))
+      .toEqual({ page: 1, per_page: 25, total: 200, has_more: true, total_scope: scope, matched_total: matched });
+  });
+
+  it('can know complete local matches without an upstream total', () => {
+    expect(withTotalScope({ page: 1, per_page: 25, has_more: false }, true, false, 0))
+      .toMatchObject({ total_scope: 'unknown', matched_total: 0 });
+  });
+
+  it('keeps both totals unknown for an incomplete scan without a total header', () => {
+    expect(withTotalScope({ page: 1, per_page: 25, has_more: true }, false, false, 25))
+      .toMatchObject({ total_scope: 'unknown', matched_total: null });
+  });
+});
 
 describe('parseLinkHeader', () => {
   it('parses single rel=next', () => {

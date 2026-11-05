@@ -6,6 +6,8 @@ import { PaginationWithScopeOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
+import { withTotalScope } from '../../swsd/pagination.js';
 import { toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { resolveCurrentUser } from '../../utils/resolveCurrentUser.js';
 import { applyDateAlias } from '../../utils/dateAliases.js';
@@ -48,7 +50,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         'filters (verified 2026-05-08 against the live API: a fake email returns ' +
         'the entire tenant). The client-side filter is the only correct way to ' +
         'scope to a specific user. For broader queries use swsd_list_incidents ' +
-        'with assigned_to=<group_id> (group filtering does work server-side).',
+        'with assigned_to_group=<group_id> (group filtering does work server-side).',
       inputSchema: ListMyIncidentsInput,
       outputSchema: z.object({
         incidents: z.array(IncidentSummaryOutput),
@@ -58,7 +60,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
           .describe(
             'Echo of the filters applied to this query — empty object if none. ' +
               'Use this to reason about whether the result count reflects your filters or the tenant total. ' +
-              'NOTE: assignee_email is applied client-side (post-fetch) because SWSD ignores it server-side.',
+              'NOTE: assignee_email and requester_email are applied client-side (post-fetch) because SWSD ignores them server-side.',
           ),
         assignee_email: z
           .string()
@@ -97,7 +99,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         const me = resolved.me;
 
         // Step 2: Build /incidents.json query.
-        // CRITICAL: do NOT send assignee_email — SWSD silently ignores it on
+        // CRITICAL: do NOT send assignee_email or requester_email — SWSD silently ignores them on
         // /incidents.json (verified live 2026-05-08: fake email returns the
         // full tenant). We narrow client-side after the response lands.
         // All OTHER filters (state, dates, category, etc.) DO work server-side
@@ -106,24 +108,23 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
           page: input.page,
           per_page: input.per_page,
         };
-        if (input.states) params.state = input.states;
-        if (input.priorities) params.priority = input.priorities;
-        if (input.categories) params.category = input.categories;
-        if (input.requester_email) params.requester_email = input.requester_email;
+        if (input.states?.length) params.state = input.states;
+        if (input.priorities?.length) params.priority = input.priorities;
+        if (input.categories?.length) params.category = input.categories;
         if (input.updated_from) params.updated_at = ['greater_than', input.updated_from];
         if (input.updated_to) params.updated_to = input.updated_to;
         if (input.created_from) params.created_from = input.created_from;
         if (input.created_to) params.created_to = input.created_to;
-        if (input.sites) params.site = input.sites;
-        if (input.departments) params.department = input.departments;
+        if (input.sites?.length) params.site = input.sites;
+        if (input.departments?.length) params.department = input.departments;
         if (input.assigned_to_group !== undefined) params.assigned_to = input.assigned_to_group;
-        if (input.state_is_not) params.state_is_not = input.state_is_not;
+        if (input.state_is_not?.length) params.state_is_not = input.state_is_not;
         if (input.sort_by) params.sort_by = input.sort_by;
         if (input.sort_order) params.sort_order = input.sort_order;
         if (input.query) params.query = input.query;
 
         const { body, pagination } = await ctx.client.get<unknown>('/incidents.json', params);
-        const raw = Array.isArray(body) ? body : [];
+        const raw = requireListArray(body);
         const candidates = raw
           .map(toIncidentSummary)
           .filter((x): x is NonNullable<typeof x> => x !== null);
@@ -132,8 +133,10 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         // Case-insensitive exact-match on the email; defensive against
         // mixed-case email storage variations across SWSD records.
         const meEmailLower = me.email.toLowerCase();
+        const requesterLower = input.requester_email?.toLowerCase();
         const incidents = candidates.filter(
-          (c) => c.assignee_email !== undefined && c.assignee_email.toLowerCase() === meEmailLower,
+          (c) => c.assignee_email?.toLowerCase() === meEmailLower
+            && (requesterLower === undefined || c.requester_email?.toLowerCase() === requesterLower),
         );
 
         // Step 4: Echo the applied filters back. assignee_email is included
@@ -143,20 +146,18 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         const applied_filters: Record<string, unknown> = {
           assignee_email: me.email,
         };
-        if (input.states) applied_filters.states = input.states;
-        if (input.priorities) applied_filters.priorities = input.priorities;
-        if (input.categories) applied_filters.categories = input.categories;
+        if (input.states?.length) applied_filters.states = input.states;
+        if (input.priorities?.length) applied_filters.priorities = input.priorities;
+        if (input.categories?.length) applied_filters.categories = input.categories;
         if (input.requester_email) applied_filters.requester_email = input.requester_email;
         if (input.updated_from) applied_filters.updated_from = input.updated_from;
         if (input.updated_to) applied_filters.updated_to = input.updated_to;
         if (input.created_from) applied_filters.created_from = input.created_from;
         if (input.created_to) applied_filters.created_to = input.created_to;
-        if (input.sites) applied_filters.sites = input.sites;
-        if (input.departments) applied_filters.departments = input.departments;
+        if (input.sites?.length) applied_filters.sites = input.sites;
+        if (input.departments?.length) applied_filters.departments = input.departments;
         if (input.assigned_to_group !== undefined) applied_filters.assigned_to_group = input.assigned_to_group;
-        if (input.state_is_not) applied_filters.state_is_not = input.state_is_not;
-        if (input.sort_by) applied_filters.sort_by = input.sort_by;
-        if (input.sort_order) applied_filters.sort_order = input.sort_order;
+        if (input.state_is_not?.length) applied_filters.state_is_not = input.state_is_not;
         if (input.query) applied_filters.query = input.query;
 
         // Step 5: Honest summary text. Includes:
@@ -176,7 +177,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         // assignments but won't be auto-assigned new ones", and suggest the
         // group-scope fallback for users who hit 0 matches.
         const caveat = cantBeAssigned
-          ? ' (NOTE: this user has available_for_assignment=false — they cannot be assigned NEW tickets, though existing assignments may still appear above. If looking for tickets in their broader scope, also try swsd_list_incidents with assigned_to=<group_id>.)'
+          ? ' (NOTE: this user has available_for_assignment=false — they cannot be assigned NEW tickets, though existing assignments may still appear above. If looking for tickets in their broader scope, also try swsd_list_incidents with assigned_to_group=<group_id>.)'
           : '';
         const summary =
           `Found ${String(incidents.length)} ticket${incidents.length === 1 ? '' : 's'} ` +
@@ -184,13 +185,10 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
           `from ${String(candidates.length)} candidate${candidates.length === 1 ? '' : 's'} ` +
           `scanned on page ${String(pagination.page)}${totalNote}${moreNote}.${caveat}`;
 
-        const total_scope: 'filtered' | 'tenant' | 'unknown' =
-          pagination.total === undefined ? 'unknown' : 'filtered';
-
         return structuredResult(
           {
             incidents,
-            pagination: { ...pagination, total_scope },
+            pagination: withTotalScope(pagination, true, true, incidents.length),
             applied_filters,
             assignee_email: me.email,
             scan: {

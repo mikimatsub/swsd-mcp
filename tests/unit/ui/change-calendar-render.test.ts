@@ -5,6 +5,7 @@ import type { Payload, RenderTargets, renderPayload as RenderPayload, renderRow 
 import type { MountAppOptions } from '../../../src/ui/shared/host.js';
 import { el } from '../../../src/ui/shared/dom.js';
 import { toCalendarItem } from '../../../src/swsd/mappers/changeCalendar.js';
+import { indexConflictReasons } from '../../../src/ui/change-calendar/logic.js';
 import fixture from '../mappers/fixtures/change-calendar-api.json';
 
 const host = vi.hoisted(() => ({ openLink: vi.fn().mockResolvedValue({}), options: undefined as MountAppOptions<Payload> | undefined }));
@@ -30,6 +31,27 @@ beforeEach(async () => {
 });
 
 describe('change calendar rendering', () => {
+  it('uses aggregate conflict totals and explains omitted details on a complete scan', () => {
+    renderPayload(targets, {
+      items: [{ ...item, id: 1234567, conflict_count: 21, assignee_email: 'synthetic@example.test' }],
+      conflicts: [conflict], conflict_count: 231, conflicts_truncated: true,
+    });
+    expect(targets.chips.lastElementChild?.textContent).toBe('Conflicts 231');
+    expect(targets.notice.hidden).toBe(false);
+    expect(targets.notice.textContent).toContain('Showing 1 of 231 conflict details');
+    expect(targets.days.querySelector('.badge')?.getAttribute('title')).toBe('Overlapping scheduled work');
+  });
+  it('indexes conflict details once rather than scanning conflicts for each rendered row', () => {
+    const reasonRead = vi.fn(() => ['same group: Synthetic group']);
+    const indexedConflict = { ...conflict, get reasons() { return reasonRead(); } };
+    renderPayload(targets, { items: [
+      { ...item, conflict_count: 1, assignee_email: 'synthetic@example.test' },
+      { ...item, kind: 'release', conflict_count: 1, assignee_email: 'synthetic@example.test' },
+    ], conflicts: [indexedConflict] });
+    expect(reasonRead).toHaveBeenCalledTimes(1);
+    expect([...targets.days.querySelectorAll('.badge')].map(b => b.getAttribute('title')))
+      .toEqual(['same group: Synthetic group', 'same group: Synthetic group']);
+  });
   it('renders day sections, four row cells, kind pills, local-time window and accurate chips', () => {
     const items = [item, { ...item, kind: 'release' as const, conflict_count: 1, planned_start_at: '2026-11-12T09:00:00Z', planned_end_at: undefined }];
     host.options!.onResult({ items, conflicts: [conflict], window: { from: '2026-11-10', to: '2026-11-13' } });
@@ -47,15 +69,15 @@ describe('change calendar rendering', () => {
     expect(targets.empty.hidden).toBe(true);
   });
   it('accents conflicting rows and explains both reasons in the badge title', () => {
-    const row = renderRow({ ...item, conflict_count: 1 }, [conflict]);
+    const row = renderRow({ ...item, conflict_count: 1 }, indexConflictReasons([conflict]));
     expect(row.classList.contains('has-conflict')).toBe(true);
     expect(row.querySelector('.badge')?.textContent).toBe('Conflict');
     expect(row.querySelector('.badge')?.getAttribute('title')).toBe('shared CI: Database\nsame group: Ops');
-    expect(renderRow(item, [conflict]).querySelector('.badge')).toBeNull();
+    expect(renderRow(item, indexConflictReasons([conflict])).querySelector('.badge')).toBeNull();
   });
   it('renders untrusted names as text with full tooltips and safe links', () => {
     const name = '<img src=x onerror=alert(1)> A very long change name';
-    const row = renderRow({ ...item, name, url: 'https://tenant.example/changes/1' }, []);
+    const row = renderRow({ ...item, name, url: 'https://tenant.example/changes/1' }, new Map());
     expect(row.querySelector('img')).toBeNull();
     expect(row.querySelector('.name-cell')?.getAttribute('title')).toBe(name);
     const anchor = row.querySelector('a')!;
@@ -65,7 +87,7 @@ describe('change calendar rendering', () => {
     expect(anchor.target).toBe('_blank');
   });
   it.each(['javascript:alert(1)', '//evil.example/path', 'data:text/html,bad', undefined])('leaves unsafe/missing URL %s as text', url => {
-    const row = renderRow({ ...item, url }, []);
+    const row = renderRow({ ...item, url }, new Map());
     expect(row.querySelector('a')).toBeNull();
     expect(row.querySelector('.name')?.textContent).toBe('Database patch');
   });

@@ -9,6 +9,7 @@ import { DescribeCustomFieldsInput } from '../../schemas/customField.js';
 import { PaginationOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
 import { toCustomFieldSummary } from '../../swsd/mappers/customField.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
@@ -74,7 +75,7 @@ export function registerDescribeCustomFields(
         const { body } = await ctx.client.get<unknown>('/custom_fields.json', {
           per_page: 1,
         });
-        const arr = Array.isArray(body) ? body : [];
+        const arr = requireListArray(body);
         const allFields = arr
           .map(toCustomFieldSummary)
           .filter((f): f is NonNullable<typeof f> => f !== null);

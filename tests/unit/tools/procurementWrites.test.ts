@@ -76,18 +76,18 @@ const CASES = [
   {
     stem: 'change_catalog', root: 'change_catalog', collection: 'change_catalogs',
     fields: {
-      name: NAME, description: DESCRIPTION, change_type: 'Standard', priority: 'High', state: 'Draft',
+      name: NAME, description: DESCRIPTION, change_type: 'Standard', priority: 'High', state_id: 1234567,
       change_plan: 'Synthetic change plan', rollback_plan: 'Synthetic rollback plan', test_plan: 'Synthetic test plan',
       show_in_portal: false, ...ASSIGNMENTS,
     },
     payload: {
-      name: NAME, description: DESCRIPTION, change_type: 'Standard', priority: 'High', state: 'Draft',
+      name: NAME, description: DESCRIPTION, change_type: 'Standard', priority: 'High', state_id: 1234567,
       change_plan: 'Synthetic change plan', rollback_plan: 'Synthetic rollback plan', test_plan: 'Synthetic test plan',
       show_in_portal: false, ...ASSIGNMENTS,
     },
-    labels: ['name', 'change_type', 'priority', 'state'],
+    labels: ['name', 'change_type', 'priority'],
     texts: ['description', 'change_plan', 'rollback_plan', 'test_plan'], emails: [], dates: [],
-    ids: Object.keys(ASSIGNMENTS), booleans: ['show_in_portal'],
+    ids: [...Object.keys(ASSIGNMENTS), 'state_id'], booleans: ['show_in_portal'],
   },
 ];
 
@@ -175,6 +175,16 @@ describe.each(CASES)('$stem procurement writes', (spec) => {
         [spec.stem]: { id: ID }, ...(update ? { changed_fields: [clearedField] } : {}),
       });
     });
+
+    if (spec.stem === 'change_catalog') {
+      it('sends state_id and never the read-only state label', async () => {
+        const { client, invoke } = setup(name);
+        client.setPostResponse({ id: 1234567 });
+        client.setPutResponse({ id: 1234567 });
+        await invoke({ ...input, state: 'Draft' });
+        expect(client.calls).toEqual([{ type: update ? 'put' : 'post', path, body: payload }]);
+      });
+    }
 
     it.each([null, [], 'invalid', { name: NAME }].map((response) => ({ response })))(
       'rejects an unparseable write response: $response', async ({ response }) => {

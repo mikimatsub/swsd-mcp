@@ -223,14 +223,15 @@ describe('swsd_list_catalog_items', () => {
     expect(struct?.items).toHaveLength(1);
   });
 
-  it('handles non-array body gracefully (returns empty items)', async () => {
+  it('rejects a non-array body as a decode error', async () => {
     client.setBody({ not: 'an array' });
     const result = (await tool.handler(
       { page: 1, per_page: 25 },
       {},
     )) as StructuredCallToolResult;
-    const struct = result.structuredContent as ToolStructuredOutput | undefined;
-    expect(struct?.items).toEqual([]);
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toBeUndefined();
+    expect(result.content?.[0]?.text).toMatch(/decode/i);
   });
 
   it('summary text includes count, total, and scope', async () => {
