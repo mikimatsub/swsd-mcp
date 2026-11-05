@@ -85,6 +85,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check changelog format
+        run: npm run check:changelog
+
       - name: Typecheck
         run: npm run typecheck
 

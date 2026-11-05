@@ -6,6 +6,35 @@ body:
   - type: markdown
     attributes:
       value: |
+        **Do not paste secrets.** Remove credentials, personal information, and organization data from text, logs, screenshots, and links. Use synthetic examples only.
+
+  - type: input
+    id: app_version
+    attributes:
+      label: App version
+      description: Installed Windows app version, if applicable.
+
+  - type: input
+    id: server_version
+    attributes:
+      label: Server version
+      description: Installed swsd-mcp server version, if known.
+
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows version
+      description: Windows edition and build from winver, if applicable.
+
+  - type: input
+    id: profile
+    attributes:
+      label: Profile
+      description: Selected profile name only; omit configuration contents and file paths.
+
+  - type: markdown
+    attributes:
+      value: |
         Thanks for suggesting an improvement. Concrete use cases help a lot: they let us judge whether a feature lives in the core profile, an extra, or as something a user can compose on their own.
 
   - type: textarea
