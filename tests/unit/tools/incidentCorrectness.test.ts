@@ -123,12 +123,26 @@ describe('incident correctness', () => {
     if (config.name === 'swsd_list_incidents') expect(sc.pagination.total_scope).toBe('tenant');
   });
 
-  it.each(tools)('$name sends the full hour cutoff timestamp', async config => {
+  it.each(tools)('$name sends a date-only cutoff upstream and applies the hour locally', async config => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-11-04T20:30:00Z'));
-    const { run, get } = setup(config);
-    await run({ updated_within: '1h' });
-    expect(get.mock.calls[0]?.[1]?.updated_at).toEqual(['greater_than', '2026-11-04T19:30:00.000Z']);
+    const { run, get } = setup(config, [[
+      { ...row(1234567), updated_at: '2026-11-04T19:45:00Z' },
+      { ...row(1234568), updated_at: '2026-11-04T19:00:00Z' },
+      row(1234569),
+    ]]);
+    const { structuredContent: sc } = await run({ updated_within: '1h' });
+    expect(get.mock.calls[0]?.[1]?.updated_at).toEqual(['greater_than', '2026-11-03']);
+    expect(sc.incidents.map(i => i.id)).toEqual([1234567]);
+    expect(sc.applied_filters.updated_from).toBe('2026-11-04T19:30:00.000Z');
+    expect(sc.pagination.total_scope).toBe('upstream');
+  });
+
+  it.each(tools)('$name passes date-only updated_from through without local filtering', async config => {
+    const { run, get } = setup(config, [[row(1234567)]]);
+    const { structuredContent: sc } = await run({ updated_from: '2026-11-01' });
+    expect(get.mock.calls[0]?.[1]?.updated_at).toEqual(['greater_than', '2026-11-01']);
+    expect(sc.incidents.map(i => i.id)).toEqual([1234567]);
   });
 
   it('recommends the public assigned_to_group parameter in both group hints', async () => {

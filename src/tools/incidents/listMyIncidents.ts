@@ -10,7 +10,7 @@ import { requireListArray } from '../../swsd/list-helper.js';
 import { withTotalScope } from '../../swsd/pagination.js';
 import { toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { resolveCurrentUser } from '../../utils/resolveCurrentUser.js';
-import { applyDateAlias } from '../../utils/dateAliases.js';
+import { applyDateAlias, passesUpdatedCutoff, planUpdatedFrom } from '../../utils/dateAliases.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 // Reuse the incident-list widget already registered (as a resource) by
@@ -111,7 +111,8 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         if (input.states?.length) params.state = input.states;
         if (input.priorities?.length) params.priority = input.priorities;
         if (input.categories?.length) params.category = input.categories;
-        if (input.updated_from) params.updated_at = ['greater_than', input.updated_from];
+        const updatedPlan = planUpdatedFrom(input.updated_from);
+        if (updatedPlan.upstream) params.updated_at = ['greater_than', updatedPlan.upstream];
         if (input.updated_to) params.updated_to = input.updated_to;
         if (input.created_from) params.created_from = input.created_from;
         if (input.created_to) params.created_to = input.created_to;
@@ -136,6 +137,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         const requesterLower = input.requester_email?.toLowerCase();
         const incidents = candidates.filter(
           (c) => c.assignee_email?.toLowerCase() === meEmailLower
+            && passesUpdatedCutoff(c.updated_at, updatedPlan.cutoffMs)
             && (requesterLower === undefined || c.requester_email?.toLowerCase() === requesterLower),
         );
 

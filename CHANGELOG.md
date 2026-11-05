@@ -112,8 +112,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `is_complete`, with the state-based fallback shared by every handler.
 - Malformed or interrupted upstream responses and unexpected list shapes now
   report sanitized errors instead of successful empty results.
-- Hour-based `updated_within` aliases preserve the full ISO timestamp; day and
-  week aliases retain their UTC calendar-date behavior.
+- Hour-based `updated_within` aliases and timestamped `updated_from` values now
+  apply the exact cutoff locally, sending SWSD only a widened calendar date; day
+  and week aliases retain their UTC calendar-date behavior.
 - `swsd_sla_risk` now collects `max_results` across up to ten candidate pages and
   reports scan truncation when pages or matching rows remain.
 - My-incident group fallback hints now use the public `assigned_to_group` input.

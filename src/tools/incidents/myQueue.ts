@@ -11,7 +11,7 @@ import { withTotalScope } from '../../swsd/pagination.js';
 import { toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { computeSlaRisk, type SlaRiskLevel } from '../../swsd/mappers/slaRisk.js';
 import { resolveCurrentUser } from '../../utils/resolveCurrentUser.js';
-import { applyDateAlias } from '../../utils/dateAliases.js';
+import { applyDateAlias, passesUpdatedCutoff, planUpdatedFrom } from '../../utils/dateAliases.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 const UI_RESOURCE_URI = 'ui://swsd/incident-list.html';
@@ -87,7 +87,8 @@ export function registerMyQueue(server: McpServer, ctx: ToolContext): void {
         if (input.states?.length) params.state = input.states;
         if (input.priorities?.length) params.priority = input.priorities;
         if (input.state_is_not?.length) params.state_is_not = input.state_is_not;
-        if (input.updated_from) params.updated_at = ['greater_than', input.updated_from];
+        const updatedPlan = planUpdatedFrom(input.updated_from);
+        if (updatedPlan.upstream) params.updated_at = ['greater_than', updatedPlan.upstream];
         if (input.assigned_to_group !== undefined) params.assigned_to = input.assigned_to_group;
 
         const sortKey = input.sort_by ?? 'due_at';
@@ -103,12 +104,13 @@ export function registerMyQueue(server: McpServer, ctx: ToolContext): void {
         const assigneeLower = useClientFilter && resolvedEmail
           ? resolvedEmail.toLowerCase()
           : undefined;
-        const clientFilterApplied = assigneeLower !== undefined;
+        const clientFilterApplied = assigneeLower !== undefined || updatedPlan.cutoffMs !== undefined;
         const filtered = clientFilterApplied
           ? candidates.filter(
               (c) =>
-                c.assignee_email !== undefined &&
-                c.assignee_email.toLowerCase() === assigneeLower,
+                (assigneeLower === undefined || (c.assignee_email !== undefined &&
+                c.assignee_email.toLowerCase() === assigneeLower)) &&
+                passesUpdatedCutoff(c.updated_at, updatedPlan.cutoffMs),
             )
           : candidates;
 

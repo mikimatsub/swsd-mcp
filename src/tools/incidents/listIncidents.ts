@@ -13,7 +13,7 @@ import { requireListArray } from '../../swsd/list-helper.js';
 import { withTotalScope } from '../../swsd/pagination.js';
 import { toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
-import { applyDateAlias } from '../../utils/dateAliases.js';
+import { applyDateAlias, passesUpdatedCutoff, planUpdatedFrom } from '../../utils/dateAliases.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 const UI_RESOURCE_URI = 'ui://swsd/incident-list.html';
@@ -101,7 +101,8 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         if (input.states?.length) params.state = input.states;
         if (input.priorities?.length) params.priority = input.priorities;
         if (input.categories?.length) params.category = input.categories;
-        if (input.updated_from) params.updated_at = ['greater_than', input.updated_from];
+        const updatedPlan = planUpdatedFrom(input.updated_from);
+        if (updatedPlan.upstream) params.updated_at = ['greater_than', updatedPlan.upstream];
         if (input.updated_to) params.updated_to = input.updated_to;
         if (input.created_from) params.created_from = input.created_from;
         if (input.created_to) params.created_to = input.created_to;
@@ -124,9 +125,10 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         const assigneeLower = input.assignee_email?.toLowerCase();
         const requesterLower = input.requester_email?.toLowerCase();
         const clientFilterApplied =
-          assigneeLower !== undefined || requesterLower !== undefined;
+          assigneeLower !== undefined || requesterLower !== undefined || updatedPlan.cutoffMs !== undefined;
         const incidents = clientFilterApplied
           ? candidates.filter((c) => {
+              if (!passesUpdatedCutoff(c.updated_at, updatedPlan.cutoffMs)) return false;
               if (
                 assigneeLower !== undefined &&
                 (c.assignee_email === undefined ||
