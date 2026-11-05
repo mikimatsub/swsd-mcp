@@ -33,7 +33,7 @@
         },
         {
           "name": "SWSD_PROFILE",
-          "description": "Tool registration profile: 'triage' (14 read-heavy tools), 'agent' (37 default), 'knowledge' (15 KB-author), 'operations' (64 ITSM operations tools), 'full' (66 every tool).",
+          "description": "Tool registration profile: 'triage' (21 read-heavy tools), 'agent' (51 default), 'knowledge' (17 KB-author), 'operations' (143 ITSM operations tools), 'full' (145 every tool).",
           "isRequired": false,
           "format": "string",
           "default": "agent",

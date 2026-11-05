@@ -55,6 +55,31 @@ describe('change calendar mapping and window', () => {
 });
 
 describe('change calendar conflicts', () => {
+  it('caps dense conflict details while preserving total and per-item counts', () => {
+    const candidates = Array.from({ length: 600 }, (_, index) => item({
+      id: 1234567 + index, assignee_email: 'synthetic@example.test',
+    }));
+    const result = buildCalendar(candidates);
+    expect(result.conflicts).toHaveLength(200);
+    expect(result).toMatchObject({ conflict_count: 179700, conflicts_truncated: true });
+    expect(result.items.map(i => i.conflict_count)).toEqual(Array<number>(600).fill(599));
+    expect(candidates.every(i => i.conflict_count === 0)).toBe(true);
+  });
+  it.each([199, 200, 201])('marks detail truncation only above the 200-pair limit: %i pairs', count => {
+    const start = Date.parse('2026-11-10T09:00:00Z');
+    const candidates = [item({ id: 1234567, planned_end_at: new Date(start + (count + 1) * 3600000).toISOString(), assignee_email: 'synthetic@example.test' }),
+      ...Array.from({ length: count }, (_, index) => item({
+        id: 1234568 + index,
+        planned_start_at: new Date(start + index * 3600000).toISOString(),
+        planned_end_at: new Date(start + (index + 1) * 3600000).toISOString(),
+        assignee_email: 'synthetic@example.test',
+      }))];
+    const result = buildCalendar(candidates);
+    expect(result.conflicts).toHaveLength(Math.min(count, 200));
+    expect(result).toMatchObject({ conflict_count: count, conflicts_truncated: count > 200 });
+    expect(result.items.find(i => i.id === 1234567)?.conflict_count).toBe(count);
+    expect(result.items.filter(i => i.id !== 1234567).every(i => i.conflict_count === 1)).toBe(true);
+  });
   it.each([
     ['08:00:00.000', '09:00:00.000', false],
     ['08:00:00.000', '09:00:00.001', true],
@@ -97,6 +122,6 @@ describe('change calendar conflicts', () => {
     expect(result.conflicts).toHaveLength(3);
     expect(result.days.map(d => [d.date, d.items.length])).toEqual([['2026-11-10', 3], ['2026-11-12', 1]]);
     expect(first.conflict_count).toBe(0);
-    expect(buildCalendar([])).toEqual({ items: [], conflicts: [], days: [] });
+    expect(buildCalendar([])).toEqual({ items: [], conflicts: [], conflict_count: 0, conflicts_truncated: false, days: [] });
   });
 });

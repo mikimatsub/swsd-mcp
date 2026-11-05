@@ -11,7 +11,8 @@ import type { Env } from '../config/env.js';
 import { createMcpServer, SERVER_NAME, SERVER_VERSION } from '../mcp/server.js';
 import { createSwsdClient } from '../swsd/client.js';
 import { registerTools } from '../config/toolRegistry.js';
-import { extractToken, AuthError } from './auth.js';
+import { extractToken, parseToken, AuthError } from './auth.js';
+import { redactTransport } from '../utils/secrets.js';
 
 // Legacy MCP protocol versions supported by SDK v2.
 // When upgrading the SDK, re-check the spec versions it supports.
@@ -22,7 +23,18 @@ const SUPPORTED_PROTOCOL_VERSIONS = new Set<string>([
   '2025-11-25',
 ]);
 
-export async function runHttp(env: Env): Promise<void> {
+function isLoopbackOrigin(origin: string): boolean {
+  if (!/^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::[0-9]+)?$/i.test(origin)) return false;
+  try {
+    return new URL(origin).origin !== 'null';
+  } catch {
+    return false;
+  }
+}
+
+export async function runHttp(config: Env): Promise<void> {
+  // HTTP must never inherit stdio's permission to read server-local attachments.
+  const env: Env = { ...config, SWSD_TRANSPORT: 'http' };
   const app = express();
 
   // Trust upstream proxy hops so req.ip reflects the real client (not the
@@ -45,8 +57,6 @@ export async function runHttp(env: Env): Promise<void> {
   // No customization needed: the server returns JSON only (no HTML, no
   // scripts, no inline styles), so Helmet's strict defaults are correct.
   app.use(helmet());
-
-  app.use(express.json({ limit: '4mb' }));
 
   // Health endpoint — minimal payload (no version disclosure), separate
   // from /mcp so monitoring doesn't auth-fail and so health probes don't
@@ -73,21 +83,26 @@ export async function runHttp(env: Env): Promise<void> {
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     keyGenerator: (req: Request): string => {
-      const auth = req.header('authorization') ?? req.header('x-swsd-token') ?? '';
+      const token = parseToken(req) ?? '';
       const ipKey = ipKeyGenerator(req.ip ?? '0.0.0.0');
-      return createHash('sha256').update(`${auth}:${ipKey}`).digest('hex');
+      return createHash('sha256').update(`${token}:${ipKey}`).digest('hex');
     },
     message: { error: 'Too many requests. Slow down and try again later.' },
   });
   app.use('/mcp', mcpLimiter);
 
   // Origin validation — spec MUST for DNS-rebinding prevention.
-  // Empty allowlist disables the check (acceptable behind a trusted reverse proxy).
+  // With no explicit allowlist, accept only loopback browser origins.
   const allowedOrigins = new Set(env.SWSD_ALLOWED_ORIGINS);
+  const allowedHosts = new Set(env.SWSD_ALLOWED_HOSTS);
   app.use('/mcp', (req: Request, res: Response, next: NextFunction) => {
     const origin = req.header('origin');
-    if (origin && allowedOrigins.size > 0 && !allowedOrigins.has(origin)) {
-      res.status(403).json({ error: `Origin ${origin} not allowed.` });
+    if (origin !== undefined && !(allowedOrigins.size > 0 ? allowedOrigins.has(origin) : isLoopbackOrigin(origin))) {
+      res.status(403).json({ error: 'Origin not allowed.' });
+      return;
+    }
+    if (allowedHosts.size > 0 && !allowedHosts.has(req.header('host') ?? '')) {
+      res.status(403).json({ error: 'Host not allowed.' });
       return;
     }
     next();
@@ -98,7 +113,7 @@ export async function runHttp(env: Env): Promise<void> {
     const v = req.header('mcp-protocol-version');
     if (v && !SUPPORTED_PROTOCOL_VERSIONS.has(v)) {
       res.status(400).json({
-        error: `Unsupported MCP-Protocol-Version: ${v}.`,
+        error: 'Unsupported MCP-Protocol-Version.',
         supported: [...SUPPORTED_PROTOCOL_VERSIONS],
       });
       return;
@@ -106,10 +121,10 @@ export async function runHttp(env: Env): Promise<void> {
     next();
   });
 
-  app.post('/mcp', async (req: Request, res: Response) => {
-    let token: string;
+  // Authenticate and throttle before parsing potentially large or malformed JSON.
+  app.post('/mcp', (req: Request, res: Response, next: NextFunction) => {
     try {
-      token = extractToken(req);
+      extractToken(req);
     } catch (e) {
       if (e instanceof AuthError) {
         res.status(401).json({ error: e.message });
@@ -117,7 +132,11 @@ export async function runHttp(env: Env): Promise<void> {
       }
       throw e;
     }
+    next();
+  });
 
+  app.post('/mcp', express.json({ limit: '4mb' }), async (req: Request, res: Response) => {
+    const token = extractToken(req);
     const client = createSwsdClient({ env, token });
     const server = createMcpServer();
     const enabledTools: string[] = [];
@@ -131,14 +150,27 @@ export async function runHttp(env: Env): Promise<void> {
 
     const transport = new NodeStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless
+      allowedHosts: env.SWSD_ALLOWED_HOSTS,
+      enableDnsRebindingProtection: allowedHosts.size > 0,
     });
     res.on('close', () => {
       void transport.close();
       void server.close();
     });
 
-    await server.connect(transport);
+    await server.connect(redactTransport(transport, token));
     await transport.handleRequest(req, res, req.body as unknown);
+  });
+
+  // Four arguments are required for Express to recognize error middleware.
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    const type = err && typeof err === 'object' && 'type' in err ? err.type : undefined;
+    const status = type === 'entity.parse.failed' ? 400 : type === 'entity.too.large' ? 413 : 500;
+    const code = status === 400 ? 'INVALID_JSON' : status === 413 ? 'PAYLOAD_TOO_LARGE' : 'INTERNAL_ERROR';
+    const message = status === 400 ? 'Malformed JSON request.' : status === 413 ? 'Request payload too large.' : 'Internal server error.';
+    process.stderr.write(`HTTP request failed: ${JSON.stringify({ status, code })}\n`);
+    if (!res.headersSent) res.status(status).json({ error: { code, message } });
+    else res.end();
   });
 
   app.listen(env.PORT, () => {

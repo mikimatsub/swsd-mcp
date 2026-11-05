@@ -35,8 +35,10 @@ const trustProxyTransform = (v: string | undefined): boolean | number | string =
  */
 const isSamanageUrl = (url: string): boolean => {
   try {
-    const h = new URL(url).hostname.toLowerCase();
-    return h === 'samanage.com' || h.endsWith('.samanage.com');
+    const parsed = new URL(url);
+    const h = parsed.hostname.toLowerCase();
+    return parsed.protocol === 'https:' && !parsed.username && !parsed.password &&
+      (h === 'samanage.com' || h.endsWith('.samanage.com'));
   } catch {
     return false;
   }
@@ -49,7 +51,7 @@ export const EnvSchema = z.object({
     .max(2_048)
     .url()
     .refine(isSamanageUrl, {
-      message: 'SWSD_BASE_URL must be on samanage.com (e.g., https://api.samanage.com or https://apieu.samanage.com)',
+      message: 'SWSD_BASE_URL must use HTTPS on samanage.com without embedded credentials (e.g., https://api.samanage.com or https://apieu.samanage.com)',
     })
     .default('https://api.samanage.com'),
   SWSD_API_VERSION: z.string().min(1).max(32).default('v2.1'),
@@ -80,7 +82,14 @@ export const EnvSchema = z.object({
     .string()
     .max(10_000)
     .optional()
-    .transform(csv),
+    .transform(csv)
+    .describe('Allowed Origin headers. Empty allows only HTTP(S) loopback origins; requests without Origin are allowed.'),
+  SWSD_ALLOWED_HOSTS: z
+    .string()
+    .max(10_000)
+    .transform(csv)
+    .optional()
+    .describe('Optional comma-separated exact Host headers, including ports when present. Empty disables Host validation; the listen address is unchanged.'),
   SWSD_RETRY_MAX_ATTEMPTS: z.coerce.number().int().min(0).max(10).default(3),
   SWSD_REQUEST_TIMEOUT_MS: z.coerce
     .number()

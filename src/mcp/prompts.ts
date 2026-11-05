@@ -21,6 +21,12 @@ const GroupArg = z
   .regex(/^[^\r\n<>`]+$/, 'Group name must be plain single-line text.')
   .optional();
 
+const GroupIdArg = z
+  .string()
+  .regex(/^[1-9]\d*$/, 'Use a positive numeric group ID.')
+  .refine((v) => Number.isSafeInteger(Number(v)), 'Group ID must be a safe integer.')
+  .optional();
+
 const WeekStartArg = z
   .string()
   .regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/, 'Use an ISO date like 2026-11-02.')
@@ -79,13 +85,13 @@ export const PROMPTS: readonly PromptDef[] = [
     requires: ['swsd_sla_risk'],
     argsSchema: z.object({
       within_hours: HoursArg.describe('Treat tickets due within this many hours as at risk (1-168). Default 24.'),
-      group: GroupArg.describe('Optional assignment group name to limit the review.'),
+      group: GroupIdArg.describe('Optional positive numeric group ID to limit the review (not a group name).'),
     }),
     build: ({ within_hours, group }) => {
       const hours = within_hours ?? '24';
       return [
-        `Review SWSD SLA risk${group ? ` for the "${group}" group` : ''}.`,
-        `1. Call swsd_sla_risk with at_risk_within_hours=${hours}${group ? ' and the matching assigned_to_group (look the group id up with swsd_list_groups if needed)' : ''}.`,
+        `Review SWSD SLA risk${group ? ` for group ID ${group}` : ''}.`,
+        `1. Call swsd_sla_risk with at_risk_within_hours=${hours}${group ? ` and assigned_to_group=${group}` : ''}.`,
         '2. Group the results by risk level: breached, critical, warning.',
         '3. For each breached or critical ticket give number, title, priority, assignee, due time, and one concrete next action (for example reassign, escalate, or update the requester).',
         '4. Call out tickets with no assignee and patterns such as one assignee holding several at-risk tickets.',

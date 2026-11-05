@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ListIncidentTasksInput } from '../../schemas/task.js';
 import { structuredResult } from '../../mcp/output.js';
 import { mapSwsdError } from '../../swsd/errors.js';
+import { requireListArray } from '../../swsd/list-helper.js';
 import { toTask } from '../../swsd/mappers/task.js';
 import { resolveIncidentRef } from '../../utils/idResolver.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
@@ -51,7 +52,7 @@ export function registerListIncidentTasks(server: McpServer, ctx: ToolContext): 
         const { body } = await ctx.client.get<unknown>(
           `/incidents/${String(resolvedIncidentId)}/tasks.json`,
         );
-        const arr = Array.isArray(body) ? body : [];
+        const arr = requireListArray(body);
         const tasks = arr
           .map(toTask)
           .filter((x): x is NonNullable<typeof x> => x !== null);

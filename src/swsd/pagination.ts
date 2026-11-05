@@ -6,6 +6,22 @@ export interface PaginationMeta {
   next_page?: number;
 }
 
+/** Keep upstream counts separate from matches after local filtering. */
+export function withTotalScope(
+  pagination: PaginationMeta,
+  clientFilterApplied: boolean,
+  hasServerFilter: boolean,
+  matches: number,
+  allPagesScanned = pagination.page === 1 && !pagination.has_more,
+): PaginationMeta & { total_scope: 'upstream' | 'filtered' | 'tenant' | 'unknown'; matched_total: number | null } {
+  return {
+    ...pagination,
+    total_scope: pagination.total === undefined ? 'unknown'
+      : clientFilterApplied ? 'upstream' : hasServerFilter ? 'filtered' : 'tenant',
+    matched_total: allPagesScanned ? matches : clientFilterApplied ? null : pagination.total ?? null,
+  };
+}
+
 const LINK_PART_RE = /<([^>]+)>;\s*rel="?([^"]+)"?/;
 const PAGE_PARAM_RE = /[?&]page=(\d+)/;
 

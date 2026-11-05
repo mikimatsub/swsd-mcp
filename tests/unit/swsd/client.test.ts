@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EnvSchema, type Env } from '../../../src/config/env.js';
 import { createSwsdClient } from '../../../src/swsd/client.js';
-import { SwsdNetworkError } from '../../../src/swsd/errors.js';
+import { SwsdNetworkError, mapSwsdError } from '../../../src/swsd/errors.js';
 import type { SwsdHttpError } from '../../../src/swsd/errors.js';
 
 function makeEnv(overrides: Record<string, string | number> = {}): Env {
@@ -24,6 +24,21 @@ describe('createSwsdClient request boundary', () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it.each(['HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'])('never retries %s on HTTP or network failures', async (method) => {
+    vi.useFakeTimers();
+    for (const network of [false, true]) {
+      const fetchMock = vi.fn<typeof fetch>();
+      if (network) fetchMock.mockRejectedValue(new Error('SYNTHETIC_NETWORK_FAILURE'));
+      else fetchMock.mockResolvedValue(new Response(null, { status: 503 }));
+      vi.stubGlobal('fetch', fetchMock);
+      const client = createSwsdClient({ env: makeEnv({ SWSD_RETRY_MAX_ATTEMPTS: 1 }), token: 'SYNTHETIC_TOKEN' });
+      const assertion = expect(client.rawRequest('/incidents/1234567.json', { method })).rejects.toThrow();
+      await vi.runAllTimersAsync();
+      await assertion;
+      expect(fetchMock).toHaveBeenCalledOnce();
+    }
   });
 
   it('builds an authenticated GET with encoded query values and pagination defaults', async () => {
@@ -124,16 +139,10 @@ describe('createSwsdClient request boundary', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('returns plain-text success bodies and normalizes invalid JSON to null', async () => {
+  it('returns plain-text success bodies', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response('accepted', { status: 202 }))
-      .mockResolvedValueOnce(
-        new Response('{invalid', {
-          status: 200,
-          headers: { 'content-type': 'application/problem+json' },
-        }),
-      );
+      .mockResolvedValueOnce(new Response('accepted', { status: 202 }));
     vi.stubGlobal('fetch', fetchMock);
     const client = createSwsdClient({ env: makeEnv(), token: 'tenant-token' });
 
@@ -141,14 +150,61 @@ describe('createSwsdClient request boundary', () => {
       body: 'accepted',
       status: 202,
     });
-    await expect(client.rawRequest('/invalid-json', { method: 'GET' })).resolves.toMatchObject({
-      body: null,
-      status: 200,
-    });
+  });
+
+  it.each(['GET', 'POST'])('rejects malformed successful JSON for %s with a sanitized decode error and no retry', async (method) => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response('{SYNTHETIC_TOKEN', {
+      status: 200, headers: { 'content-type': 'application/problem+json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const client = createSwsdClient({ env: makeEnv({ SWSD_RETRY_MAX_ATTEMPTS: 3 }), token: 'SYNTHETIC_TOKEN' });
+
+    const err: unknown = await client.rawRequest('/tasks.json', { method }).catch((error: unknown) => error);
+
+    expect(err).toMatchObject({ name: 'SwsdDecodeError', status: 200 });
+    expect(String(err)).not.toContain('SYNTHETIC_TOKEN');
+    const result = mapSwsdError(err);
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result)).toContain('may already have completed');
+    expect(JSON.stringify(result)).not.toContain('SYNTHETIC_TOKEN');
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it.each(['application/json', 'text/plain'])('rejects interrupted %s success bodies without exposing the cause', async (contentType) => {
+    const response = new Response('synthetic', { status: 200, headers: { 'content-type': contentType } });
+    vi.spyOn(response, 'text').mockRejectedValue(new Error('SYNTHETIC_TOKEN body read failed'));
+    vi.spyOn(response, 'json').mockRejectedValue(new Error('SYNTHETIC_TOKEN body read failed'));
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(response));
+    const client = createSwsdClient({ env: makeEnv(), token: 'SYNTHETIC_TOKEN' });
+
+    const err: unknown = await client.get('/tasks.json').catch((error: unknown) => error);
+    expect(err).toMatchObject({ name: 'SwsdDecodeError', status: 200 });
+    expect(String(err)).not.toContain('SYNTHETIC_TOKEN');
+    expect(JSON.stringify(mapSwsdError(err))).not.toContain('SYNTHETIC_TOKEN');
+  });
+
+  it.each([
+    { method: 'DELETE', status: 200 },
+    { method: 'DELETE', status: 204 },
+    { method: 'PUT', status: 204 },
+  ])('accepts an empty $method response with status $status', async ({ method, status }) => {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(new Response(null, {
+      status, headers: { 'content-type': 'application/json' },
+    })));
+    const client = createSwsdClient({ env: makeEnv(), token: 'SYNTHETIC_TOKEN' });
+    await expect(client.rawRequest('/tasks/1234567.json', { method })).resolves.toMatchObject({ body: null, status });
+  });
+
+  it.each(['GET'])('rejects empty JSON on %s instead of treating it as an empty result', async (method) => {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(new Response(null, {
+      status: 200, headers: { 'content-type': 'application/json' },
+    })));
+    const client = createSwsdClient({ env: makeEnv(), token: 'SYNTHETIC_TOKEN' });
+    await expect(client.rawRequest('/tasks.json', { method })).rejects.toMatchObject({ name: 'SwsdDecodeError' });
   });
 
   it('supports PUT and string request bodies without double encoding', async () => {
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ id: 7 }, { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => jsonResponse({ id: 7 }, { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     const client = createSwsdClient({ env: makeEnv(), token: 'tenant-token' });
 
@@ -157,5 +213,22 @@ describe('createSwsdClient request boundary', () => {
 
     await client.rawRequest('/raw', { method: 'POST', body: 'already-encoded' });
     expect(fetchMock.mock.calls[1]?.[1]?.body).toBe('already-encoded');
+  });
+});
+
+describe('empty successful bodies after writes', () => {
+  it('treats an empty JSON 200 response to POST as null, not a decode error', async () => {
+    const { createSwsdClient } = await import('../../../src/swsd/client.js');
+    const { EnvSchema } = await import('../../../src/config/env.js');
+    const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const client = createSwsdClient({ env: EnvSchema.parse({}), token: 'SYNTHETIC_TOKEN' });
+      const res = await client.post('/incidents.json', { incident: { name: 'Synthetic' } });
+      expect(res.body).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

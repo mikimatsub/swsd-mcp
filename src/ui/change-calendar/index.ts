@@ -1,11 +1,11 @@
 import { mountApp } from '../shared/host.js';
 import { el, clear } from '../shared/dom.js';
-import { renderError } from '../shared/error.js';
+import { clearError, renderError } from '../shared/error.js';
 import { isSafeHttpUrl } from '../shared/format.js';
 import type { CalendarConflict, CalendarItem, ChangeCalendarOutput } from '../../schemas/changeCalendar.js';
-import { conflictReasons, formatDay, formatTimeRange, formatWindow, groupDays } from './logic.js';
+import { conflictReasons, formatDay, formatTimeRange, formatWindow, groupDays, indexConflictReasons, type ConflictReasonIndex } from './logic.js';
 
-export type Payload = Pick<ChangeCalendarOutput, 'items' | 'conflicts'> & Partial<Pick<ChangeCalendarOutput, 'window' | 'scan'>>;
+export type Payload = Pick<ChangeCalendarOutput, 'items' | 'conflicts'> & Partial<Pick<ChangeCalendarOutput, 'window' | 'scan' | 'conflict_count' | 'conflicts_truncated'>>;
 export interface RenderTargets {
   title: HTMLElement;
   window: HTMLElement;
@@ -15,18 +15,18 @@ export interface RenderTargets {
   notice: HTMLElement;
 }
 
-export function renderChips(target: HTMLElement, items: readonly CalendarItem[], conflicts: readonly CalendarConflict[]): void {
+export function renderChips(target: HTMLElement, items: readonly CalendarItem[], conflictCount: number): void {
   clear(target);
   for (const [label, count, kind] of [
     ['Changes', items.filter(i => i.kind === 'change').length, 'change'],
     ['Releases', items.filter(i => i.kind === 'release').length, 'release'],
-    ['Conflicts', conflicts.length, 'conflict'],
+    ['Conflicts', conflictCount, 'conflict'],
   ] as const) {
     target.appendChild(el('span', { class: `chip ${kind}` }, [`${label} ${String(count)}`]));
   }
 }
 
-export function renderRow(item: CalendarItem, conflicts: readonly CalendarConflict[]): HTMLElement {
+export function renderRow(item: CalendarItem, conflicts: ConflictReasonIndex): HTMLElement {
   const name = item.name;
   const label = item.url && isSafeHttpUrl(item.url)
     ? el('a', { class: 'name', title: name, href: item.url, target: '_blank', rel: 'noopener noreferrer' }, [name])
@@ -52,10 +52,11 @@ export function renderRow(item: CalendarItem, conflicts: readonly CalendarConfli
 
 export function renderDays(target: HTMLElement, items: readonly CalendarItem[], conflicts: readonly CalendarConflict[]): void {
   clear(target);
+  const reasonsByRecord = indexConflictReasons(conflicts);
   for (const day of groupDays(items)) {
     target.appendChild(el('section', { class: 'day', 'aria-label': formatDay(day.date) }, [
       el('h2', undefined, [formatDay(day.date)]),
-      el('ul', { class: 'day-rows' }, day.items.map(item => renderRow(item, conflicts))),
+      el('ul', { class: 'day-rows' }, day.items.map(item => renderRow(item, reasonsByRecord))),
     ]));
   }
 }
@@ -65,13 +66,17 @@ export function renderPayload(target: RenderTargets, data: Payload | undefined |
   const conflicts = Array.isArray(data?.conflicts) ? data.conflicts : [];
   target.title.textContent = 'Change calendar';
   target.window.textContent = formatWindow(data?.window);
-  renderChips(target.chips, items, conflicts);
+  const conflictCount = data?.conflict_count ?? conflicts.length;
+  renderChips(target.chips, items, conflictCount);
   renderDays(target.days, items, conflicts);
   target.empty.hidden = items.length > 0;
   target.empty.textContent = 'No scheduled changes or releases match this window and filters.';
-  target.notice.hidden = !data?.scan?.truncated;
-  target.notice.textContent = data?.scan?.truncated
-    ? 'Partial calendar: the scan limit was reached. More scheduled work and conflicts may exist.' : '';
+  const notices = [
+    data?.scan?.truncated ? 'Partial calendar: the scan limit was reached. More scheduled work and conflicts may exist.' : '',
+    data?.conflicts_truncated ? `Showing ${String(conflicts.length)} of ${String(conflictCount)} conflict details; badges include all conflicts for returned items.` : '',
+  ].filter(Boolean);
+  target.notice.hidden = notices.length === 0;
+  target.notice.textContent = notices.join(' ');
 }
 
 const root = document.getElementById('root');
@@ -88,7 +93,10 @@ const targets: RenderTargets = { title, window: windowText, chips, days, empty, 
 // Host-mediated links work inside sandboxed MCP Apps frames.
 void mountApp<Payload>({
   name: 'swsd-mcp/change-calendar', version: '1.0.0',
-  onResult: data => renderPayload(targets, data),
+  onResult: data => {
+    clearError(root);
+    renderPayload(targets, data);
+  },
   onError: ({ message }) => renderError(root, message),
 }).then(app => {
   root.addEventListener('click', event => {

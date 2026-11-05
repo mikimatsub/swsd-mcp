@@ -46,6 +46,9 @@ import type { SwsdClient } from '../swsd/client.js';
  */
 export const ID_DIGIT_THRESHOLD = 7;
 
+export const RECORD_REFERENCE_DESCRIPTION =
+  `Accepts an internal id (>=${String(ID_DIGIT_THRESHOLD)} digits) or human-facing number (<=${String(ID_DIGIT_THRESHOLD - 1)} digits). `;
+
 /**
  * Page size for the lookup request. The SWSD `query` filter is free-text and
  * may return rows whose description contains the number as a substring in

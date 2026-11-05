@@ -68,7 +68,7 @@ describe('ticket stats widget rendering', () => {
     options.onError({ message: '<img src=x onerror=alert(1)> Forbidden.' });
     expect(root.querySelector('[role="alert"]')?.textContent).toContain('Forbidden.');
     expect(root.querySelector('img')).toBeNull();
-    expect(root.querySelector('.kpis')).toBeNull();
+    expect(root.querySelector('.kpis')?.closest<HTMLElement>('.error-content')?.hidden).toBe(true);
     options.onResult(fixture);
     expect(root.querySelector('[role="alert"]')).toBeNull();
     expect(root.querySelectorAll('.kpi')).toHaveLength(6);

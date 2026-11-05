@@ -1,6 +1,6 @@
 import { mountApp } from '../shared/host.js';
 import { el, clear } from '../shared/dom.js';
-import { renderError } from '../shared/error.js';
+import { clearError, renderError } from '../shared/error.js';
 import { pickString, pickNumber, isSafeHttpUrl } from '../shared/format.js';
 import {
   RISK_LABELS,
@@ -100,6 +100,7 @@ mountApp<Payload>({
   name: 'swsd-mcp/sla-risk',
   version: '1.1.0',
   onResult: (data) => {
+    clearError(rootEl);
     renderPayload(targets, data);
   },
   onError: ({ message }) => {

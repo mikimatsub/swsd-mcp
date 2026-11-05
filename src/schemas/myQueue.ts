@@ -5,6 +5,7 @@ import {
   MAX_FILTER_ITEMS,
   MAX_LABEL_CHARS,
   RelativeTimeAliasInput,
+  RELATIVE_TIME_DESCRIPTION,
 } from './limits.js';
 
 export const MyQueueInput = z.object({
@@ -37,7 +38,7 @@ export const MyQueueInput = z.object({
     .describe('Filter to incidents matching ANY of these priorities.'),
   updated_within: RelativeTimeAliasInput
     .optional()
-    .describe('Convenience alias for updated_from. Accepts "Nh", "Nd", or "Nw".'),
+    .describe(RELATIVE_TIME_DESCRIPTION),
   updated_from: IsoDateOrDateTimeInput
     .optional()
     .describe('Filter to incidents updated on or after this ISO date or datetime.'),

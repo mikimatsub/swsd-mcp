@@ -21,6 +21,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseEnv } from '../src/config/env.js';
+import { redactSecrets, validateToken } from '../src/utils/secrets.js';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_OUT = resolve(REPO_ROOT, 'validation/custom-fields.json');
@@ -38,12 +40,14 @@ function parseArgs(argv: string[]): Args {
 }
 
 async function main(): Promise<void> {
-  const token = process.env.SWSD_TOKEN;
-  const baseUrl = (process.env.SWSD_BASE_URL ?? 'https://api.samanage.com').replace(/\/+$/, '');
+  const env = parseEnv(process.env);
+  const token = env.SWSD_TOKEN;
+  const baseUrl = env.SWSD_BASE_URL.replace(/\/+$/, '');
   if (!token) {
     process.stderr.write('SWSD_TOKEN environment variable is required.\n');
     process.exit(2);
   }
+  validateToken(token);
 
   const args = parseArgs(process.argv.slice(2));
   const headers = {
@@ -55,9 +59,7 @@ async function main(): Promise<void> {
   const url = `${baseUrl}/custom_fields.json?per_page=1`;
   const res = await fetch(url, { headers });
   if (!res.ok) {
-    process.stderr.write(`HTTP ${String(res.status)} from ${url}\n`);
-    const body = await res.text().catch(() => '');
-    process.stderr.write(body.slice(0, 500) + '\n');
+    process.stderr.write(`Custom-field request failed (HTTP ${String(res.status)}).\n`);
     process.exit(1);
   }
   const body: unknown = await res.json();
@@ -71,7 +73,7 @@ async function main(): Promise<void> {
     captured_at: new Date().toISOString(),
     base_url: baseUrl,
     field_count: body.length,
-    fields: body,
+    fields: redactSecrets(body, token),
   };
   writeFileSync(args.out, JSON.stringify(captured, null, 2), 'utf-8');
   process.stdout.write(`Wrote ${String(body.length)} custom fields to ${args.out}\n`);
@@ -82,7 +84,7 @@ async function main(): Promise<void> {
   );
 }
 
-main().catch((err: unknown) => {
-  process.stderr.write(`Fatal: ${err instanceof Error ? err.message : String(err)}\n`);
+main().catch(() => {
+  process.stderr.write('Custom-field dump failed. Check configuration and network connectivity.\n');
   process.exit(1);
 });

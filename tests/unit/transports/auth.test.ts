@@ -30,7 +30,6 @@ describe('extractToken — Authorization: Bearer <token>', () => {
 
   it('trims trailing whitespace from the token', () => {
     expect(extractToken(fakeReq({ authorization: 'Bearer abc123   ' }))).toBe('abc123');
-    expect(extractToken(fakeReq({ authorization: 'Bearer abc123\t\n' }))).toBe('abc123');
   });
 
   it('preserves internal characters (JWTs contain dots, hyphens, etc.)', () => {
@@ -86,7 +85,7 @@ describe('extractToken — X-SWSD-Token fallback', () => {
   });
 
   it('trims X-SWSD-Token', () => {
-    expect(extractToken(fakeReq({ 'x-swsd-token': '  xyz789\n' }))).toBe('xyz789');
+    expect(extractToken(fakeReq({ 'x-swsd-token': '  xyz789  ' }))).toBe('xyz789');
   });
 
   it('prefers Authorization over X-SWSD-Token when both are present', () => {
@@ -106,6 +105,11 @@ describe('extractToken — X-SWSD-Token fallback', () => {
 });
 
 describe('extractToken — error path', () => {
+  it.each(['SYNTHETIC_TOKEN\nBAD', 'SYNTHETIC_TOKEN\t', 'SYNTHETIC TOKEN', 'SYNTHETIC_TOKEN\u007f'])('rejects whitespace and control characters without echoing the token (%j)', (token) => {
+    for (const headers of [{ authorization: `Bearer ${token}` }, { 'x-swsd-token': token }]) {
+      expect(() => extractToken(fakeReq(headers))).toThrow('Invalid SWSD token. Tokens must contain only visible ASCII characters without whitespace.');
+    }
+  });
   it('throws AuthError when no headers are present', () => {
     expect(() => extractToken(fakeReq({}))).toThrow(AuthError);
   });

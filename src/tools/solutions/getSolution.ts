@@ -6,6 +6,7 @@ import {
 } from '@modelcontextprotocol/ext-apps/server';
 import { z } from 'zod';
 import { GetSolutionInput } from '../../schemas/solution.js';
+import { RECORD_REFERENCE_DESCRIPTION } from '../../utils/idResolver.js';
 import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
@@ -22,7 +23,7 @@ export function registerGetSolution(server: McpServer, ctx: ToolContext): void {
     'swsd_get_solution',
     {
       description:
-        'Fetch one SWSD solution by numeric ID. Returns the full solution as ' +
+        'Fetch one SWSD solution. ' + RECORD_REFERENCE_DESCRIPTION + 'Returns the full solution as ' +
         'returned by SWSD (passthrough), including both `description` (HTML) and ' +
         '`description_no_html` (plain text) fields, custom_fields_values, comments ' +
         'count, and attachment metadata. Use swsd_search_solutions first if you ' +
