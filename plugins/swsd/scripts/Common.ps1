@@ -4,14 +4,44 @@ $script:SwsdPackageVersion = '3.2.0'
 $script:SwsdClientVersion = '3.1.0'
 $script:SwsdCredentialTarget = 'swsd-mcp/api-token'
 $script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'swsd-mcp'
+
+# Data-driven profile catalog. picker=$true rows appear in Home/Tools pickers.
+# Hidden aliases (picker=$false) keep older saved settings working; aliasOf maps
+# them onto a visible profile (full -> operations while Full merges into Operations).
 $script:SwsdProfiles = @(
-    @{ id = 'triage'; name = 'Triage'; description = 'Review incidents and catalog items, view tasks and problems, and add incident comments.' },
-    @{ id = 'agent'; name = 'Agent'; description = 'Everyday ticket handling, tasks, problems, time entries, attachments, and knowledge searches.' },
-    @{ id = 'knowledge'; name = 'Knowledge'; description = 'Search, create, and update knowledge articles, with incident and catalog context.' },
-    @{ id = 'operations'; name = 'Operations'; description = 'Agent tools plus changes, releases, assets, procurement, and risk records.' },
-    @{ id = 'full'; name = 'Full'; description = 'All available tools. Your SolarWinds account permissions still apply.' }
+    @{ id = 'triage'; name = 'Triage'; description = 'Review incidents and catalog items, view tasks and problems, and add incident comments.'; picker = $true },
+    @{ id = 'agent'; name = 'Agent'; description = 'Everyday ticket handling, tasks, problems, time entries, attachments, and knowledge searches.'; picker = $true },
+    @{ id = 'knowledge'; name = 'Knowledge'; description = 'Search, create, and update knowledge articles, with incident and catalog context.'; picker = $true },
+    @{ id = 'operations'; name = 'Operations'; description = 'All available tools. Your SolarWinds account permissions still apply.'; picker = $true },
+    @{ id = 'full'; name = 'Full'; description = 'Hidden alias for Operations while older installs still store profile=full.'; picker = $false; aliasOf = 'operations' }
 )
 
+function Get-SwsdPickerProfiles {
+    return @($script:SwsdProfiles | Where-Object { $_.picker })
+}
+
+function Resolve-SwsdProfileId([string]$Id) {
+    $row = $script:SwsdProfiles | Where-Object { $_.id -eq $Id } | Select-Object -First 1
+    if (-not $row) { return $Id }
+    if ($row -is [hashtable]) {
+        if ($row.ContainsKey('aliasOf') -and $row['aliasOf']) { return [string]$row['aliasOf'] }
+        return $Id
+    }
+    $prop = $row.PSObject.Properties['aliasOf']
+    if ($prop -and $prop.Value) { return [string]$prop.Value }
+    return $Id
+}
+
+function Get-SwsdProfileRow([string]$Id) {
+    $resolved = Resolve-SwsdProfileId $Id
+    return $script:SwsdProfiles | Where-Object { $_.id -eq $resolved } | Select-Object -First 1
+}
+
+function Get-SwsdProfileDisplayName([string]$Id) {
+    $row = Get-SwsdProfileRow $Id
+    if ($row) { return [string]$row.name }
+    return (Get-Culture).TextInfo.ToTitleCase($Id)
+}
 # Credential values never travel through command arguments, stdout, or configuration files.
 if (-not ('SwsdDesktop.Credentials' -as [type])) {
     Add-Type -TypeDefinition @'
@@ -79,7 +109,7 @@ namespace SwsdDesktop {
         Credential value = new Credential();
         value.Type = 1; value.TargetName = target;
         value.UserName = Environment.UserName;
-        value.Comment = "SolarWinds Service Desk personal API token";
+        value.Comment = "SolarWinds Service Desk JSON Web Token";
         value.CredentialBlob = blob; value.CredentialBlobSize = (uint)secret.Length * 2;
         value.Persist = 2;
         if (!WriteNative(ref value, 0)) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -98,7 +128,7 @@ namespace SwsdDesktop {
 
 function Get-SwsdSettings {
     $path = Join-Path $script:SwsdHome 'settings.json'
-    $settings = @{ baseUrl = 'https://api.samanage.com'; profile = 'agent' }
+    $settings = @{ baseUrl = 'https://api.samanage.com'; profile = 'agent'; theme = 'system' }
     if (Test-Path -LiteralPath $path) {
         $saved = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
         if ($saved.baseUrl -notin @('https://api.samanage.com', 'https://apieu.samanage.com')) {
@@ -111,6 +141,7 @@ function Get-SwsdSettings {
             }
             $settings.profile = $saved.profile
         }
+        if ($saved.PSObject.Properties['theme'] -and $saved.theme -in @('system','light','dark')) { $settings.theme = $saved.theme }
     }
     return $settings
 }
@@ -118,12 +149,14 @@ function Get-SwsdSettings {
 function Save-SwsdSettings {
     param(
         [Parameter(Mandatory)][ValidateSet('https://api.samanage.com','https://apieu.samanage.com')][string]$BaseUrl,
-        [Parameter(Mandatory)][ValidateSet('triage','agent','knowledge','operations','full')][string]$Profile
+        [Parameter(Mandatory)][ValidateSet('triage','agent','knowledge','operations','full')][string]$Profile,
+        [ValidateSet('system','light','dark')][string]$Theme
     )
     New-Item -ItemType Directory -Path $script:SwsdHome -Force | Out-Null
     $temporary = Join-Path $script:SwsdHome ('settings-' + [guid]::NewGuid().ToString('N') + '.tmp')
     try {
-        @{ baseUrl = $BaseUrl; profile = $Profile } | ConvertTo-Json | Set-Content -LiteralPath $temporary -Encoding UTF8
+        if (-not $Theme) { $Theme = (Get-SwsdSettings).theme }
+        @{ baseUrl = $BaseUrl; profile = $Profile; theme = $Theme } | ConvertTo-Json | Set-Content -LiteralPath $temporary -Encoding UTF8
         Move-Item -LiteralPath $temporary -Destination (Join-Path $script:SwsdHome 'settings.json') -Force
     } finally {
         if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
@@ -166,7 +199,7 @@ function Test-SwsdToken {
         try {
             if (-not $response.IsSuccessStatusCode) {
                 $status = [int]$response.StatusCode
-                if ($status -eq 401) { throw 'SolarWinds rejected this token (401). Generate or supply a valid personal API token.' }
+                if ($status -eq 401) { throw 'SolarWinds rejected this token (401). Supply a valid JSON Web Token.' }
                 if ($status -eq 403) { throw 'SolarWinds denied incident access (403). Ask your SWSD administrator to review your account permissions.' }
                 throw "SolarWinds returned HTTP $status. Check the region and service availability."
             }
@@ -176,6 +209,42 @@ function Test-SwsdToken {
         if ($_.Exception.Message -match '^SolarWinds ') { throw $_.Exception.Message }
         throw 'Connection failed. Check network access, proxy settings, and the selected SWSD region.'
     } finally { $client.Dispose(); $handler.Dispose() }
+}
+
+function Get-SwsdVerifiedIdentity {
+    param([Parameter(Mandatory)][string]$Token, [Parameter(Mandatory)][string]$BaseUrl)
+    # Called only after Test-SwsdToken succeeds. This is display metadata, never proof
+    # of authentication. Endpoint/claims/shape match src/tools/utility/getMe.ts and
+    # src/swsd/{jwt.ts,mappers/me.ts}. Site is optional; no organization is invented.
+    if ($BaseUrl -notin @('https://api.samanage.com','https://apieu.samanage.com')) { return $null }
+    $client=$null; $handler=$null; $response=$null
+    try {
+        $parts=$Token.Split('.')
+        if ($parts.Count -ne 3) { return $null }
+        $payload=$parts[1].Replace('-','+').Replace('_','/')
+        $payload=$payload.PadRight($payload.Length + ((4-$payload.Length%4)%4),'=')
+        $claims=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload)) | ConvertFrom-Json
+        $userId=$null
+        foreach ($field in @('user_id','user_ic')) {
+            if ($claims.PSObject.Properties[$field] -and [string]$claims.$field -match '^\d+$') { $userId=[string]$claims.$field; break }
+        }
+        if (-not $userId) { return $null }
+        Add-Type -AssemblyName System.Net.Http
+        $handler=New-Object Net.Http.HttpClientHandler; $handler.AllowAutoRedirect=$false
+        $client=New-Object Net.Http.HttpClient($handler); $client.Timeout=[TimeSpan]::FromSeconds(5)
+        $client.DefaultRequestHeaders.Add('X-Samanage-Authorization',"Bearer $Token")
+        $client.DefaultRequestHeaders.Add('Accept','application/vnd.samanage.v2.1+json')
+        $response=$client.GetAsync("$BaseUrl/users/$userId.json").GetAwaiter().GetResult()
+        if (-not $response.IsSuccessStatusCode) { return $null }
+        $user=$response.Content.ReadAsStringAsync().GetAwaiter().GetResult() | ConvertFrom-Json
+        if ($user.PSObject.Properties['name'] -and $user.name -is [string] -and $user.name) {
+            $display=$user.name
+            if ($user.PSObject.Properties['site'] -and $user.site -and $user.site.PSObject.Properties['name'] -and $user.site.name -is [string] -and $user.site.name) { $display+=' · ' + $user.site.name }
+            return $display
+        }
+    } catch { return $null }
+    finally { if ($response) {$response.Dispose()}; if ($client) {$client.Dispose()}; if ($handler) {$handler.Dispose()} }
+    return $null
 }
 
 function Get-SwsdInstalledVersion {
@@ -209,9 +278,9 @@ function Get-SwsdLatestVersion {
         $stdoutTask = $process.StandardOutput.ReadToEndAsync()
         $stderrTask = $process.StandardError.ReadToEndAsync()
         if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-            try { $process.Kill($true) } catch {
-                if (-not $process.HasExited) { & taskkill.exe /T /F /PID $process.Id > $null 2>&1 }
-            }
+            # Framework's Process has only Kill(). npm is launched directly as this
+            # owned Node child, so no taskkill process-tree fallback is necessary.
+            $process.Kill()
             $process.WaitForExit()
             return $null
         }
@@ -495,6 +564,10 @@ function Install-SwsdTools {
     New-Item -ItemType Directory -Path $clientDir -Force | Out-Null
     foreach ($name in @('Common.ps1', 'Start-Swsd.ps1', 'Manage-Swsd.ps1')) {
         Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\$name") -Destination $clientDir -Force
+    }
+    # Ship the WPF catalog and help figures alongside the unchanged client/recipe.
+    if (Test-Path -LiteralPath (Join-Path $SourceRoot 'assets')) {
+        Copy-Item -LiteralPath (Join-Path $SourceRoot 'assets') -Destination $clientDir -Recurse -Force
     }
     # Keep the pinned installation recipe available for repair from the Start menu.
     $recipeDir = Join-Path $clientDir 'runtime'
