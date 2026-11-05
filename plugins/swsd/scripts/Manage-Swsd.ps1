@@ -1,5 +1,6 @@
-﻿param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [switch]$ValidateDpiChanges, [ValidateRange(1,15)][int]$WindowTestSeconds = 2, [ValidateSet('ready','firstrun','jwt-help','error','tools','tool-detail','profile-builder','custom-selected','import-error','whats-new')][string]$PreviewState = 'ready', [string]$ScreenshotPath)
+﻿param([switch]$CheckOnly, [switch]$ValidateUi, [switch]$ValidateWindow, [switch]$ValidateHandlers, [switch]$ValidateDpiChanges, [ValidateRange(1,15)][int]$WindowTestSeconds = 2, [ValidateSet('ready','firstrun','jwt-help','error','tools','tool-detail','profile-builder','custom-selected','import-error','whats-new')][string]$PreviewState = 'ready', [string]$ScreenshotPath, [string]$PreviewTheme)
 $ErrorActionPreference = 'Stop'
+if ($PreviewTheme -and -not ($ValidateUi -or $ValidateWindow -or $ValidateHandlers -or $ValidateDpiChanges)) {throw 'PreviewTheme requires an isolated UI validation mode.'}
 if ($ValidateUi -or $ValidateWindow -or $ValidateHandlers -or $ValidateDpiChanges) {
     # Handler checks exercise credential flows without depending on a signed-in desktop.
     # Reject every target outside this invocation's isolated UI-test namespace.
@@ -113,6 +114,12 @@ namespace SwsdDesktop {
     }
     [DllImport("dwmapi.dll", PreserveSig=true)]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+    [DllImport("dwmapi.dll", PreserveSig=true)]
+    private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attr, out int attrValue, int attrSize);
+    public static int ReadWindowAttribute(IntPtr hwnd, int attr) {
+      try { int value; return DwmGetWindowAttribute(hwnd, attr, out value, 4) == 0 ? value : -1; }
+      catch { return -1; }
+    }
     public static void ApplyDarkMode(IntPtr hwnd, bool dark) {
       try { int val = dark ? 1 : 0; DwmSetWindowAttribute(hwnd, 20, ref val, 4); } catch {}
       try { int val = dark ? 1 : 0; DwmSetWindowAttribute(hwnd, 19, ref val, 4); } catch {}
@@ -129,6 +136,10 @@ namespace SwsdDesktop {
     }
     public static void ApplyRoundedCorners(IntPtr hwnd) {
       try { int val = 2; DwmSetWindowAttribute(hwnd, 33, ref val, 4); } catch {}
+    }
+    public static void ClearBackdrop(IntPtr hwnd) {
+      try { int val = 1; DwmSetWindowAttribute(hwnd, 38, ref val, 4); } catch {}
+      try { MARGINS margins = new MARGINS(); DwmExtendFrameIntoClientArea(hwnd, ref margins); } catch {}
     }
   }
 }
@@ -256,7 +267,7 @@ function ConvertTo-SwsdXml([string]$Text) { return [Security.SecurityElement]::E
 function New-SwsdIconXaml([string]$Name) {
     $path = $script:SwsdIcons[$Name]
     $fill = if ($Name -eq 'theme') { '{DynamicResource Accent}' } else { 'Transparent' }
-    return "<Border Style=`"{StaticResource IconBox}`"><Viewbox Width=`"18`" Height=`"18`"><Path Width=`"24`" Height=`"24`" Data=`"$path`" Stroke=`"{DynamicResource Accent}`" StrokeThickness=`"1.7`" Fill=`"$fill`" StrokeLineJoin=`"Round`"/></Viewbox></Border>"
+    return "<Border Style=`"{StaticResource IconBox}`"><Viewbox Width=`"18`" Height=`"18`"><Path Width=`"24`" Height=`"24`" Data=`"$path`" Stroke=`"{DynamicResource AccentForeground}`" StrokeThickness=`"1.7`" Fill=`"$fill`" StrokeLineJoin=`"Round`"/></Viewbox></Border>"
 }
 function New-SwsdRowXaml([string]$Id, [string]$Icon, [string]$Title, [string]$Description, [string]$Controls) {
     $iconXaml = New-SwsdIconXaml $Icon
@@ -272,12 +283,16 @@ $iconXaml
 "@
 }
 $regionXaml = New-SwsdRowXaml 'region' 'globe' 'Region' 'Where your SWSD data is hosted' '<ComboBox Name="region" Width="200" AutomationProperties.Name="SWSD region"><ComboBoxItem Content="United States"/><ComboBoxItem Content="Europe"/></ComboBox>'
-$tokenXaml = New-SwsdRowXaml 'token' 'key' 'JSON Web Token' 'Select Test to verify' '<Grid Width="230"><PasswordBox Name="tokenBox" AutomationProperties.Name="JSON Web Token"/><TextBlock Name="tokenPlaceholder" Text="Paste token" Foreground="{DynamicResource Muted}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/><TextBlock Name="tokenVerified" Text="✓" Foreground="{DynamicResource Success}" FontWeight="SemiBold" FontSize="16" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Visibility="Collapsed" IsHitTestVisible="False" AutomationProperties.Name="Verified connection"/></Grid><Button Name="test" Content="Test" Width="64" Margin="8,0,0,0"/>'
+$tokenXaml = New-SwsdRowXaml 'token' 'key' 'JSON Web Token' 'Select Test to verify' '<Grid Width="230"><PasswordBox Name="tokenBox" AutomationProperties.Name="JSON Web Token"/><TextBlock Name="tokenPlaceholder" Text="Paste token" Foreground="{DynamicResource Muted}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/><TextBlock Name="tokenVerified" Text="✓" Foreground="{DynamicResource SuccessForeground}" FontWeight="SemiBold" FontSize="16" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" Visibility="Collapsed" IsHitTestVisible="False" AutomationProperties.Name="Verified connection"/></Grid><Button Name="test" Content="Test" Width="64" Margin="8,0,0,0"/>'
 $profileXaml = New-SwsdRowXaml 'profile' 'prof' 'Profile' '' '<ComboBox Name="profile" Width="200" AutomationProperties.Name="Tool profile"/>'
 $updateXaml = New-SwsdRowXaml 'updates' 'upd' 'Updates' 'Check for a newer version of SWSD tools' '<Button Name="releaseNotes" Content="What&#x2019;s new" Style="{StaticResource LinkButton}" Margin="0,0,12,0"/><Button Name="checkUpdates" Content="Check now" Width="110"/>'
 $diagnosticsXaml = New-SwsdRowXaml 'diagnostics' 'diag' 'Diagnostics' 'Copy a redacted report for support. Tokens are never included.' '<Button Name="copyDiagnostics" Content="Copy report" Width="110" AutomationProperties.Name="Copy diagnostics"/>'
 $repairXaml = New-SwsdRowXaml 'repair' 'wrench' 'Repair tools' 'Fix a damaged or incomplete installation.' '<Button Name="install" Content="Repair" Width="110"/>'
-$appearanceXaml = New-SwsdRowXaml 'appearance' 'theme' 'Appearance' 'Follows Windows' '<ComboBox Name="appearance" Width="160" AutomationProperties.Name="Appearance"><ComboBoxItem Content="Match Windows"/><ComboBoxItem Content="Light"/><ComboBoxItem Content="Dark"/></ComboBox>'
+$appearanceItems = foreach ($entry in $script:SwsdThemes.GetEnumerator()) {
+    if ($entry.Key -eq 'dracula') {'<Separator Focusable="False" IsEnabled="False" Margin="8,5" Background="{DynamicResource Divider}"/>'}
+    '<ComboBoxItem Content="'+(ConvertTo-SwsdXml $entry.Value.name)+'" Tag="'+$entry.Key+'"/>'
+}
+$appearanceXaml = New-SwsdRowXaml 'appearance' 'theme' 'Appearance' 'Follows Windows' ('<ComboBox Name="appearance" Width="230" AutomationProperties.Name="Appearance">'+($appearanceItems -join '')+'</ComboBox>')
 $dashboardXaml = ''
 $rowNames = @('Node','Tools','Token','Region','Profile','Update')
 $rowLabels = @('Node.js','SWSD tools','JSON Web Token','Region','Profile','Updates')
@@ -303,18 +318,25 @@ $xaml = @"
  <Style x:Key="CardStyle" TargetType="Border"><Setter Property="Background" Value="{DynamicResource Card}"/><Setter Property="BorderBrush" Value="{DynamicResource Border}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Effect"><Setter.Value><DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.09"/></Setter.Value></Setter></Style>
  <Style x:Key="Section" TargetType="TextBlock"><Setter Property="FontSize" Value="14"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="2,20,0,8"/></Style>
  <Style x:Key="SettingRow" TargetType="Border"><Setter Property="MinHeight" Value="64"/><Setter Property="Padding" Value="18,13"/><Setter Property="BorderBrush" Value="{DynamicResource Divider}"/><Setter Property="BorderThickness" Value="0,0,0,1"/></Style>
- <Style x:Key="IconBox" TargetType="Border"><Setter Property="Width" Value="32"/><Setter Property="Height" Value="32"/><Setter Property="CornerRadius" Value="7"/><Setter Property="Background" Value="{DynamicResource IconBackground}"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
+ <Style x:Key="IconBox" TargetType="Border"><Setter Property="Width" Value="32"/><Setter Property="Height" Value="32"/><Setter Property="CornerRadius" Value="7"/><Setter Property="Background" Value="{DynamicResource Selected}"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
  <Style x:Key="Chip" TargetType="Border"><Setter Property="Height" Value="22"/><Setter Property="Padding" Value="8,2"/><Setter Property="CornerRadius" Value="11"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
- <Style TargetType="Button"><Setter Property="Height" Value="32"/><Setter Property="Padding" Value="14,0"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Background" Value="{DynamicResource Control}"/><Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border Name="ButtonFrame" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonFrame" Property="Opacity" Value="0.8"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="ButtonFrame" Property="BorderBrush" Value="{DynamicResource Accent}"/><Setter TargetName="ButtonFrame" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="ButtonFrame" Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+ <Style TargetType="Button"><Setter Property="Height" Value="32"/><Setter Property="Padding" Value="14,0"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Background" Value="{DynamicResource Control}"/><Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border Name="ButtonFrame" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="ButtonFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="ButtonFrame" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="ButtonFrame" Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
  <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Background" Value="{DynamicResource Accent}"/><Setter Property="Foreground" Value="{DynamicResource AccentText}"/><Setter Property="BorderThickness" Value="0"/></Style>
- <Style x:Key="LinkButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="{DynamicResource Accent}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="0"/></Style>
+ <Style x:Key="LinkButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="{DynamicResource AccentForeground}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="0"/></Style>
  <Style x:Key="HelpButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Width" Value="18"/><Setter Property="Height" Value="18"/><Setter Property="Padding" Value="0"/><Setter Property="FontSize" Value="11"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
- <Style x:Key="NavButton" TargetType="RadioButton"><Setter Property="Height" Value="26"/><Setter Property="Padding" Value="14,0"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton"><Border Name="NavFrame" CornerRadius="5" Background="Transparent" Padding="{TemplateBinding Padding}"><Grid><ContentPresenter VerticalAlignment="Center"/><Border Name="Underline" Width="14" Height="2" VerticalAlignment="Bottom" Background="{DynamicResource Accent}" Visibility="Collapsed"/></Grid></Border><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="NavFrame" Property="Background" Value="{DynamicResource Selected}"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter TargetName="Underline" Property="Visibility" Value="Visible"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="NavFrame" Property="BorderBrush" Value="{DynamicResource Accent}"/><Setter TargetName="NavFrame" Property="BorderThickness" Value="1"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
- <Style TargetType="ComboBoxItem"><Setter Property="Padding" Value="10,7"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem"><Border Name="ItemFrame" Padding="{TemplateBinding Padding}" Background="Transparent"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemFrame" Property="Background" Value="{DynamicResource IconBackground}"/></Trigger><Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemFrame" Property="Background" Value="{DynamicResource IconBackground}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
- <Style TargetType="ComboBox"><Setter Property="Height" Value="32"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Background" Value="{DynamicResource Control}"/><Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/><Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox"><Grid><ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"><ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border CornerRadius="5" Background="{DynamicResource Control}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1,1,1,1"><Path Data="M0,0 L4,4 8,0" Stroke="{DynamicResource Muted}" StrokeThickness="1" Width="8" Height="4" HorizontalAlignment="Right" Margin="0,0,12,0"/></Border></ControlTemplate></ToggleButton.Template></ToggleButton><ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" Margin="12,0,30,0" VerticalAlignment="Center" IsHitTestVisible="False"/><Popup Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False"><Border Background="{DynamicResource Flyout}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="5" MinWidth="{TemplateBinding ActualWidth}" Padding="2"><ScrollViewer MaxHeight="300"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/></ScrollViewer></Border></Popup></Grid><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource Accent}"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
- <Style TargetType="PasswordBox"><Setter Property="Height" Value="32"/><Setter Property="Padding" Value="11,5"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Background" Value="{DynamicResource Control}"/><Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="PasswordBox"><Border Name="PasswordFrame" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"><ScrollViewer Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/></Border><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="PasswordFrame" Property="BorderBrush" Value="{DynamicResource Accent}"/><Setter TargetName="PasswordFrame" Property="BorderThickness" Value="1,1,1,2"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
- <Style TargetType="TextBox"><Setter Property="Padding" Value="12,7"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Background" Value="{DynamicResource Control}"/><Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/><Setter Property="CaretBrush" Value="{DynamicResource Text}"/></Style>
- <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="CheckBox"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="16"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Name="CheckFrame" Width="15" Height="15" CornerRadius="3" Background="{DynamicResource Control}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" VerticalAlignment="Center"/><Path Name="CheckMark" Data="M0,4 L3,7 L9,0" Stroke="{DynamicResource AccentText}" StrokeThickness="1.6" Width="9" Height="7" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed"/><ContentPresenter Grid.Column="2" VerticalAlignment="Center"/></Grid><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="CheckFrame" Property="Background" Value="{DynamicResource Accent}"/><Setter TargetName="CheckFrame" Property="BorderBrush" Value="{DynamicResource Accent}"/><Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="CheckFrame" Property="BorderBrush" Value="{DynamicResource Accent}"/><Setter TargetName="CheckFrame" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+ <Style x:Key="NavButton" TargetType="RadioButton"><Setter Property="Height" Value="26"/><Setter Property="Padding" Value="14,0"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton"><Border Name="NavFrame" CornerRadius="5" Background="Transparent" Padding="{TemplateBinding Padding}"><Grid><ContentPresenter VerticalAlignment="Center"/><Border Name="Underline" Width="14" Height="2" VerticalAlignment="Bottom" Background="{DynamicResource AccentForeground}" Visibility="Collapsed"/></Grid></Border><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="NavFrame" Property="Background" Value="{DynamicResource Selected}"/><Setter Property="Foreground" Value="{DynamicResource SelectedText}"/><Setter TargetName="Underline" Property="Visibility" Value="Visible"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="NavFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="NavFrame" Property="BorderThickness" Value="1"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+ <Style TargetType="ComboBoxItem"><Setter Property="Padding" Value="10,7"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem"><Border Name="ItemFrame" Padding="{TemplateBinding Padding}" Background="Transparent"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemFrame" Property="Background" Value="{DynamicResource Selected}"/><Setter Property="Foreground" Value="{DynamicResource SelectedText}"/></Trigger><Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemFrame" Property="Background" Value="{DynamicResource Selected}"/><Setter Property="Foreground" Value="{DynamicResource SelectedText}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+ <Style TargetType="ComboBox"><Setter Property="Height" Value="32"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Background" Value="{DynamicResource Control}"/><Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/><Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox"><Grid><ToggleButton Focusable="False" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"><ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1,1,1,1"><Path Data="M0,0 L4,4 8,0" Stroke="{DynamicResource Muted}" StrokeThickness="1" Width="8" Height="4" HorizontalAlignment="Right" Margin="0,0,12,0"/></Border></ControlTemplate></ToggleButton.Template></ToggleButton><ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" Margin="12,0,30,0" VerticalAlignment="Center" IsHitTestVisible="False"/><Popup Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False"><Border Background="{DynamicResource Flyout}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="5" MinWidth="{TemplateBinding ActualWidth}" Padding="2"><ScrollViewer MaxHeight="300"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/></ScrollViewer></Border></Popup></Grid><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource AccentForeground}"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+ <Style TargetType="PasswordBox"><Setter Property="CaretBrush" Value="{DynamicResource Text}"/><Setter Property="SelectionBrush" Value="{DynamicResource Accent}"/><Setter Property="SelectionTextBrush" Value="{DynamicResource AccentText}"/><Setter Property="SelectionOpacity" Value="1"/><Setter Property="Height" Value="32"/><Setter Property="Padding" Value="11,5"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Background" Value="{DynamicResource Control}"/><Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="PasswordBox"><Border Name="PasswordFrame" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"><ScrollViewer Name="PART_ContentHost" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/></Border><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="PasswordFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="PasswordFrame" Property="BorderThickness" Value="1,1,1,2"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+ <Style TargetType="TextBox"><Setter Property="Padding" Value="12,7"/><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Background" Value="{DynamicResource Control}"/><Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/><Setter Property="CaretBrush" Value="{DynamicResource Text}"/><Setter Property="SelectionBrush" Value="{DynamicResource Accent}"/><Setter Property="SelectionTextBrush" Value="{DynamicResource AccentText}"/><Setter Property="SelectionOpacity" Value="1"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox"><Border Name="TextFrame" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"><ScrollViewer Name="PART_ContentHost" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/></Border><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="TextFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="TextFrame" Property="BorderThickness" Value="1,1,1,2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+ <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="CheckBox"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="16"/><ColumnDefinition Width="8"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Name="CheckFrame" Width="15" Height="15" CornerRadius="3" Background="{DynamicResource Control}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" VerticalAlignment="Center"/><Path Name="CheckMark" Data="M0,4 L3,7 L9,0" Stroke="{DynamicResource AccentText}" StrokeThickness="1.6" Width="9" Height="7" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed"/><ContentPresenter Grid.Column="2" VerticalAlignment="Center"/></Grid><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="CheckFrame" Property="Background" Value="{DynamicResource Accent}"/><Setter TargetName="CheckFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="CheckFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="CheckFrame" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+
+ <Style TargetType="Separator"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Separator"><Border Height="1" Background="{DynamicResource Divider}" Margin="{TemplateBinding Margin}"/></ControlTemplate></Setter.Value></Setter></Style>
+ <Style TargetType="ToolTip"><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToolTip"><Border Background="{DynamicResource Flyout}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="5" Padding="10,7"><ContentPresenter/></Border></ControlTemplate></Setter.Value></Setter></Style>
+ <Style x:Key="ScrollPage" TargetType="RepeatButton"><Setter Property="Focusable" Value="False"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></Setter.Value></Setter></Style>
+ <Style x:Key="ScrollThumb" TargetType="Thumb"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Thumb"><Border Name="ThumbFrame" Background="{DynamicResource Muted}" CornerRadius="3" Margin="3"/><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ThumbFrame" Property="Background" Value="{DynamicResource AccentForeground}"/></Trigger><Trigger Property="IsDragging" Value="True"><Setter TargetName="ThumbFrame" Property="Background" Value="{DynamicResource AccentForeground}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+ <Style TargetType="ScrollBar"><Setter Property="Width" Value="12"/><Setter Property="MinHeight" Value="24"/><Setter Property="Background" Value="Transparent"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar"><Border Background="{TemplateBinding Background}"><Track Name="PART_Track" IsDirectionReversed="True" Orientation="{TemplateBinding Orientation}"><Track.DecreaseRepeatButton><RepeatButton Name="BeforeThumb" Style="{StaticResource ScrollPage}" Command="ScrollBar.PageUpCommand"/></Track.DecreaseRepeatButton><Track.Thumb><Thumb Style="{StaticResource ScrollThumb}"/></Track.Thumb><Track.IncreaseRepeatButton><RepeatButton Name="AfterThumb" Style="{StaticResource ScrollPage}" Command="ScrollBar.PageDownCommand"/></Track.IncreaseRepeatButton></Track></Border><ControlTemplate.Triggers><Trigger Property="Orientation" Value="Horizontal"><Setter Property="Width" Value="Auto"/><Setter Property="Height" Value="12"/><Setter Property="MinHeight" Value="0"/><Setter Property="MinWidth" Value="24"/><Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/><Setter TargetName="BeforeThumb" Property="Command" Value="ScrollBar.PageLeftCommand"/><Setter TargetName="AfterThumb" Property="Command" Value="ScrollBar.PageRightCommand"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+ <Style TargetType="Expander"><Setter Property="Foreground" Value="{DynamicResource Text}"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Expander"><StackPanel><ToggleButton Name="HeaderSite" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" Foreground="{TemplateBinding Foreground}"><ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Name="HeaderFrame" Padding="4,10" Background="Transparent" CornerRadius="5"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Path Name="Arrow" Data="M0,0 L4,4 8,0" Stroke="{DynamicResource Muted}" StrokeThickness="1.5" Width="8" Height="4" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5"><Path.RenderTransform><RotateTransform Angle="-90"/></Path.RenderTransform></Path><ContentPresenter Grid.Column="1" Content="{Binding Header, RelativeSource={RelativeSource AncestorType=Expander}}"/></Grid></Border><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="Arrow" Property="RenderTransform"><Setter.Value><RotateTransform Angle="0"/></Setter.Value></Setter></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="HeaderFrame" Property="BorderBrush" Value="{DynamicResource AccentForeground}"/><Setter TargetName="HeaderFrame" Property="BorderThickness" Value="1"/></Trigger></ControlTemplate.Triggers></ControlTemplate></ToggleButton.Template></ToggleButton><ContentPresenter Name="ExpandSite" Visibility="Collapsed" Margin="{TemplateBinding Padding}"/></StackPanel><ControlTemplate.Triggers><Trigger Property="IsExpanded" Value="True"><Setter TargetName="ExpandSite" Property="Visibility" Value="Visible"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
 </Window.Resources>
 <Grid Name="appRoot" Background="{DynamicResource Canvas}">
  <Grid.RowDefinitions><RowDefinition Height="44"/><RowDefinition Height="*"/></Grid.RowDefinitions>
@@ -335,9 +357,9 @@ $xaml = @"
     <Grid Height="96" Margin="22,0"><Grid.ColumnDefinitions><ColumnDefinition Width="60"/><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Grid Width="60" Height="60"><Ellipse Stroke="{DynamicResource Divider}" StrokeThickness="5" Margin="4"/><Path Name="healthArc" Stroke="{DynamicResource Success}" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/><TextBlock Name="healthCount" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid><StackPanel Grid.Column="2" VerticalAlignment="Center"><TextBlock Name="healthTitle" FontSize="18" FontWeight="SemiBold"/><TextBlock Name="healthDescription" Style="{StaticResource Description}"/></StackPanel></Grid>
     <UniformGrid Name="statusGrid" Columns="3">$dashboardXaml</UniformGrid>
    </StackPanel></Border>
-   <Border Name="setup" Style="{StaticResource CardStyle}"><StackPanel><ProgressBar Name="setupProgress" Height="3" Margin="20,16,20,0" Maximum="3" Foreground="{DynamicResource Accent}" Background="{DynamicResource Divider}"/><UniformGrid Columns="3">
+   <Border Name="setup" Style="{StaticResource CardStyle}"><StackPanel><ProgressBar Name="setupProgress" Height="3" Margin="20,16,20,0" Maximum="3" Foreground="{DynamicResource AccentForeground}" Background="{DynamicResource Divider}"/><UniformGrid Columns="3">
     <StackPanel Margin="20,18"><Border Name="step1Circle" Style="{StaticResource Chip}" Width="24" Height="24" HorizontalAlignment="Left"><TextBlock Name="step1Number" Text="1" HorizontalAlignment="Center"/></Border><TextBlock Text="Install tools" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,3"/><TextBlock Name="step1Description" Style="{StaticResource Description}" TextWrapping="Wrap" MinHeight="36"/><Button Name="setupInstall" Content="Install tools" HorizontalAlignment="Left" Margin="0,12,0,0" Style="{StaticResource PrimaryButton}"/></StackPanel>
-    <StackPanel Margin="20,18"><Border Name="step2Circle" Style="{StaticResource Chip}" Width="24" Height="24" HorizontalAlignment="Left"><TextBlock Text="2" HorizontalAlignment="Center"/></Border><TextBlock Text="Connect account" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,3"/><TextBlock Text="Choose your region and paste your JSON Web Token." Style="{StaticResource Description}" TextWrapping="Wrap" MinHeight="36"/><TextBlock Name="step2State" Text="●  In progress" FontSize="11.5" Foreground="{DynamicResource Accent}" Margin="0,16,0,0"/></StackPanel>
+    <StackPanel Margin="20,18"><Border Name="step2Circle" TextElement.Foreground="{DynamicResource AccentChipText}" Style="{StaticResource Chip}" Width="24" Height="24" HorizontalAlignment="Left"><TextBlock Text="2" HorizontalAlignment="Center"/></Border><TextBlock Text="Connect account" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,3"/><TextBlock Text="Choose your region and paste your JSON Web Token." Style="{StaticResource Description}" TextWrapping="Wrap" MinHeight="36"/><TextBlock Name="step2State" Text="●  In progress" FontSize="11.5" Foreground="{DynamicResource AccentForeground}" Margin="0,16,0,0"/></StackPanel>
     <StackPanel Margin="20,18"><Border Style="{StaticResource Chip}" Width="24" Height="24" BorderThickness="1" BorderBrush="{DynamicResource ControlBorder}" HorizontalAlignment="Left"><TextBlock Text="3" HorizontalAlignment="Center"/></Border><TextBlock Text="Choose profile" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,3"/><TextBlock Text="Choose what your AI apps are allowed to do." Style="{StaticResource Description}" TextWrapping="Wrap" MinHeight="36"/><TextBlock Text="Up next" FontSize="11.5" Foreground="{DynamicResource Muted}" Margin="0,16,0,0"/></StackPanel>
    </UniformGrid></StackPanel></Border>
    <TextBlock Name="accountHeading" Text="Account" Style="{StaticResource Section}"/>
@@ -346,7 +368,7 @@ $xaml = @"
    <Grid Margin="2,20,0,8"><TextBlock Text="Maintenance" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Name="reportBug" Content="Report a bug" Style="{StaticResource LinkButton}" Height="24"/><Button Name="requestFeature" Content="Request a feature" Style="{StaticResource LinkButton}" Height="24" Margin="16,0,0,0"/></StackPanel></Grid>
    <Border Style="{StaticResource CardStyle}"><StackPanel>$updateXaml $diagnosticsXaml $repairXaml $appearanceXaml</StackPanel></Border>
    <StackPanel Name="credentialActions" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,-12"><Button Name="remove" Content="Remove saved JSON Web Token" Style="{StaticResource LinkButton}" Height="24" FontSize="11.5"/></StackPanel>
-   <StackPanel Name="actionDetails" Margin="0,8,0,0"><ProgressBar Name="progressBar" Height="3" IsIndeterminate="True" Foreground="{DynamicResource Accent}" Visibility="Collapsed" AutomationProperties.Name="Progress"/><StackPanel Orientation="Horizontal"><Button Name="showDetails" Content="Show details" Style="{StaticResource LinkButton}" Visibility="Collapsed"/><Button Name="nodeInstallButton" Content="Install Node.js" Style="{StaticResource LinkButton}" Visibility="Collapsed" Margin="12,0,0,0"/></StackPanel><TextBlock Name="errorDetails" TextWrapping="Wrap" Style="{StaticResource Description}" Visibility="Collapsed"/></StackPanel>
+   <StackPanel Name="actionDetails" Margin="0,8,0,0"><ProgressBar Name="progressBar" Height="3" IsIndeterminate="True" Foreground="{DynamicResource AccentForeground}" Visibility="Collapsed" AutomationProperties.Name="Progress"/><StackPanel Orientation="Horizontal"><Button Name="showDetails" Content="Show details" Style="{StaticResource LinkButton}" Visibility="Collapsed"/><Button Name="nodeInstallButton" Content="Install Node.js" Style="{StaticResource LinkButton}" Visibility="Collapsed" Margin="12,0,0,0"/></StackPanel><TextBlock Name="errorDetails" TextWrapping="Wrap" Style="{StaticResource Description}" Visibility="Collapsed"/></StackPanel>
    <Grid Margin="2,12,2,0"><TextBlock Text="Your JSON Web Token stays on this PC and is only sent to SWSD." FontSize="12" Foreground="{DynamicResource Muted}"/><Button Name="findToken" Content="Where do I find my token? ↗" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" Height="20" FontSize="12"/></Grid>
   </StackPanel>
   <StackPanel Name="toolsPage" Visibility="Collapsed">
@@ -365,7 +387,7 @@ $xaml = @"
    <WrapPanel Name="areaFilters" Margin="0,12,0,0"/>
    <WrapPanel Name="toolLegend" Margin="0,12,0,0"/>
    <StackPanel Name="toolGroups"/>
-   <Border Name="toolDetail" Style="{StaticResource CardStyle}" Margin="0,10,0,0" Padding="16"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="320"/></Grid.ColumnDefinitions><StackPanel><TextBlock Name="detailTitle" FontSize="16" FontWeight="SemiBold"/><TextBlock Name="detailId" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,6,0,8"/><StackPanel Orientation="Horizontal"><ContentControl Name="detailBadge" Margin="0,0,8,0"/><TextBlock Name="detailProfiles" Style="{StaticResource Description}" TextWrapping="Wrap"/></StackPanel><TextBlock Name="detailDescription" Style="{StaticResource Description}" TextWrapping="Wrap" Margin="0,12,0,0"/><Border Name="deleteNotice" Background="{DynamicResource ErrorBackground}" CornerRadius="6" Padding="12,10" Margin="0,12,0,0" Visibility="Collapsed"><TextBlock Text="Destructive. Available in Operations. Preview the record first, then confirm its ID before deleting." Foreground="{DynamicResource Error}" FontSize="12.5" TextWrapping="Wrap"/></Border></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Example prompt" FontWeight="SemiBold" FontSize="12"/><Border Background="{DynamicResource IconBackground}" CornerRadius="6" Padding="12,10" Margin="0,6,0,10"><TextBlock Name="examplePrompt" FontSize="12.5" TextWrapping="Wrap"/></Border><Button Name="copyPrompt" Content="Copy prompt" Style="{StaticResource PrimaryButton}"/><Button Name="switchProfile" Content="Switch to Operations" Margin="0,8,0,0" Visibility="Collapsed"/></StackPanel></Grid></Border>
+   <Border Name="toolDetail" Style="{StaticResource CardStyle}" Margin="0,10,0,0" Padding="16"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="320"/></Grid.ColumnDefinitions><StackPanel><TextBlock Name="detailTitle" FontSize="16" FontWeight="SemiBold"/><TextBlock Name="detailId" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,6,0,8"/><StackPanel Orientation="Horizontal"><ContentControl Name="detailBadge" Margin="0,0,8,0"/><TextBlock Name="detailProfiles" Style="{StaticResource Description}" TextWrapping="Wrap"/></StackPanel><TextBlock Name="detailDescription" Style="{StaticResource Description}" TextWrapping="Wrap" Margin="0,12,0,0"/><Border Name="deleteNotice" Background="{DynamicResource ErrorBackground}" CornerRadius="6" Padding="12,10" Margin="0,12,0,0" Visibility="Collapsed"><TextBlock Text="Destructive. Available in Operations. Preview the record first, then confirm its ID before deleting." Foreground="{DynamicResource ErrorText}" FontSize="12.5" TextWrapping="Wrap"/></Border></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Example prompt" FontWeight="SemiBold" FontSize="12"/><Border Background="{DynamicResource IconBackground}" CornerRadius="6" Padding="12,10" Margin="0,6,0,10"><TextBlock Name="examplePrompt" FontSize="12.5" TextWrapping="Wrap"/></Border><Button Name="copyPrompt" Content="Copy prompt" Style="{StaticResource PrimaryButton}"/><Button Name="switchProfile" Content="Switch to Operations" Margin="0,8,0,0" Visibility="Collapsed"/></StackPanel></Grid></Border>
    <Expander Name="otherTools" IsExpanded="False" Foreground="{DynamicResource Muted}" Margin="0,14,0,0" Padding="12"><StackPanel Name="lockedTools"/></Expander>
   </StackPanel>
   <StackPanel Name="whatsNewPage" Visibility="Collapsed"><Grid Margin="0,0,0,12"><Button Name="closeWhatsNew" Content="Back to Home" HorizontalAlignment="Right"/></Grid><Border Style="{StaticResource CardStyle}" Padding="22"><StackPanel Name="releaseNoteContent"/></Border></StackPanel>
@@ -374,7 +396,7 @@ $xaml = @"
   <Grid><TextBlock Text="Get your JSON Web Token in SWSD" FontSize="13.5" FontWeight="SemiBold"/><Button Name="closeHelp" Content="×" Style="{StaticResource HelpButton}" HorizontalAlignment="Right" AutomationProperties.Name="Close JSON Web Token help"/></Grid>
   <TextBlock Text="Only SWSD administrators can generate tokens. Tokens keep working if the user’s email or password changes." Style="{StaticResource Description}" TextWrapping="Wrap" Margin="0,6,0,8"/>
   <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource Muted}" LineHeight="19" Margin="18,0,0,10">1. Go to <Bold>Setup → Users &amp; Groups → Users</Bold> and open your <Bold>User detail</Bold> page (not your User Profile Card). You can search your name.<LineBreak/>2. If you don’t see a JSON Web Token, choose <Bold>Actions → Generate JSON Web Token</Bold> (admin rights required).<LineBreak/>3. Under <Bold>JSON Web Token</Bold>, choose <Bold>Copy</Bold> (or <Bold>Show Token</Bold>, then Copy).</TextBlock>
-  <Grid Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="1.55*"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource Border}" Background="#0b1220"><StackPanel><Image Name="jwtProfileImage" Height="300" Stretch="Uniform" VerticalAlignment="Top"/><Border Background="{DynamicResource Control}" Padding="8,6"><TextBlock Text="1 · User detail · JSON Web Token" FontSize="11" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/></Border></StackPanel></Border><Border Grid.Column="2" CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource Border}" Background="#0b1220"><StackPanel><Image Name="jwtActionsImage" Height="300" Stretch="Uniform" VerticalAlignment="Top"/><Border Background="{DynamicResource Control}" Padding="8,6"><TextBlock Text="2 · Actions → Generate (only if none shown)" FontSize="11" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/></Border></StackPanel></Border></Grid>
+  <Grid Margin="0,4,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="1.55*"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource Border}" Background="{DynamicResource Card}"><StackPanel><Image Name="jwtProfileImage" Height="300" Stretch="Uniform" VerticalAlignment="Top"/><Border Background="{DynamicResource Control}" Padding="8,6"><TextBlock Text="1 · User detail · JSON Web Token" FontSize="11" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/></Border></StackPanel></Border><Border Grid.Column="2" CornerRadius="8" BorderThickness="1" BorderBrush="{DynamicResource Border}" Background="{DynamicResource Card}"><StackPanel><Image Name="jwtActionsImage" Height="300" Stretch="Uniform" VerticalAlignment="Top"/><Border Background="{DynamicResource Control}" Padding="8,6"><TextBlock Text="2 · Actions → Generate (only if none shown)" FontSize="11" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/></Border></StackPanel></Border></Grid>
  </StackPanel></Border>
  </Grid></ScrollViewer>
 </Grid>
@@ -415,7 +437,11 @@ $savedSettings = Get-SwsdSettings
 $region.SelectedIndex = if ($savedSettings.baseUrl -eq 'https://apieu.samanage.com') { 1 } else { 0 }
 $profile.SelectedIndex = Get-SwsdSelectedProfileIndex $savedSettings
 $toolsProfile.SelectedIndex = $profile.SelectedIndex
-$appearance.SelectedIndex = @('system','light','dark').IndexOf($savedSettings.theme)
+function Set-SwsdAppearanceSelection([string]$Id) {
+    $Id=Resolve-SwsdThemeId $Id
+    $appearance.SelectedItem=@($appearance.Items | Where-Object {$_ -is [Windows.Controls.ComboBoxItem] -and $_.Tag -eq $Id})[0]
+}
+Set-SwsdAppearanceSelection $savedSettings.theme
 foreach ($pair in @(@($jwtProfileImage,'jwt-help-profile-crop.png'),@($jwtActionsImage,'jwt-help-actions-crop.png'))) {
     $bitmap = New-Object Windows.Media.Imaging.BitmapImage
     $bitmap.BeginInit(); $bitmap.CacheOption = 'OnLoad'
@@ -424,51 +450,64 @@ foreach ($pair in @(@($jwtProfileImage,'jwt-help-profile-crop.png'),@($jwtAction
 }
 
 function Set-SwsdTheme {
-    $mode = @('system','light','dark')[$appearance.SelectedIndex]
+    $mode = if ($appearance.SelectedItem -is [Windows.Controls.ComboBoxItem]) {[string]$appearance.SelectedItem.Tag} else {'system'}
+    $script:SwsdThemeId = $mode
+    $script:SwsdUseMica = $mode -in @('system','light','dark')
     $dark = $false
     if ($mode -eq 'dark') { $dark = $true }
     elseif ($mode -eq 'system') {
         $personalize = Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -ErrorAction SilentlyContinue
         if ($personalize -and $personalize.PSObject.Properties['AppsUseLightTheme']) { $dark = ([int]$personalize.AppsUseLightTheme -eq 0) }
     }
-    if ($env:SWSD_THEME -eq 'dark') { $dark = $true } elseif ($env:SWSD_THEME -eq 'light') { $dark = $false }
+    # Keep existing light/dark capture overrides; named choices always show their own palette.
+    if ($script:SwsdUseMica) {
+        if ($env:SWSD_THEME -eq 'dark') { $dark = $true } elseif ($env:SWSD_THEME -eq 'light') { $dark = $false }
+    }
+    $resolved = if ($script:SwsdUseMica) {if ($dark) {'dark'} else {'light'}} else {$mode}
+    $palette = Get-SwsdThemePalette $resolved
+    $script:SwsdResolvedThemeId = $resolved
+    $dark = (Get-SwsdColorLuminance $palette.Canvas) -lt 0.5
     $script:SwsdDarkMode = $dark
-    $palette = if ($dark) { @{
-        Canvas='#1d1d20'; Text='#f5f5f7'; Muted='#a3a3ad'; Card='#28282d'; Control='#35353a'; Selected='#3a3e48'; Border='#3c3c43'; ControlBorder='#49494f'; Divider='#38383e'; Accent='#5fc8ff'; AccentText='#002338'; IconBackground='#2d3a44'; Success='#7ad46e'; SuccessBackground='#2d3e31'; Warning='#ffd25e'; WarningBackground='#423d2d'; Error='#ff99a4'; ErrorBackground='#463139'; Flyout='#222429'; WashLeft='#26304a'; WashRight='#2c2638'
-    } } else { @{
-        Canvas='#f3f3f4'; Text='#1a1a1e'; Muted='#5c5f66'; Card='#fcfcfd'; Control='#ffffff'; Selected='#ffffff'; Border='#e4e4e8'; ControlBorder='#d5d5db'; Divider='#ebebee'; Accent='#0067c0'; AccentText='#ffffff'; IconBackground='#eaf2fb'; Success='#107c10'; SuccessBackground='#e3f4e1'; Warning='#8a5300'; WarningBackground='#fff3cd'; Error='#c42b1c'; ErrorBackground='#fde7e9'; Flyout='#ffffff'; WashLeft='#dde7f6'; WashRight='#ece5f3'
-    } }
-    $palette['AccentBackground']=$palette.IconBackground
     foreach ($key in $palette.Keys) { $form.Resources[$key] = [Windows.Media.BrushConverter]::new().ConvertFromString($palette[$key]) }
-    $wash = New-Object Windows.Media.LinearGradientBrush
-    $wash.StartPoint = New-Object Windows.Point(0,0); $wash.EndPoint = New-Object Windows.Point(0,1)
-    $wash.GradientStops.Add((New-Object Windows.Media.GradientStop ([Windows.Media.ColorConverter]::ConvertFromString($palette.WashLeft)),0))
-    $wash.GradientStops.Add((New-Object Windows.Media.GradientStop ([Windows.Media.ColorConverter]::ConvertFromString($palette.Canvas)),0.44))
-    $wash.GradientStops.Add((New-Object Windows.Media.GradientStop ([Windows.Media.ColorConverter]::ConvertFromString($palette.Canvas)),1))
-    $appRoot.Background = $wash
-    $appearanceDescription.Text = if ($mode -eq 'system') { 'Follows Windows · currently ' + $(if ($dark) {'dark'} else {'light'}) } else { $(if ($dark) {'Dark'} else {'Light'}) + ' appearance' }
+    $appRoot.SetResourceReference([Windows.Controls.Panel]::BackgroundProperty,'Canvas')
+    $form.SetResourceReference([Windows.Controls.Control]::BackgroundProperty,'Canvas')
+    if ($script:SwsdUseMica) {
+        $wash = New-Object Windows.Media.LinearGradientBrush
+        $wash.StartPoint = New-Object Windows.Point(0,0); $wash.EndPoint = New-Object Windows.Point(0,1)
+        $wash.GradientStops.Add((New-Object Windows.Media.GradientStop ([Windows.Media.ColorConverter]::ConvertFromString($palette.WashLeft)),0))
+        $wash.GradientStops.Add((New-Object Windows.Media.GradientStop ([Windows.Media.ColorConverter]::ConvertFromString($palette.Canvas)),0.44))
+        $wash.GradientStops.Add((New-Object Windows.Media.GradientStop ([Windows.Media.ColorConverter]::ConvertFromString($palette.Canvas)),1))
+        $appRoot.Background = $wash
+    }
+    $appearanceDescription.Text = if ($mode -eq 'system') { 'Follows Windows · currently ' + $(if ($dark) {'dark'} else {'light'}) } else { $script:SwsdThemes[$mode].name + ' appearance' }
     if ($script:SwsdHandle -ne [IntPtr]::Zero) {
         [SwsdDesktop.Windows]::ApplyDarkMode($script:SwsdHandle, $dark)
         Set-SwsdBackdrop
     }
 }
 function Set-SwsdBackdrop {
-    $script:SwsdMicaEnabled=[SwsdDesktop.Windows]::ApplyMicaBackdrop($script:SwsdHandle)
+    $script:SwsdMicaEnabled=$false
+    $target=[Windows.Interop.HwndSource]::FromHwnd($script:SwsdHandle).CompositionTarget
+    if ($script:SwsdUseMica) {$script:SwsdMicaEnabled=[SwsdDesktop.Windows]::ApplyMicaBackdrop($script:SwsdHandle)}
+    else {[SwsdDesktop.Windows]::ClearBackdrop($script:SwsdHandle)}
     if ($script:SwsdMicaEnabled) {
-        [Windows.Interop.HwndSource]::FromHwnd($script:SwsdHandle).CompositionTarget.BackgroundColor=[Windows.Media.Colors]::Transparent
+        $target.BackgroundColor=[Windows.Media.Colors]::Transparent
         $form.Background=[Windows.Media.Brushes]::Transparent
         # Keep an opaque palette fallback on older Windows. A subtle tint lets the
         # real DWM Mica show through on supported desktops; captures use an opaque
         # canvas so the PNG does not depend on the desktop wallpaper.
         $appRoot.Background.Opacity=if ($ValidateWindow) {1} else {0.92}
+    } else {
+        $target.BackgroundColor=$form.Resources['Canvas'].Color
+        $form.SetResourceReference([Windows.Controls.Control]::BackgroundProperty,'Canvas')
     }
 }
 function Set-SwsdStatus {
     param([ValidateSet('success','warn','error','info')][string]$Kind = 'info', [string]$Text)
-    $key = switch ($Kind) { success {'Success'} warn {'Warning'} error {'Error'} default {'Accent'} }
+    $key = switch ($Kind) { success {'SuccessText'} warn {'WarningText'} error {'ErrorText'} default {'AccentChipText'} }
     $background = switch ($Kind) { success {'SuccessBackground'} warn {'WarningBackground'} error {'ErrorBackground'} default {'IconBackground'} }
-    $status.Text = $Text; $status.Foreground = $form.Resources[$key]
-    $toast.Background = $form.Resources[$background]; $toast.Visibility = 'Visible'
+    $status.Text = $Text; $status.SetResourceReference([Windows.Controls.TextBlock]::ForegroundProperty,$key)
+    $toast.SetResourceReference([Windows.Controls.Border]::BackgroundProperty,$background); $toast.Visibility = 'Visible'
 }
 function Format-SwsdFriendlyError([Exception]$Exception) {
     $message = $Exception.GetBaseException().Message
@@ -533,8 +572,9 @@ function Test-SwsdUpdateAvailable {
 function Set-SwsdCell([string]$Id, [string]$Value, [string]$Chip, [string]$Kind) {
     (Get-Variable "${Id}Value" -ValueOnly -Scope Script).Text = $Value
     $label = Get-Variable "${Id}ChipText" -ValueOnly -Scope Script
-    $label.Text = $Chip; $label.Foreground = $form.Resources[$Kind]
-    (Get-Variable "${Id}Chip" -ValueOnly -Scope Script).Background = $form.Resources[($Kind + 'Background')]
+    $key=if ($Kind -eq 'Accent') {'AccentChipText'} else {$Kind+'Text'}
+    $label.Text = $Chip; $label.SetResourceReference([Windows.Controls.TextBlock]::ForegroundProperty,$key)
+    (Get-Variable "${Id}Chip" -ValueOnly -Scope Script).SetResourceReference([Windows.Controls.Border]::BackgroundProperty,($Kind+'Background'))
 }
 function Update-SwsdDashboard {
     $s = Get-SwsdStatus
@@ -569,10 +609,10 @@ function Update-SwsdDashboard {
     $profileDescription.ToolTip = $selection.description
     $tokenDescription.Text = if ($script:SwsdTokenError) {'Couldn''t verify · check the token and try again'} elseif ($verified) {'Verified just now'} else {'Select Test to verify'}
     $tokenPlaceholder.Text = if ($s.credentialSaved) {'••••••••'} else {'Paste token'}
-    $tokenPlaceholder.Foreground = $form.Resources[$(if ($verified) {'Success'} else {'Muted'})]
+    $tokenPlaceholder.SetResourceReference([Windows.Controls.TextBlock]::ForegroundProperty,$(if ($verified) {'SuccessForeground'} else {'Muted'}))
     $tokenVerified.Visibility=if ($verified -and $tokenBox.SecurePassword.Length -eq 0) {'Visible'} else {'Collapsed'}
     $credentialActions.Visibility = if ($s.credentialSaved) {'Visible'} else {'Collapsed'}
-    $tokenBox.BorderBrush = if ($script:SwsdTokenError) {$form.Resources['Error']} else {$form.Resources['ControlBorder']}
+    $tokenBox.SetResourceReference([Windows.Controls.Control]::BorderBrushProperty,$(if ($script:SwsdTokenError) {'ErrorForeground'} else {'ControlBorder'}))
     $firstRun = -not $s.toolsInstalled -or (-not $s.credentialSaved -and -not $script:SwsdTokenError)
     $dashboard.Visibility = if ($firstRun -or $script:SwsdHelpOpen) {'Collapsed'} else {'Visible'}
     $setup.Visibility = if ($firstRun -and -not $script:SwsdHelpOpen) {'Visible'} else {'Collapsed'}
@@ -583,11 +623,12 @@ function Update-SwsdDashboard {
     $setupInstall.Content = if ($readySteps -eq 2) {'✓ Done'} elseif (-not $s.nodeSupported) {'Install Node.js'} else {'Install tools'}
     $setupInstall.Height = if ($readySteps -eq 2) {22} else {32}
     $setupInstall.FontSize = if ($readySteps -eq 2) {11.5} else {13}
-    $setupInstall.Background = $form.Resources[$(if ($readySteps -eq 2) {'SuccessBackground'} else {'Accent'})]
-    $setupInstall.Foreground = $form.Resources[$(if ($readySteps -eq 2) {'Success'} else {'AccentText'})]
+    $setupInstall.SetResourceReference([Windows.Controls.Control]::BackgroundProperty,$(if ($readySteps -eq 2) {'SuccessBackground'} else {'Accent'}))
+    $setupInstall.SetResourceReference([Windows.Controls.Control]::ForegroundProperty,$(if ($readySteps -eq 2) {'SuccessText'} else {'AccentText'}))
     $step1Number.Text = if ($readySteps -eq 2) {'✓'} else {'1'}
-    $step1Circle.Background = $form.Resources[$(if ($readySteps -eq 2) {'SuccessBackground'} else {'IconBackground'})]
-    $step2Circle.Background = $form.Resources['IconBackground']
+    $step1Number.SetResourceReference([Windows.Controls.TextBlock]::ForegroundProperty,$(if ($readySteps -eq 2) {'SuccessText'} else {'AccentChipText'}))
+    $step1Circle.SetResourceReference([Windows.Controls.Border]::BackgroundProperty,$(if ($readySteps -eq 2) {'SuccessBackground'} else {'IconBackground'}))
+    $step2Circle.SetResourceReference([Windows.Controls.Border]::BackgroundProperty,'IconBackground')
     $healthTitle.Text = if ($verified -and $s.toolsInstalled) {'Ready to use'} else {'Action needed'}
     $healthDescription.Text = if ($script:SwsdTokenError) {'Update your JSON Web Token to finish connecting'} elseif (-not $verified) {'Test your JSON Web Token to verify the connection'} elseif ($updateKind -eq 'Warning') {'One update available'} else {'Connect your AI apps to SWSD'}
     $good = [int]$s.nodeSupported + [int]$s.toolsInstalled + [int]$verified + 2 + [int]($updateKind -eq 'Success')
@@ -596,7 +637,7 @@ function Update-SwsdDashboard {
     $endX = 30 + 26 * [Math]::Sin($rad); $endY = 30 - 26 * [Math]::Cos($rad)
     $arcData = 'M30,4 A26,26 0 ' + $(if ($angle -gt 180) {'1'} else {'0'}) + ',1 ' + $endX.ToString('0.###',[Globalization.CultureInfo]::InvariantCulture) + ',' + $endY.ToString('0.###',[Globalization.CultureInfo]::InvariantCulture)
     $healthArc.Data = [Windows.Media.Geometry]::Parse($arcData)
-    $healthArc.Stroke = $form.Resources[$(if ($script:SwsdTokenError) {'Error'} else {'Success'})]
+    $healthArc.SetResourceReference([Windows.Shapes.Shape]::StrokeProperty,$(if ($script:SwsdTokenError) {'ErrorForeground'} else {'SuccessForeground'}))
     $nodeInstallButton.Visibility = if ($s.nodeSupported) {'Collapsed'} else {'Visible'}
     $repairRow.Visibility = if (-not $firstRun -and ($s.toolsInstalled -or $s.installedVersion)) {'Visible'} else {'Collapsed'}
 }
@@ -607,7 +648,7 @@ function New-SwsdFragment([string]$Markup) {
 }
 function New-SwsdBadgeXaml([string]$Kind) {
     $label = switch ($Kind) { read {'Read'} edit {'Edit'} delete {'Delete'} }
-    $color = switch ($Kind) { read {'Muted'} edit {'Accent'} delete {'Error'} }
+    $color = switch ($Kind) { read {'Muted'} edit {'AccentChipText'} delete {'ErrorText'} }
     $background = switch ($Kind) { read {'Control'} edit {'IconBackground'} delete {'ErrorBackground'} }
     $glyph = if ($Kind -eq 'delete') {'<TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" Margin="0,0,4,0"/>'} else {''}
     return "<Border Background=`"{DynamicResource $background}`" BorderBrush=`"{DynamicResource Border}`" BorderThickness=`"1`" CornerRadius=`"4`" Padding=`"6,2`" HorizontalAlignment=`"Right`" VerticalAlignment=`"Center`"><StackPanel Orientation=`"Horizontal`" TextElement.Foreground=`"{DynamicResource $color}`" TextElement.FontSize=`"11`">$glyph<TextBlock Text=`"$label`"/></StackPanel></Border>"
@@ -834,8 +875,9 @@ function Set-SwsdJwtHelp([bool]$Open) {
     $jwtFlyout.Visibility=if ($Open) {'Visible'} else {'Collapsed'}
     $helpSpacer.Visibility=if ($Open) {'Visible'} else {'Collapsed'}
     $accountHeading.Margin=if ($Open) {'2,4,0,8'} else {'2,20,0,8'}
-    if ($Open) { $toast.Visibility='Collapsed'; $tokenHelp.Background=$form.Resources['Accent']; $tokenHelp.Foreground=$form.Resources['AccentText'] }
-    else { $tokenHelp.Background=$form.Resources['Control']; $tokenHelp.Foreground=$form.Resources['Muted'] }
+    if ($Open) { $toast.Visibility='Collapsed' }
+    $tokenHelp.SetResourceReference([Windows.Controls.Control]::BackgroundProperty,$(if ($Open) {'Accent'} else {'Control'}))
+    $tokenHelp.SetResourceReference([Windows.Controls.Control]::ForegroundProperty,$(if ($Open) {'AccentText'} else {'Muted'}))
     Update-SwsdDashboard
 }
 
@@ -1019,7 +1061,7 @@ $region.Add_SelectionChanged({param($sender,$e) Invoke-SwsdSafe -Source 'RegionC
 $profile.Add_SelectionChanged({param($sender,$e) Invoke-SwsdSafe -Source 'ProfileChanged' {Save-SwsdSelectedProfile $profile.SelectedIndex}})
 $toolsProfile.Add_SelectionChanged({param($sender,$e) Invoke-SwsdSafe -Source 'ToolsProfileChanged' {Save-SwsdSelectedProfile $toolsProfile.SelectedIndex}})
 $appearance.Add_SelectionChanged({param($sender,$e) Invoke-SwsdSafe -Source 'AppearanceChanged' {
-    if (-not $script:SwsdSyncing) {$s=Get-SwsdSettings; Save-SwsdSettings -BaseUrl $s.baseUrl -Profile $s.profile -Theme @('system','light','dark')[$appearance.SelectedIndex]; Set-SwsdTheme; Update-SwsdDashboard; Update-SwsdTools}
+    if (-not $script:SwsdSyncing -and $appearance.SelectedItem -is [Windows.Controls.ComboBoxItem]) {$s=Get-SwsdSettings; Save-SwsdSettings -BaseUrl $s.baseUrl -Profile $s.profile -Theme ([string]$appearance.SelectedItem.Tag); Set-SwsdTheme; Update-SwsdDashboard; Update-SwsdTools}
 }})
 $tokenBox.Add_PasswordChanged({param($sender,$e) Invoke-SwsdSafe -Source 'PasswordChanged' {$tokenPlaceholder.Visibility=if ($tokenBox.SecurePassword.Length -gt 0) {'Collapsed'} else {'Visible'}; $tokenVerified.Visibility=if ($tokenBox.SecurePassword.Length -eq 0 -and $script:SwsdVerified) {'Visible'} else {'Collapsed'}}})
 $showDetails.Add_Click({param($sender,$e) Invoke-SwsdSafe -Source 'DetailsClick' {$open=$errorDetails.Visibility -ne 'Visible'; $errorDetails.Visibility=if ($open) {'Visible'} else {'Collapsed'}; $showDetails.Content=if ($open) {'Hide details'} else {'Show details'}}})
@@ -1107,6 +1149,33 @@ function Remove-SwsdUiFixture {
     [SwsdDesktop.Credentials]::Remove($script:SwsdCredentialTarget)
     if (Test-Path -LiteralPath $resolved) {Remove-Item -LiteralPath $resolved -Recurse -Force}
 }
+function Test-SwsdAppearanceControls {
+    $profile.SelectedIndex=1
+    Assert-Swsd ($appearance.Items.Count -eq 26 -and $appearance.Items[3] -is [Windows.Controls.Separator] -and -not $appearance.Items[3].IsEnabled) 'Appearance needs three Windows choices, a nonselectable separator and 22 named themes.'
+    $ids=@($appearance.Items | Where-Object {$_ -is [Windows.Controls.ComboBoxItem]} | ForEach-Object {[string]$_.Tag})
+    Assert-Swsd (($ids -join ',') -ceq ($script:SwsdThemes.Keys -join ',')) 'Appearance order or stable IDs changed.'
+    Set-SwsdStatus -Kind error -Text 'Appearance contrast check'
+    foreach ($id in $ids) {
+        Set-SwsdAppearanceSelection $id
+        Assert-Swsd ((Get-SwsdSettings).theme -eq $id) ('Appearance did not persist: '+$id)
+        Assert-Swsd ($script:SwsdThemeId -eq $id) ('Appearance did not apply live: '+$id)
+        $p=Get-SwsdThemePalette $script:SwsdResolvedThemeId
+        foreach ($key in $p.Keys) {
+            Assert-Swsd ($form.Resources[$key].Color.ToString() -ieq ('#ff'+$p[$key].Substring(1))) ('Live resource mismatch: '+$id+'/'+$key)
+        }
+        Assert-Swsd ($search.SelectionBrush.Color -eq $form.Resources['Accent'].Color -and $search.SelectionTextBrush.Color -eq $form.Resources['AccentText'].Color -and $search.SelectionOpacity -eq 1) 'Selected input text did not follow the readable accent pair.'
+        Assert-Swsd ($tokenBox.CaretBrush.Color -eq $form.Resources['Text'].Color -and $tokenBox.SelectionTextBrush.Color -eq $form.Resources['AccentText'].Color) 'Password caret or selection kept the previous theme.'
+        Assert-Swsd ($status.Foreground.Color -eq $form.Resources['ErrorText'].Color -and $toast.Background.Color -eq $form.Resources['ErrorBackground'].Color) 'An existing error banner kept the previous theme.'
+        if ($id -notin @('system','light','dark')) {
+            Assert-Swsd (-not $script:SwsdUseMica -and -not $script:SwsdMicaEnabled -and $appRoot.Background -is [Windows.Media.SolidColorBrush] -and $appRoot.Background.Color -eq $form.Resources['Canvas'].Color -and $appRoot.Background.Opacity -eq 1) 'Named themes must use an opaque solid palette.'
+            Assert-Swsd ($script:SwsdDarkMode -eq ((Get-SwsdColorLuminance $p.Canvas) -lt 0.5)) 'Named theme caption mode is incorrect.'
+        }
+        Save-SwsdProfile agent
+        Assert-Swsd ((Get-SwsdSettings).theme -eq $id) 'Profile save discarded Appearance.'
+    }
+    $toast.Visibility='Collapsed'
+    Assert-Swsd ($script:SwsdHandlerErrors.Count -eq 0) 'Appearance raised a handler error.'
+}
 function Test-SwsdUiControls {
     Assert-Swsd ($tokenBox -is [Windows.Controls.PasswordBox]) 'JSON Web Token field must use PasswordBox.'
     Assert-Swsd ($profile.Items.Count -eq $script:SwsdPickerProfiles.Count -and $profile.Items.Count -ge 4 -and $profile.SelectedItem -eq 'Agent' -and -not ($profile.Items -contains 'Full')) 'Visible profiles (no Full) and Agent default are required.'
@@ -1135,13 +1204,7 @@ function Test-SwsdUiControls {
         }
         Assert-SwsdProfileLabels
     }
-    foreach ($index in 0..2) {
-        $appearance.SelectedIndex=$index
-        Assert-Swsd ((Get-SwsdSettings).theme -eq @('system','light','dark')[$index]) 'Appearance did not persist.'
-        if ($env:SWSD_THEME -notin @('light','dark') -and $index -gt 0) {Assert-Swsd ($script:SwsdDarkMode -eq ($index -eq 2)) 'Appearance did not apply live.'}
-        $profile.SelectedIndex=1
-        Assert-Swsd ((Get-SwsdSettings).theme -eq @('system','light','dark')[$index]) 'Profile save discarded Appearance.'
-    }
+    Test-SwsdAppearanceControls
     $oldTheme=(Get-SwsdSettings).theme
     Save-SwsdSettings -BaseUrl 'https://apieu.samanage.com' -Profile 'agent'
     Assert-Swsd ((Get-SwsdSettings).theme -eq $oldTheme) 'Account save discarded Appearance.'
@@ -1255,9 +1318,10 @@ function Test-SwsdUiControls {
 }
 
 function Set-SwsdPreviewFixture([string]$PreviewState) {
-    Save-SwsdSettings -BaseUrl 'https://api.samanage.com' -Profile agent -Theme system
+    $theme=if ($PreviewTheme) {Resolve-SwsdThemeId $PreviewTheme} else {'system'}
+    Save-SwsdSettings -BaseUrl 'https://api.samanage.com' -Profile agent -Theme $theme
     Update-SwsdProfilePickers
-    $script:SwsdSyncing=$true; $appearance.SelectedIndex=0; $script:SwsdSyncing=$false; Set-SwsdTheme
+    $script:SwsdSyncing=$true; Set-SwsdAppearanceSelection $theme; $script:SwsdSyncing=$false; Set-SwsdTheme
     [SwsdDesktop.Credentials]::Remove($script:SwsdCredentialTarget)
     $script:SwsdVerified=$false; $script:SwsdTokenError=$false; $script:SwsdIdentity=$null
     $script:SwsdSelectedTool='swsd_list_my_incidents'; $script:SwsdArea=''; $script:SwsdExpandedAreas=@{}
@@ -1320,6 +1384,11 @@ function Set-SwsdPreviewFixture([string]$PreviewState) {
 try {
 if ($ValidateUi) {
     Test-SwsdUiControls
+    if ($PreviewTheme) {
+        Set-SwsdPreviewFixture $PreviewState
+        Assert-Swsd ($script:SwsdThemeId -eq (Resolve-SwsdThemeId $PreviewTheme)) 'Requested preview theme was not applied.'
+        Write-Output ('PASS: isolated preview '+$script:SwsdThemeId+'; dark caption='+$script:SwsdDarkMode+'; solid palette='+(-not $script:SwsdUseMica))
+    }
 } elseif ($ValidateHandlers) {
     $script:SwsdMockCalls=New-Object 'System.Collections.Concurrent.ConcurrentQueue[string]'
     $script:SwsdMockInstallFails=$false; $script:SwsdMockNodeFails=$false
@@ -1360,6 +1429,7 @@ if ($ValidateUi) {
     # Presentation fixture only; no fabricated HTTP response is used as upstream evidence.
     function script:Get-SwsdVerifiedIdentity {param($Token,$BaseUrl) return 'Alex Rivera · Acme IT'}
     function script:Set-SwsdClipboard {param([string]$Text) $script:SwsdMockCalls.Enqueue('clipboard'); $script:SwsdClipboardText=$Text}
+    Test-SwsdAppearanceControls
     $buttons=@($install,$checkUpdates,$nodeInstallButton,$test,$remove,$copyDiagnostics,$copyPrompt)
     function Assert-SwsdAction($Button,[string]$Expected,[switch]$Worker) {
         $script:SwsdHandlerErrors=@(); $Button.IsEnabled=$true
@@ -1486,6 +1556,23 @@ if ($ValidateUi) {
     $watchdog.Add_Tick({$watchdog.Stop(); $probe.Stop(); $form.Close()})
     $probe.Add_Tick({param($sender,$e) Invoke-SwsdSafe -Source 'WindowProbe' {
         $probe.Stop(); $form.UpdateLayout()
+        $liveThemeSwitches=@()
+        if ($PreviewTheme -and $PreviewState -eq 'ready' -and $script:SwsdDpiStep -eq 'initial') {
+            # Exercise Mica -> named dark -> named light -> Mica on this actual HWND.
+            foreach ($id in @('light','dracula','catppuccin-latte','dark')) {
+                Set-SwsdAppearanceSelection $id
+                $backdrop=[SwsdDesktop.Windows]::ReadWindowAttribute($script:SwsdHandle,38)
+                $caption=[SwsdDesktop.Windows]::ReadWindowAttribute($script:SwsdHandle,20)
+                if ($caption -ge 0) {Assert-Swsd ($caption -eq [int]$script:SwsdDarkMode) 'DWM caption did not apply live.'}
+                if ($id -notin @('light','dark')) {
+                    Assert-Swsd (-not $script:SwsdMicaEnabled -and $appRoot.Background -is [Windows.Media.SolidColorBrush] -and $appRoot.Background.Opacity -eq 1) 'Live named theme retained Mica or translucency.'
+                    if ($backdrop -ge 0) {Assert-Swsd ($backdrop -eq 1) 'DWM retained a system backdrop on a named theme.'}
+                } elseif ($script:SwsdMicaEnabled -and $backdrop -ge 0) {Assert-Swsd ($backdrop -eq 2) 'DWM did not restore Mica.'}
+                $liveThemeSwitches+=$id
+            }
+            Set-SwsdPreviewFixture $PreviewState
+            $form.UpdateLayout()
+        }
         $failures=@($script:SwsdHandlerErrors)
         $awareness=[SwsdDpiBootstrap]::WindowAwareness($script:SwsdHandle)
         if ($awareness -ne 'PerMonitorV2') {$failures+='Window did not inherit PerMonitorV2 awareness.'}
@@ -1493,6 +1580,12 @@ if ($ValidateUi) {
         $actualDpi=[int][Math]::Round($dpi.PixelsPerInchX)
         if ($actualDpi -ne $script:SwsdDpi.DeviceDpi) {$failures+="Visual DPI $actualDpi differs from message DPI $($script:SwsdDpi.DeviceDpi)."}
         foreach ($control in @($region,$profile,$appearance,$test,$tokenBox,$copyDiagnostics)) {if ($control.IsVisible -and $control.ActualHeight -lt 31) {$failures+='An account/maintenance control is clipped.'}}
+        foreach ($input in @($customName,$customDescription,$search)) {
+            if ($input.IsVisible -and $input.Text.Length -gt 0) {
+                $rect=$input.GetRectFromCharacterIndex(0)
+                if ($rect.IsEmpty -or $rect.Height -lt $input.FontSize -or $rect.Bottom -gt $input.ActualHeight) {$failures+='Input text is clipped by its template.'}
+            }
+        }
         if ($statusGrid.IsVisible) {
             $cells=@(foreach ($id in $rowNames) {$form.FindName($id+'Cell')})
             $widths=@($cells | ForEach-Object {[Math]::Round($_.ActualWidth,4)} | Sort-Object -Unique)
@@ -1510,6 +1603,8 @@ if ($ValidateUi) {
             consoleVisible=[SwsdDesktop.Windows]::IsWindowVisible([SwsdDesktop.Windows]::GetConsoleWindow()); tokenEntryEnabled=$tokenBox.IsEnabled
             workingAreaWidth=$area.Width; workingAreaHeight=$area.Height; formWidth=$form.ActualWidth; clientWidth=$appRoot.ActualWidth; formHeight=$form.ActualHeight; clientHeight=$appRoot.ActualHeight; preferredClientHeight=$homePage.DesiredSize.Height; frameHeight=0
             layoutFailures=@($failures); layoutNotes=@(); previewState=$PreviewState; renderer='WPF'; micaEnabled=$script:SwsdMicaEnabled
+            themeId=$script:SwsdThemeId; resolvedThemeId=$script:SwsdResolvedThemeId; darkCaption=$script:SwsdDarkMode; canvasColor=$form.Resources['Canvas'].Color.ToString()
+            liveThemeSwitches=$liveThemeSwitches
             updateButton=[string]$checkUpdates.Content; updateDescription=$updatesDescription.Text; notInProfileHeader=[string]$otherTools.Header
         }
         $script:SwsdWindowResults.Add($result)

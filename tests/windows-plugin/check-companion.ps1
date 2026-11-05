@@ -1,6 +1,27 @@
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot '../../plugins/swsd/scripts/Common.ps1')
 $script:SwsdHome=Join-Path ([IO.Path]::GetTempPath()) ('swsd-companion-test-'+[guid]::NewGuid().ToString('N'))
+# Use the same persisted IDs as the Appearance picker, including named light/dark palettes.
+try {
+    foreach ($id in $script:SwsdThemes.Keys) {
+        Save-SwsdSettings -BaseUrl 'https://api.samanage.com' -Profile agent -Theme $id
+        if ((Get-SwsdSettings).theme -cne $id) {throw "Theme did not round-trip: $id"}
+        Save-SwsdProfile knowledge
+        Save-SwsdSettings -BaseUrl 'https://apieu.samanage.com' -Profile knowledge
+        if ((Get-SwsdSettings).theme -cne $id) {throw "Profile/account save discarded theme: $id"}
+    }
+    Save-SwsdSettings -BaseUrl 'https://api.samanage.com' -Profile agent -Theme unknown-theme
+    if ((Get-SwsdSettings).theme -ne 'system') {throw 'Unknown theme saves must fall back to Match Windows.'}
+    $path=Join-Path $script:SwsdHome 'settings.json'
+    $value=Get-Content $path -Raw | ConvertFrom-Json
+    $value.theme='future-theme'; $value | ConvertTo-Json | Set-Content $path -Encoding UTF8
+    if ((Get-SwsdSettings).theme -ne 'system') {throw 'Unknown stored themes must fall back to Match Windows.'}
+    $value.PSObject.Properties.Remove('theme'); $value | ConvertTo-Json | Set-Content $path -Encoding UTF8
+    if ((Get-SwsdSettings).theme -ne 'system') {throw 'Older settings must default to Match Windows.'}
+} finally {
+    if (Test-Path -LiteralPath $script:SwsdHome) {Remove-Item -LiteralPath (Join-Path $script:SwsdHome 'settings.json') -Force; Remove-Item -LiteralPath $script:SwsdHome}
+}
+Write-Output 'PASS: all 25 Appearance IDs persist across profile/account saves; older and unknown themes use Match Windows.'
 # Explicit parameters make URL generation a pure operation; no credential access.
 $badValues=@('synthetic-secret','person@example.test','tenant-name','https://user:password@host.test','C:\Users\person\profiles\daily.json','SWSD_TOKEN=sentinel','1.2.3&token=sentinel')
 foreach ($value in $badValues) {

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Appearance themes: Dracula, Catppuccin, Nord, Gruvbox, Tokyo Night and more.
 - Custom profiles: pick exactly the tools your AI apps can use, save them by
   name, and share them as a file.
 - On Windows, build custom profiles on the Tools page, then save, rename,
