@@ -94,6 +94,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Windows plugin: Repair from the manager window now always reinstalls, the
+  up-to-date shortcut also checks the installed lockfile, and a timed-out update
+  check no longer leaves npm running.
 - Widgets now follow the host's light or dark theme. The UI build had been lowering
   CSS `light-dark()` to the OS color-scheme preference, so eight widgets ignored
   the host theme. The incident list also keeps numbers and words whole in narrow
