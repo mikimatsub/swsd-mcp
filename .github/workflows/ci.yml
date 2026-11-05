@@ -161,7 +161,10 @@ jobs:
     # Publish from main branch pushes (latest + sha) and release tag pushes
     # (semver tags + version label); never from PRs. Release-prep merges can
     # explicitly defer publication while retaining all build/smoke checks.
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && !contains(github.event.head_commit.message, '[skip ghcr]')
+    # Tag pushes always publish. Main pushes publish unless the commit defers with [skip ghcr].
+    # workflow_dispatch (see publish-ghcr.yml) covers recovery when a tag was deferred.
+    if: github.event_name == 'push' && ((startsWith(github.ref, 'refs/tags/v')) || (github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ghcr]')))
+
     permissions:
       contents: read
       packages: write

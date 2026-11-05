@@ -1,0 +1,68 @@
+name: Publish GHCR image
+
+# Recovery / explicit publish for release tags (for example after a release-prep
+# commit deferred GHCR with [skip ghcr]). Does not replace the normal CI tag path.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing git tag to build and push (for example v3.3.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-ghcr-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and push GHCR tags
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Validate tag shape
+        run: |
+          case "${{ inputs.tag }}" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "Tag must look like vX.Y.Z" >&2; exit 1 ;;
+          esac
+
+      - name: Compute lowercase image name and semver tags
+        run: |
+          echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+          VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"
+          MAJOR_MINOR="${VERSION%.*}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "MAJOR_MINOR=$MAJOR_MINOR" >> "$GITHUB_ENV"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6  # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
+
+      - name: Build and push 3-part tags
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ env.MAJOR_MINOR }}
+            ghcr.io/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
