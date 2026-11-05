@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-11-05
+
 ### Added
 
 - Appearance themes: Dracula, Catppuccin, Nord, Gruvbox, Tokyo Night and more.
@@ -45,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Appearance now shows Match Windows, Light, and Dark above the theme divider,
+  without a blank first row.
 - Windows PowerShell now reads the app as UTF-8, keeping Appearance text,
   check marks, and other symbols readable on every Windows locale.
 - Docs site and README now match the current tools, profiles, configuration,
@@ -1025,7 +1029,8 @@ Detailed history available via `git log`.
 * **2026-05-03**: `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.0...HEAD
+[3.3.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.1.1...v3.2.0
 [3.1.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.0.2...v3.1.0

@@ -2,11 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// The Windows plugin installs the *published* swsd-mcp package, so its runtime
-// pin must equal the latest version on npm (not the root version, which can be
-// ahead during a release PR). The registry check needs network access; set
-// SWSD_OFFLINE=1 to skip it. When npm is unreachable it degrades to offline
-// checks: the pin is a registry-resolved exact version not ahead of the root.
+// Published recipes must match npm latest and retain its integrity. Release prep
+// may pin the dated root candidate before publication, without inventing npm
+// integrity. Windows CI tests that candidate's actual tarball separately.
 
 const root = join(import.meta.dirname, '..', '..');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untyped manifest JSON
@@ -20,6 +18,9 @@ const common = readFileSync(join(root, 'plugins/swsd/scripts/Common.ps1'), 'utf8
 const plugin = readJson('plugins/swsd/.codex-plugin/plugin.json');
 const mcpConfig = readFileSync(join(root, 'plugins/swsd/.mcp.json'), 'utf8');
 const pin = recipe.dependencies['swsd-mcp'] as string;
+const locked = lock.packages['node_modules/swsd-mcp'];
+const pendingRelease = locked.integrity === undefined;
+const changelog = readFileSync(join(root, 'CHANGELOG.md'), 'utf8');
 
 const psVar = (name: string): string | undefined =>
   new RegExp(`\\$script:${name} = '([^']+)'`).exec(common)?.[1];
@@ -59,19 +60,28 @@ describe('Windows plugin runtime version', () => {
 
   it('locks exactly the pinned version from the npm registry', () => {
     expect(lock.packages[''].dependencies['swsd-mcp']).toBe(pin);
-    const locked = lock.packages['node_modules/swsd-mcp'];
     expect(locked.version).toBe(pin);
     expect(locked.resolved).toBe(`https://registry.npmjs.org/swsd-mcp/-/swsd-mcp-${pin}.tgz`);
-    expect(locked.integrity).toMatch(/^sha512-/);
+    if (pendingRelease) {
+      expect(pin).toBe(serverVersion);
+      expect(changelog).toMatch(new RegExp(`^## \\[${pin.replaceAll('.', '\\.')}\\] - \\d{4}-\\d{2}-\\d{2}$`, 'm'));
+    } else {
+      expect(locked.integrity).toMatch(/^sha512-/);
+    }
   });
 
   it('keeps the setup script expectation in step with the pin', () => {
     expect(psVar('SwsdPackageVersion')).toBe(pin);
   });
 
-  it.skipIf(!registry)('pins the latest published swsd-mcp version', () => {
-    expect(registry!.versions).toContain(pin);
-    expect(pin).toBe(registry!.latest);
+  it.skipIf(!registry)('pins npm latest or a dated, unpublished release candidate', () => {
+    if (pendingRelease) {
+      expect(registry!.versions).not.toContain(pin);
+      expect(compare(pin, registry!.latest)).toBeGreaterThan(0);
+    } else {
+      expect(registry!.versions).toContain(pin);
+      expect(pin).toBe(registry!.latest);
+    }
   });
 
   it('does not override the MCP SDK back to v1', () => {
