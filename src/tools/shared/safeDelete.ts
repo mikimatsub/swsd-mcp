@@ -6,6 +6,8 @@ import { structuredResult } from '../../mcp/output.js';
 import { toolError } from '../../mcp/errors.js';
 import { mapSwsdError } from '../../swsd/errors.js';
 import { toGenericRecordSummary } from '../../swsd/mappers/record.js';
+import { ListIncidentTasksInput } from '../../schemas/task.js';
+import { resolveIncidentRef } from '../../utils/idResolver.js';
 import { checkWriteMode } from './writeMode.js';
 
 export const SafeDeleteInput = z.object({
@@ -97,6 +99,109 @@ export function registerSafeDelete(
         return structuredResult(
           { deleted: true, record, request },
           `Deleted ${kind} ${String(id)}: ${record.name}`,
+        );
+      } catch (err) {
+        return mapSwsdError(err);
+      }
+    },
+  );
+}
+
+interface SafeSubresourceDeleteConfig {
+  kind: string;
+  toolName: string;
+  collection: 'comments' | 'tasks' | 'time_tracks';
+  idField: 'comment_id' | 'task_id' | 'time_track_id';
+  envelopeKey: 'comment' | 'task' | 'time_track';
+  summarize: (raw: unknown) => ({ id: number } & Record<string, unknown>) | null;
+}
+
+/** Incident sub-resources are verified through their parent's list, never a guessed item GET. */
+export function registerSafeSubresourceDelete(
+  server: McpServer,
+  ctx: ToolContext,
+  { kind, toolName, collection, idField, envelopeKey, summarize }: SafeSubresourceDeleteConfig,
+): void {
+  server.registerTool(
+    toolName,
+    {
+      description:
+        `DESTRUCTIVE — delete an SWSD incident ${kind}. ` +
+        'Accepts an incident internal id (>=7 digits) or human-facing number (<=6 digits), ' +
+        `and the internal ${idField}. First call without confirmation to preview the record. ` +
+        'Ask the user to confirm, then re-call with confirm:true and confirm_id equal to ' +
+        'the previewed sub-record id, not the incident id. Dry-run mode always previews; ' +
+        'disabled mode blocks. Does not retry DELETE requests.',
+      inputSchema: SafeDeleteInput.omit({ id: true }).extend({
+        incident_id: ListIncidentTasksInput.shape.incident_id,
+        [idField]: SafeDeleteInput.shape.id.describe(`Internal ${kind} id from the parent's list tool.`),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true, idempotentHint: true },
+    },
+    async (input: Record<string, unknown>) => {
+      try {
+        const incidentRef = input.incident_id as number;
+        const id = input[idField] as number;
+        if (ctx.env.SWSD_WRITE_MODE === 'disabled') {
+          const gated = checkWriteMode(ctx, {
+            method: 'DELETE',
+            path: `/incidents/${String(incidentRef)}/${collection}/${String(id)}.json`,
+            action: `delete ${kind} ${String(id)} on incident ${String(incidentRef)}`,
+          });
+          if (gated) return gated;
+        }
+
+        const { id: incidentId } = await resolveIncidentRef(incidentRef, ctx.client);
+        const parentPath = `/incidents/${String(incidentId)}/${collection}`;
+        const request = { method: 'DELETE' as const, path: `${parentPath}/${String(id)}.json` };
+        let record: ({ id: number; incident_id: number } & Record<string, unknown>) | undefined;
+        // Match the list tools' page bounds and continue until the record or the end is found.
+        for (let page = 1; page <= 10_000; page++) {
+          const { body, pagination } = await ctx.client.get<unknown>(`${parentPath}.json`, { page, per_page: 100 });
+          if (!Array.isArray(body)) {
+            return toolError(`Could not verify ${kind} ${String(id)} from SWSD. No DELETE request was sent.`);
+          }
+          for (const row of body as unknown[]) {
+            const raw = row && typeof row === 'object' && envelopeKey in row
+              ? (row as Record<string, unknown>)[envelopeKey] : row;
+            const summary = summarize(raw);
+            if (summary && Number.isInteger(summary.id) && summary.id > 0 && summary.id === id) {
+              record = { ...summary, incident_id: incidentId };
+              break;
+            }
+          }
+          if (record) break;
+          if (!pagination.has_more) {
+            return toolError(`${kind} ${String(id)} not found on incident ${String(incidentId)}. No DELETE request was sent.`);
+          }
+        }
+        if (!record) {
+          return toolError(`Could not verify ${kind} ${String(id)} within the list page limit. No DELETE request was sent.`);
+        }
+
+        const gated = checkWriteMode(ctx, {
+          ...request,
+          action: `delete ${kind} ${String(id)} on incident ${String(incidentId)}`,
+        });
+        if (gated?.isError) return gated;
+        if (gated || input.confirm !== true || input.confirm_id !== id) {
+          const hint = `Ask the user to confirm deletion of this ${kind}, then re-call with ` +
+            `confirm:true and confirm_id:${String(id)} (the internal sub-record id).`;
+          return structuredResult(
+            {
+              ...(gated ? { dry_run: true } : { confirmation_required: true }),
+              would_delete: record,
+              request,
+              hint,
+            },
+            `${gated ? 'Dry run' : 'Confirmation required'}: would delete ${kind} ${String(id)} on incident ${String(incidentId)}. ` +
+              `No DELETE request was sent. ${hint}`,
+          );
+        }
+        await ctx.client.delete(request.path);
+        return structuredResult(
+          { deleted: true, record, request },
+          `Deleted ${kind} ${String(id)} on incident ${String(incidentId)}.`,
         );
       } catch (err) {
         return mapSwsdError(err);

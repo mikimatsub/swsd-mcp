@@ -55,6 +55,16 @@ export const UpdateTaskStateInput = z.object({
     .describe('True to mark the task complete ("Completed"); false to mark it incomplete ("New").'),
 });
 
+export const UpdateTaskInput = z.object({
+  incident_id: ListIncidentTasksInput.shape.incident_id,
+  task_id: UpdateTaskStateInput.shape.task_id,
+  name: CreateIncidentTaskInput.shape.name.optional(),
+  assignee_email: EmailInput.optional().describe('Email of the SWSD user to assign the task to.'),
+  due_at: z.iso.datetime({ offset: true }).max(64).optional().describe('Due datetime in ISO 8601 with a timezone.'),
+  is_complete: z.boolean().optional().describe('Whether the task is complete.'),
+});
+
+export type UpdateTaskInput = z.infer<typeof UpdateTaskInput>;
 export type ListIncidentTasksInput = z.infer<typeof ListIncidentTasksInput>;
 export type CreateIncidentTaskInput = z.infer<typeof CreateIncidentTaskInput>;
 export type UpdateTaskStateInput = z.infer<typeof UpdateTaskStateInput>;
