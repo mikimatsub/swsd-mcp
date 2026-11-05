@@ -189,7 +189,7 @@ az group delete --name swsd-mcp-rg --yes --no-wait
 |---|---|---|
 | `curl /healthz` hangs | Container starting up (cold start) | Wait 30–60 seconds, retry. Cold starts are normal with `min-replicas 0`. |
 | `404` from `/healthz` | Wrong FQDN, or container failed to start | Run `az containerapp logs show --name swsd-mcp --resource-group swsd-mcp-rg --follow` to see startup logs |
-| `403` from `/mcp` | `SWSD_ALLOWED_ORIGINS` is set and rejecting your origin | Either remove the env var (it's safe behind Container Apps' ingress) or add the calling origin to the allowlist |
+| `403` from `/mcp` | The request's `Origin` is not in `SWSD_ALLOWED_ORIGINS` (empty allows only loopback origins) | Add the calling origin to the allowlist |
 | Copilot Studio import fails | Swagger file's `host:` not updated, or contains `https://` prefix | Edit the file: `host:` should be just the FQDN, no protocol |
 | Token forwarded but SWSD returns 401 | Token expired or invalid | Generate a fresh token in SWSD UI; tokens forwarded by swsd-mcp are not stored, so each request uses what the caller sent |
 

@@ -112,7 +112,7 @@ containing the entries for your selected profile (e.g. 51 for `agent`).
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `401 Unauthorized` | Token not forwarded, or header name wrong | Re-check that the connector's auth header is exactly `X-SWSD-Token` (case-insensitive but spelling-exact) |
-| `403 Forbidden` with "Origin not allowed" | Copilot's origin isn't whitelisted | Set `SWSD_ALLOWED_ORIGINS=` to empty (trust the proxy) or add Copilot's origin to the list |
+| `403 Forbidden` with "Origin not allowed" | Copilot's origin isn't whitelisted | Add Copilot's origin to `SWSD_ALLOWED_ORIGINS` (an empty list allows only loopback origins) |
 | `400 Unsupported MCP-Protocol-Version` | Copilot sent a protocol version your server's SDK doesn't recognize | Upgrade `@modelcontextprotocol/sdk` to a version that includes the requested protocol version, or open an issue |
 | Import wizard rejects the file | YAML edited incorrectly | Check `host:` line is the only thing changed; YAML indentation matters |
 | Tools don't appear after successful import | Server's profile is empty or wrong | Verify `SWSD_PROFILE` env var on the server matches the Swagger file profile (or use `full`) |

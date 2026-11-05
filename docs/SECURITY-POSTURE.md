@@ -379,8 +379,8 @@ allowlist (`SWSD_ALLOWED_ORIGINS` env var). This is the documented
 mitigation for DNS rebinding attacks where a malicious website
 tricks a browser into sending requests to a localhost MCP server.
 
-Empty allowlist = no Origin restriction (acceptable behind a
-trusted reverse proxy).
+Empty allowlist = only loopback origins are accepted. Requests
+without an `Origin` header are unaffected.
 
 ### Logging discipline
 

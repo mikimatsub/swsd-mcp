@@ -22,7 +22,8 @@ These only apply when `SWSD_TRANSPORT=http`. They have no effect in stdio mode.
 | `SWSD_TRANSPORT` | `stdio` | Set to `http` for hosted/Copilot Studio deployments |
 | `PORT` | `3000` | HTTP listen port |
 | `SWSD_TRUST_PROXY` | `false` | Set to `1` behind Azure App Service / Nginx; `2` behind Cloudflare → App Service. Required for accurate `req.ip` (rate limiting depends on it). |
-| `SWSD_ALLOWED_ORIGINS` | _(empty)_ | Comma-separated. Empty = no Origin restriction (only safe behind a trusted proxy that filters); set explicitly otherwise to mitigate DNS rebinding. |
+| `SWSD_ALLOWED_ORIGINS` | _(empty)_ | Comma-separated exact origins. Empty = only loopback origins are accepted; requests without an `Origin` header are unaffected. List browser-based client origins explicitly. |
+| `SWSD_ALLOWED_HOSTS` | _(empty)_ | Comma-separated exact `Host` header values. Empty = no Host restriction. Does not change the listen address. |
 | `SWSD_RATE_LIMIT_WINDOW_MS` | `60000` | Rate-limit window in milliseconds |
 | `SWSD_RATE_LIMIT_MAX` | `100` | Max requests per window per `(token, IP)` pair (token is sha256-hashed for memory safety) |
 
