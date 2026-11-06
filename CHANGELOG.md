@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-11-06
+
 ### Added
 
 - Windows companion app: the README and docs site now include setup, connection status, the tool guide, custom profiles, Appearance, updates, diagnostics, What's new, and the Report a bug and Request a feature links. Dark window examples show Set up, the tool guide, search, the profile builder, an import error, and What's new.
@@ -14,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Node.js: require 24.15 or newer; Node 26 is supported. Node 25 is not. CI tests Node 24 and 26. The Docker image uses `node:26-alpine` (digest-pinned). Windows setup accepts Node 24.15+ or Node 26+, and installs the current Node.js LTS via winget when needed.
+
+### Fixed
+
+- Release tags publish their container images. Deferring the main-branch image no longer blocks the version tag.
 
 ## [3.3.0] - 2026-11-05
 
@@ -1037,7 +1043,8 @@ Detailed history available via `git log`.
 * **2026-05-03**: `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.0...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.1...HEAD
+[3.3.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.1.1...v3.2.0
 [3.1.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.1.0...v3.1.1
