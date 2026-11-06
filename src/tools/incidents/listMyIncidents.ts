@@ -11,6 +11,7 @@ import { withTotalScope } from '../../swsd/pagination.js';
 import { toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { resolveCurrentUser } from '../../utils/resolveCurrentUser.js';
 import { applyDateAlias, passesUpdatedCutoff, planUpdatedFrom } from '../../utils/dateAliases.js';
+import { resolveRequesterIds } from '../../utils/requesterResolver.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 // Reuse the incident-list widget already registered (as a resource) by
@@ -60,7 +61,8 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
           .describe(
             'Echo of the filters applied to this query — empty object if none. ' +
               'Use this to reason about whether the result count reflects your filters or the tenant total. ' +
-              'NOTE: assignee_email and requester_email are applied client-side (post-fetch) because SWSD ignores them server-side.',
+              'NOTE: assignee_email is applied client-side (post-fetch) because SWSD ignores it server-side. ' +
+              'requester_email is server-side (requested_by) when requester_ids is present, otherwise client-side.',
           ),
         assignee_email: z
           .string()
@@ -103,7 +105,11 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         // /incidents.json (verified live 2026-05-08: fake email returns the
         // full tenant). We narrow client-side after the response lands.
         // All OTHER filters (state, dates, category, etc.) DO work server-side
-        // and are applied as before.
+        // and are applied as before. requester_email, when given, is resolved to
+        // requester ids and sent as `requested_by` (see requesterResolver).
+        const requesterIds = input.requester_email
+          ? await resolveRequesterIds(ctx.client, input.requester_email)
+          : undefined;
         const params: Record<string, unknown> = {
           page: input.page,
           per_page: input.per_page,
@@ -123,6 +129,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         if (input.sort_by) params.sort_by = input.sort_by;
         if (input.sort_order) params.sort_order = input.sort_order;
         if (input.query) params.query = input.query;
+        if (requesterIds) params.requested_by = requesterIds;
 
         const { body, pagination } = await ctx.client.get<unknown>('/incidents.json', params);
         const raw = requireListArray(body);
@@ -152,6 +159,7 @@ export function registerListMyIncidents(server: McpServer, ctx: ToolContext): vo
         if (input.priorities?.length) applied_filters.priorities = input.priorities;
         if (input.categories?.length) applied_filters.categories = input.categories;
         if (input.requester_email) applied_filters.requester_email = input.requester_email;
+        if (requesterIds) applied_filters.requester_ids = requesterIds;
         if (input.updated_from) applied_filters.updated_from = input.updated_from;
         if (input.updated_to) applied_filters.updated_to = input.updated_to;
         if (input.created_from) applied_filters.created_from = input.created_from;

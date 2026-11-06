@@ -220,3 +220,52 @@ describe('swsd_list_my_incidents - client-side filter', () => {
     expect(text).toContain('assigned_to');
   });
 });
+
+describe('swsd_list_my_incidents - server-side requester filter', () => {
+  let server: McpServer;
+  let client: FakeClient;
+  let tool: RegisteredToolInternals;
+
+  beforeEach(() => {
+    server = new McpServer({ name: 'test', version: '0.0.0' });
+    client = makeFakeClient();
+    registerListMyIncidents(server, makeCtxWithJwt(client));
+    tool = getRegisteredTool(server, 'swsd_list_my_incidents');
+    client.setBodyForPath(
+      (path) => path === '/users/42.json',
+      { id: 42, email: 'me@example.com' },
+    );
+  });
+
+  it('resolves requester_email to requested_by and still scopes to my assignments', async () => {
+    client.setBodyForPath((p) => p === '/requesters.json', [
+      { id: 501, user_id: 9001, description: 'alice@example.com' },
+    ]);
+    client.setBodyForPath((p) => p === '/incidents.json', [
+      { id: 1, name: 'mine', assignee: { email: 'me@example.com' }, requester: { email: 'alice@example.com' } },
+      { id: 2, name: 'theirs', assignee: { email: 'other@example.com' }, requester: { email: 'alice@example.com' } },
+    ]);
+
+    const result = (await tool.handler(
+      { page: 1, per_page: 25, requester_email: 'alice@example.com' },
+      {},
+    )) as StructuredToolResult;
+
+    const get = client.calls.find((c) => c.type === 'get' && c.path === '/incidents.json');
+    const params = get?.type === 'get' ? get.params : {};
+    expect(params.requested_by).toEqual([501]);
+    expect(params).not.toHaveProperty('requester_email');
+    const sc = result.structuredContent ?? {};
+    expect((sc.incidents as Array<{ id: number }>).map((i) => i.id)).toEqual([1]);
+    expect(sc.applied_filters).toMatchObject({ requester_ids: [501] });
+  });
+
+  it('falls back to the client-side requester filter when the email matches no requester', async () => {
+    client.setBodyForPath((p) => p === '/requesters.json', []);
+
+    await tool.handler({ page: 1, per_page: 25, requester_email: 'alice@example.com' }, {});
+
+    const get = client.calls.find((c) => c.type === 'get' && c.path === '/incidents.json');
+    expect(get?.type === 'get' ? get.params : {}).not.toHaveProperty('requested_by');
+  });
+});

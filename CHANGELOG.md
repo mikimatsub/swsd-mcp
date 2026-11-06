@@ -74,6 +74,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   readable.
 - Documentation lists all ten widgets and clarifies the incident-list title
   total.
+- Filtering incidents by `requester_email` now finds every matching ticket.
+  It used to check only the page that was fetched, so a requester's tickets
+  were often missed. The email is now matched to SolarWinds requester IDs and
+  filtered by SolarWinds itself. If no requester has that email, the old
+  behavior is kept.
 
 ## [3.2.0] - 2026-11-05
 

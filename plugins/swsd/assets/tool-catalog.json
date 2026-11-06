@@ -1746,7 +1746,7 @@
   },
   {
     "name": "swsd_list_incidents",
-    "description": "List SWSD incidents with structured filters and pagination. Returns compact summaries (id, name, state, priority, assignee_email, requester_email, category, updated_at) — call swsd_get_incident for the full detail of any one row. Filters use SWSD repeated-key array semantics (multiple values within a filter are OR-ed). NOTE: assignee_email and requester_email are applied CLIENT-SIDE because SWSD /incidents.json silently ignores them server-side (verified 2026-05-08 against the live API). Other filters (state, category, dates, sites, departments, assigned_to_group, query) DO narrow server-side and are passed through.",
+    "description": "List SWSD incidents with structured filters and pagination. Returns compact summaries (id, name, state, priority, assignee_email, requester_email, category, updated_at) — call swsd_get_incident for the full detail of any one row. Filters use SWSD repeated-key array semantics (multiple values within a filter are OR-ed). requester_email is resolved to SWSD requester ids and filtered SERVER-SIDE (requested_by), so results cover every page; if the email matches no requester it falls back to a client-side filter of the fetched page. assignee_email is applied CLIENT-SIDE because SWSD /incidents.json silently ignores it server-side (verified 2026-05-08 against the live API). Other filters (state, category, dates, sites, departments, assigned_to_group, query) DO narrow server-side and are passed through.",
     "annotations": {
       "readOnlyHint": true,
       "destructiveHint": false,

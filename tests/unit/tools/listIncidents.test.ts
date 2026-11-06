@@ -166,3 +166,124 @@ describe('swsd_list_incidents - client-side party filter', () => {
     expect(scan.matches_in_page).toBe(2);
   });
 });
+
+/**
+ * Server-side requester filter (`requested_by`).
+ *
+ * SWSD honours `requested_by[]=<requester id>` on /incidents.json (verified
+ * live 2026-11-05), but the requester id is not the user id, so
+ * requester_email is resolved through /requesters.json first. An email that
+ * resolves to no requester (or a failed lookup) falls back to the
+ * client-side filter above.
+ */
+describe('swsd_list_incidents - server-side requester filter', () => {
+  let server: McpServer;
+  let client: FakeClient;
+  let tool: RegisteredToolInternals;
+
+  beforeEach(() => {
+    server = new McpServer({ name: 'test', version: '0.0.0' });
+    client = makeFakeClient();
+    registerListIncidents(server, makeCtx(client));
+    tool = getRegisteredTool(server, 'swsd_list_incidents');
+  });
+
+  function incidentsParams(c: FakeClient): Record<string, unknown> {
+    const get = c.calls.find((call) => call.type === 'get' && call.path === '/incidents.json');
+    return get?.type === 'get' ? get.params : {};
+  }
+
+  it('resolves requester_email via /requesters.json and sends requested_by server-side', async () => {
+    client.setBodyForPath((p) => p === '/requesters.json', [
+      { id: 501, user_id: 9001, name: 'Alice', description: 'Alice@Example.com' },
+    ]);
+    client.setBodyForPath((p) => p === '/incidents.json', [
+      { id: 1, name: 'a', requester: { email: 'alice@example.com' } },
+      { id: 2, name: 'b', requester: { email: 'ALICE@example.com' } },
+    ]);
+
+    const result = (await tool.handler(
+      { page: 1, per_page: 25, requester_email: 'alice@example.com' },
+      {},
+    )) as StructuredToolResult;
+
+    const lookup = client.calls.find((c) => c.type === 'get' && c.path === '/requesters.json');
+    expect(lookup?.type === 'get' ? lookup.params : {}).toEqual({ email: 'alice@example.com' });
+    const params = incidentsParams(client);
+    expect(params.requested_by).toEqual([501]);
+    expect(params).not.toHaveProperty('requester_email');
+
+    const sc = result.structuredContent ?? {};
+    expect((sc.incidents as Array<{ id: number }>).map((i) => i.id)).toEqual([1, 2]);
+    expect(sc.applied_filters).toMatchObject({ requester_email: 'alice@example.com', requester_ids: [501] });
+    const scan = sc.scan as { client_filter_applied: boolean; matches_in_page: number };
+    expect(scan.client_filter_applied).toBe(false);
+    expect(scan.matches_in_page).toBe(2);
+  });
+
+  it('sends every exact-match requester id and ignores rows for other emails', async () => {
+    client.setBodyForPath((p) => p === '/requesters.json', [
+      { id: 501, description: 'alice@example.com' },
+      { id: 502, description: 'alice@example.com' },
+      { id: 503, description: 'alice@example.com.au' },
+      { id: '504', description: 'alice@example.com' },
+      null,
+    ]);
+
+    await tool.handler({ page: 1, per_page: 25, requester_email: 'alice@example.com' }, {});
+
+    expect(incidentsParams(client).requested_by).toEqual([501, 502]);
+  });
+
+  it('falls back to the client-side filter when no requester matches the email', async () => {
+    client.setBodyForPath((p) => p === '/requesters.json', []);
+    client.setBodyForPath((p) => p === '/incidents.json', [
+      { id: 1, name: 'mine', requester: { email: 'r@x.com' } },
+      { id: 2, name: 'theirs', requester: { email: 's@x.com' } },
+    ]);
+
+    const result = (await tool.handler(
+      { page: 1, per_page: 25, requester_email: 'r@x.com' },
+      {},
+    )) as StructuredToolResult;
+
+    expect(incidentsParams(client)).not.toHaveProperty('requested_by');
+    const sc = result.structuredContent ?? {};
+    expect((sc.incidents as Array<{ id: number }>).map((i) => i.id)).toEqual([1]);
+    expect(sc.applied_filters).not.toHaveProperty('requester_ids');
+    expect((sc.scan as { client_filter_applied: boolean }).client_filter_applied).toBe(true);
+  });
+
+  it('falls back to the client-side filter when the requester lookup fails', async () => {
+    const failing: FakeClient = {
+      ...client,
+      get: async <T>(path: string, params: Record<string, unknown> = {}) => {
+        if (path === '/requesters.json') throw new Error('lookup unavailable');
+        return client.get<T>(path, params);
+      },
+    };
+    const failingServer = new McpServer({ name: 'test', version: '0.0.0' });
+    registerListIncidents(failingServer, makeCtx(failing));
+    const failingTool = getRegisteredTool(failingServer, 'swsd_list_incidents');
+    client.setBodyForPath((p) => p === '/incidents.json', [
+      { id: 1, name: 'mine', requester: { email: 'r@x.com' } },
+      { id: 2, name: 'theirs', requester: { email: 's@x.com' } },
+    ]);
+
+    const result = (await failingTool.handler(
+      { page: 1, per_page: 25, requester_email: 'r@x.com' },
+      {},
+    )) as StructuredToolResult;
+
+    expect(incidentsParams(client)).not.toHaveProperty('requested_by');
+    const incidents = (result.structuredContent?.incidents ?? []) as Array<{ id: number }>;
+    expect(incidents.map((i) => i.id)).toEqual([1]);
+  });
+
+  it('does not look up requesters when requester_email is not given', async () => {
+    await tool.handler({ page: 1, per_page: 25 }, {});
+
+    expect(client.calls.some((c) => c.path === '/requesters.json')).toBe(false);
+    expect(incidentsParams(client)).not.toHaveProperty('requested_by');
+  });
+});

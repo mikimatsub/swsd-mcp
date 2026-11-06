@@ -14,6 +14,7 @@ import { withTotalScope } from '../../swsd/pagination.js';
 import { toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
 import { applyDateAlias, passesUpdatedCutoff, planUpdatedFrom } from '../../utils/dateAliases.js';
+import { resolveRequesterIds } from '../../utils/requesterResolver.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 const UI_RESOURCE_URI = 'ui://swsd/incident-list.html';
@@ -44,10 +45,12 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         'compact summaries (id, name, state, priority, assignee_email, requester_email, ' +
         'category, updated_at) — call swsd_get_incident for the full detail of any one row. ' +
         'Filters use SWSD repeated-key array semantics (multiple values within a filter are OR-ed). ' +
-        'NOTE: assignee_email and requester_email are applied CLIENT-SIDE because SWSD ' +
-        '/incidents.json silently ignores them server-side (verified 2026-05-08 against the ' +
-        'live API). Other filters (state, category, dates, sites, departments, assigned_to_group, ' +
-        'query) DO narrow server-side and are passed through.',
+        'requester_email is resolved to SWSD requester ids and filtered SERVER-SIDE ' +
+        '(requested_by), so results cover every page; if the email matches no requester it ' +
+        'falls back to a client-side filter of the fetched page. assignee_email is applied ' +
+        'CLIENT-SIDE because SWSD /incidents.json silently ignores it server-side (verified ' +
+        '2026-05-08 against the live API). Other filters (state, category, dates, sites, ' +
+        'departments, assigned_to_group, query) DO narrow server-side and are passed through.',
       inputSchema: ListIncidentsInput,
       outputSchema: z.object({
         incidents: z.array(IncidentSummaryOutput),
@@ -57,7 +60,8 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
           .describe(
             'Echo of the filters applied to this query — empty object if none. ' +
               'Use this to reason about whether the result count reflects your filters or the tenant total. ' +
-              'NOTE: assignee_email / requester_email are applied client-side; everything else is server-side.',
+              'NOTE: assignee_email is applied client-side. requester_email is server-side when ' +
+              'requester_ids is present, otherwise client-side. Everything else is server-side.',
           ),
         scan: z
           .object({
@@ -74,7 +78,10 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
               .describe('True if more candidate pages exist server-side. Increase per_page or paginate to scan more.'),
             client_filter_applied: z
               .boolean()
-              .describe('True iff assignee_email and/or requester_email triggered post-fetch narrowing.'),
+              .describe(
+                'True iff post-fetch narrowing was needed: assignee_email, an updated_from time cutoff, ' +
+                  'or a requester_email that could not be resolved to a requester id.',
+              ),
           })
           .describe('Honest accounting of what was scanned vs matched.'),
       }),
@@ -91,9 +98,13 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         // Build server-side params. CRITICAL: do NOT send assignee_email or
         // requester_email — SWSD silently ignores those filters on
         // /incidents.json (verified live 2026-05-08: a fake email returns the
-        // full tenant of 56,829 records). They are applied client-side after
-        // the response lands. All OTHER filters DO narrow server-side and are
-        // passed through unchanged.
+        // full tenant of 56,829 records). requester_email is instead resolved
+        // to requester ids and sent as `requested_by` (see requesterResolver);
+        // assignee_email is applied client-side after the response lands. All
+        // OTHER filters DO narrow server-side and are passed through unchanged.
+        const requesterIds = input.requester_email
+          ? await resolveRequesterIds(ctx.client, input.requester_email)
+          : undefined;
         const params: Record<string, unknown> = {
           page: input.page,
           per_page: input.per_page,
@@ -113,6 +124,7 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         if (input.sort_by) params.sort_by = input.sort_by;
         if (input.sort_order) params.sort_order = input.sort_order;
         if (input.query) params.query = input.query;
+        if (requesterIds) params.requested_by = requesterIds;
 
         const { body, pagination } = await ctx.client.get<unknown>('/incidents.json', params);
         const raw = requireListArray(body);
@@ -122,11 +134,16 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
 
         // Client-side party filter — only when caller asked for it.
         // Case-insensitive exact-match on assignee.email / requester.email.
+        // The requester check also runs when requested_by narrowed server-side:
+        // it is a no-op then, but guards against SWSD ever ignoring the filter.
         const assigneeLower = input.assignee_email?.toLowerCase();
         const requesterLower = input.requester_email?.toLowerCase();
+        const requesterServerSide = requesterIds !== undefined;
         const clientFilterApplied =
-          assigneeLower !== undefined || requesterLower !== undefined || updatedPlan.cutoffMs !== undefined;
-        const incidents = clientFilterApplied
+          assigneeLower !== undefined ||
+          (requesterLower !== undefined && !requesterServerSide) ||
+          updatedPlan.cutoffMs !== undefined;
+        const incidents = clientFilterApplied || requesterServerSide
           ? candidates.filter((c) => {
               if (!passesUpdatedCutoff(c.updated_at, updatedPlan.cutoffMs)) return false;
               if (
@@ -157,6 +174,7 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         if (input.categories?.length) applied_filters.categories = input.categories;
         if (input.assignee_email) applied_filters.assignee_email = input.assignee_email;
         if (input.requester_email) applied_filters.requester_email = input.requester_email;
+        if (requesterIds) applied_filters.requester_ids = requesterIds;
         if (input.updated_from) applied_filters.updated_from = input.updated_from;
         if (input.updated_to) applied_filters.updated_to = input.updated_to;
         if (input.created_from) applied_filters.created_from = input.created_from;
@@ -175,9 +193,15 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
               .map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(',') : String(v)}`)
               .join(', ')}${Object.keys(applied_filters).length > 3 ? ', ...' : ''})`
           : 'tenant-wide';
-        const clientFilterNote = clientFilterApplied
-          ? ` (assignee_email/requester_email applied client-side after fetch — SWSD ignores them server-side)`
-          : '';
+        const clientSideFields = [
+          ...(assigneeLower !== undefined ? ['assignee_email'] : []),
+          ...(requesterLower !== undefined && !requesterServerSide ? ['requester_email'] : []),
+        ];
+        const clientFilterNote = clientSideFields.length > 0
+          ? ` (${clientSideFields.join('/')} applied client-side after fetch — SWSD ignores ${clientSideFields.length > 1 ? 'them' : 'it'} server-side)`
+          : clientFilterApplied
+            ? ' (updated_from cutoff applied client-side after fetch)'
+            : '';
         const matchesCount = String(incidents.length);
         const candidatesCount = String(candidates.length);
         const totalNote =
