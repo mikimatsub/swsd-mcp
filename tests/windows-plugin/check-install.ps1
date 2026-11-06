@@ -81,7 +81,10 @@ try {
     try {
         [void]$process.Start()
         $stdout = $process.StandardOutput.ReadToEndAsync(); $stderr = $process.StandardError.ReadToEndAsync()
-        if (-not $process.WaitForExit(120000)) { $process.Kill(); throw 'Installed WPF validation timed out.' }
+        # The full companion suite now applies 25 themes, exercises the custom
+        # profile builder, and measures six previews. Allow slower desktops to
+        # finish those assertions; keep a bounded watchdog for actual hangs.
+        if (-not $process.WaitForExit(300000)) { $process.Kill(); throw 'Installed WPF validation timed out.' }
         $uiOutput = $stdout.GetAwaiter().GetResult(); $uiErrors = $stderr.GetAwaiter().GetResult()
         if ($process.ExitCode -ne 0 -or $uiOutput -notmatch '(?m)^PASS:') { throw "Installed WPF validation failed: $uiErrors" }
         Write-Output $uiOutput.Trim()

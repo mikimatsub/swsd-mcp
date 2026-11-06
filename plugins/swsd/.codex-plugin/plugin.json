@@ -1,7 +1,7 @@
 {
   "name": "swsd",
-  "version": "3.1.0",
-  "description": "SolarWinds Service Desk for Windows desktop, with guided setup and private credential management.",
+  "version": "3.3.1",
+  "description": "SolarWinds Service Desk tools and Windows companion app for connection setup, custom profiles, updates, and diagnostics.",
   "author": {
     "name": "mikimatsub",
     "url": "https://github.com/mikimatsub"
@@ -19,8 +19,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "SolarWinds Service Desk",
-    "shortDescription": "SWSD with guided Windows setup",
-    "longDescription": "Windows desktop only. After installing, start a new local Work or Codex chat and ask: Set up SolarWinds Service Desk on this computer. The private Windows setup window installs tools, saves your personal API token in Windows Credential Manager, and lets you choose a saved tool profile from a dropdown. Operations is the complete tool set; legacy Full selections map to Operations. Change profiles or manage your token later from SolarWinds Service Desk Setup in the Windows Start menu. Restart the desktop app and start a new chat after changing profiles. Requires Node.js 24.15+ within version 24 or Node.js 26+. Node 25 is not supported. SolarWinds account permissions determine access.",
+    "shortDescription": "SWSD tools and companion app",
+    "longDescription": "Windows desktop only. Includes SWSD MCP 3.3.1 with 145 tools across the complete Operations profile, ten interactive MCP Apps widgets, and a Windows companion app. Start a new local Work or Codex chat and ask: Set up SolarWinds Service Desk on this computer. The companion app provides private connection setup, a searchable tool guide, built-in and custom profiles, appearance themes, updates, redacted diagnostics, and offline release notes. Reopen it from SWSD Setup in the Start menu. Tokens stay in Windows Credential Manager. Restart the desktop app and start a new chat after installation or changing profiles. Requires Node.js 24.15+ within version 24 or Node.js 26+; Node 25 is not supported. SolarWinds account permissions determine access.",
     "developerName": "mikimatsub",
     "category": "Productivity",
     "capabilities": [
