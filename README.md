@@ -23,7 +23,7 @@ The Windows `swsd` plugin includes a settings window for installing swsd-mcp on 
 
 1. Install the Windows `swsd` plugin.
 2. Start a new local chat and ask to set up SWSD on this computer.
-3. On **Set up**, select **Install tools**. Windows setup accepts Node.js 24.15 or newer within version 24, or Node.js 26 or newer, with npm. The window rejects other versions, and its message says Node 25 is not supported. When Node.js is missing, setup can install the current Node.js LTS through winget after you confirm. Reopen the window when that installation finishes.
+3. On **Set up**, select **Install tools**. Windows setup accepts Node.js 24.15 or newer within version 24, or Node.js 26 or newer, with npm. The window rejects other versions, and its message says Node 25 is not supported. When Node.js is missing or not a version this window accepts, setup can install the current Node.js LTS through winget after you confirm. The confirmation says Windows may ask for administrator approval. Reopen the window when that installation finishes.
 4. Choose **United States** or **Europe**, paste your JSON Web Token, and select **Test**. The field stays masked. **?** and **Where do I find my token?** show the SWSD User detail page. Use **Actions → Generate JSON Web Token** only when no token is shown.
 5. Choose **Triage** (21 tools), **Agent** (51), **Knowledge** (17), **Operations** (145), or a saved custom profile. The choice is saved immediately. Quit and reopen the AI app, then start a new chat so the server loads that profile.
 6. Open the window again from **SWSD Setup** on the Start menu.
