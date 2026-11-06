@@ -14,10 +14,10 @@ Re-run after any profile change.
 
 | File | Profile | Tools | When to use |
 |---|---|---|---|
-| `triage.swagger.yaml` | `triage` | 21 | First-line support agents who read tickets and post comments but don't reassign or close. |
-| `agent.swagger.yaml` | `agent` | 51 | Full ticket-handler workflow (default). |
+| `triage.swagger.yaml` | `triage` | 22 | First-line support agents who read tickets and post comments but don't reassign or close. |
+| `agent.swagger.yaml` | `agent` | 52 | Full ticket-handler workflow (default). |
 | `knowledge.swagger.yaml` | `knowledge` | 17 | KB authors browsing incident context plus full solution CRUD. |
-| `operations.swagger.yaml` | `operations` | 145 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool. |
+| `operations.swagger.yaml` | `operations` | 146 | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool. |
 
 Agent and Operations include the read-only `swsd_change_calendar` tool.
 Its calendar (shown in the viewer's local time) scans bounded pages and applies all filters client-side;

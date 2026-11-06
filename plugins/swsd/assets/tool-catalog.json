@@ -1192,6 +1192,26 @@
     "example": "Get incident in SWSD"
   },
   {
+    "name": "swsd_get_incident_attachment",
+    "description": "List or fetch an incident's attachments, including images pasted into the description or comments. Call with only `id` to list them (ref, filename, type, size, where it came from). Call with `id` and `attachment: <ref>` to return the file: images come back as image content you can look at, other files as an embedded resource. Files over the size limit (SWSD_MAX_ATTACHMENT_BYTES, 5 MB by default) are refused.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true,
+      "idempotentHint": true
+    },
+    "profiles": [
+      "triage",
+      "agent",
+      "operations"
+    ],
+    "area": "Incidents",
+    "friendly": "Get incident attachment",
+    "short": "List or fetch an incident's attachments, including images pasted into the description…",
+    "kind": "read",
+    "example": "Get incident attachment in SWSD"
+  },
+  {
     "name": "swsd_get_me",
     "description": "Get the SWSD user record for the token's owner — id, email, name, title, role, department, site, group_ids, and assignment status. **Call this first** when the request mentions \"me\", \"my\", or \"I\" (e.g. \"my tickets\", \"tickets in my group\", \"tickets assigned to me\"), then pass the returned id/email to assignee_email or requester_email filters on swsd_list_incidents (or use swsd_list_my_incidents which does this in one call). Without this step, \"my X\" queries cannot be answered correctly.",
     "annotations": {

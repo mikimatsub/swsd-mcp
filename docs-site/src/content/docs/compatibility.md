@@ -3,7 +3,7 @@ title: Client compatibility
 description: Which MCP clients work with swsd-mcp, and which render the rich UI widgets.
 ---
 
-swsd-mcp is a standard [Model Context Protocol](https://modelcontextprotocol.io) server. Use a client that supports **stdio or Streamable HTTP**, with the SWSD JSON Web Token supplied through the matching transport. The active profile selects which of the 145 tools are available.
+swsd-mcp is a standard [Model Context Protocol](https://modelcontextprotocol.io) server. Use a client that supports **stdio or Streamable HTTP**, with the SWSD JSON Web Token supplied through the matching transport. The active profile selects which of the 146 tools are available.
 
 The ten [UI widgets](/widgets/) ship over the [MCP Apps extension](https://modelcontextprotocol.io/extensions/apps/overview) (SEP-1865). Hosts that don't support MCP Apps still get text and structured tool output. Widget availability also follows the profile: the catalog form needs both the lookup and service-request tools.
 

@@ -172,7 +172,7 @@ describe('custom tool registration over MCP', () => {
       const env = fresh.parse({ SWSD_PROFILE: profile });
       const enabledTools: string[] = [];
       registerTools(new McpServer({ name: 'synthetic', version: '0' }), { env, profile: env.SWSD_PROFILE, client: makeFakeClient(), enabledTools, token: '' });
-      expect(enabledTools).toHaveLength(145);
+      expect(enabledTools).toHaveLength(146);
       expect(new Set(enabledTools)).toEqual(new Set(PROFILE_TOOLS.operations));
       expect(enabledTools).toContain('swsd_create_solution');
       expect(enabledTools).toContain('swsd_update_solution');

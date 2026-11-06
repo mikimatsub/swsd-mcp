@@ -2,7 +2,7 @@ import type { Env } from '../config/env.js';
 import { buildHeaders } from './headers.js';
 import { serializeQuery } from './query.js';
 import { extractPagination, type PaginationMeta } from './pagination.js';
-import { SwsdDecodeError, SwsdHttpError, SwsdNetworkError } from './errors.js';
+import { SwsdDecodeError, SwsdHttpError, SwsdNetworkError, SwsdTooLargeError } from './errors.js';
 import { redactValue } from '../utils/secrets.js';
 
 export interface SwsdGetResult<T> {
@@ -30,12 +30,23 @@ export interface SwsdMutationResult<T> {
   status: number;
 }
 
+export interface SwsdDownloadResult {
+  bytes: Uint8Array;
+  /** Media type from the response (parameters such as charset removed), or '' when absent. */
+  contentType: string;
+}
+
 export interface SwsdClient {
   get<T = unknown>(path: string, params?: Record<string, unknown>): Promise<SwsdGetResult<T>>;
   post<T = unknown>(path: string, body: unknown): Promise<SwsdMutationResult<T>>;
   put<T = unknown>(path: string, body: unknown): Promise<SwsdMutationResult<T>>;
   delete<T = unknown>(path: string): Promise<SwsdMutationResult<T>>;
   rawRequest(path: string, init: SwsdRequestInit): Promise<SwsdRawResult>;
+  /**
+   * Download a binary file (an attachment) without decoding it as text. Throws
+   * SwsdTooLargeError once the body exceeds `maxBytes`.
+   */
+  download(path: string, maxBytes: number): Promise<SwsdDownloadResult>;
 }
 
 export interface CreateClientOpts {
@@ -136,8 +147,71 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
     return { body: redactValue(body, token), headers: res.headers, status: res.status };
   }
 
+  /**
+   * Binary GET for attachments. SWSD answers inline-image paths with a 303 to a
+   * pre-signed S3 URL, so redirects are followed manually: at most one hop, https
+   * only, and WITHOUT SWSD headers (fetch would otherwise forward the
+   * X-Samanage-Authorization token to the third-party host). The size limit is
+   * enforced from Content-Length when present and again while streaming.
+   */
+  async function download(path: string, maxBytes: number): Promise<SwsdDownloadResult> {
+    const headers = buildHeaders(env, token, { Accept: '*/*' });
+    delete headers['Content-Type'];
+    let res = await fetchWithRetry(
+      `${baseUrl}${ensureLeadingSlash(path)}`,
+      { method: 'GET', headers, redirect: 'manual' },
+      true,
+    );
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      await res.body?.cancel();
+      const target = location ? safeRedirectTarget(location, baseUrl) : undefined;
+      if (!target) throw new SwsdHttpError(res.status, 'Unsupported redirect for this download.');
+      res = await fetchWithRetry(target, { method: 'GET', redirect: 'error' }, true);
+    }
+    if (!res.ok) {
+      let body: unknown = '';
+      try {
+        body = await res.text();
+      } catch {
+        // keep the status; the body is optional detail
+      }
+      throw new SwsdHttpError(res.status, body, res.headers.get('retry-after') ?? undefined, token);
+    }
+
+    const declared = Number(res.headers.get('content-length'));
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      await res.body?.cancel();
+      throw new SwsdTooLargeError(maxBytes, declared);
+    }
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    if (res.body) {
+      const reader = res.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > maxBytes) {
+          await reader.cancel();
+          throw new SwsdTooLargeError(maxBytes);
+        }
+        chunks.push(value);
+      }
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    const contentType = (res.headers.get('content-type') ?? '').split(';')[0]?.trim().toLowerCase() ?? '';
+    return { bytes, contentType };
+  }
+
   return {
     rawRequest,
+    download,
     async get<T>(
       path: string,
       params: Record<string, unknown> = {},
@@ -172,6 +246,16 @@ function coerceInt(v: unknown, fallback: number): number {
     if (Number.isFinite(n) && Number.isInteger(n)) return n;
   }
   return fallback;
+}
+
+/** An absolute https redirect target, or undefined. Relative targets resolve against the SWSD base URL. */
+function safeRedirectTarget(location: string, baseUrl: string): string | undefined {
+  try {
+    const url = new URL(location, `${baseUrl}/`);
+    return url.protocol === 'https:' ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function ensureLeadingSlash(p: string): string {

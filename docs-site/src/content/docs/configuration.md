@@ -34,6 +34,7 @@ Server configuration uses environment variables; `--transport=stdio|http` can ov
 | Variable | Default | Notes |
 |---|---|---|
 | `SWSD_RETRY_MAX_ATTEMPTS` | `3` | Additional GET retries, 0–10, for 429, 5xx, and network/timeout errors. Exponential backoff honors `Retry-After`. Writes are never retried. |
+| `SWSD_MAX_ATTACHMENT_BYTES` | `5242880` | Largest file `swsd_get_incident_attachment` returns, in bytes (5 MB). Larger files are refused, never truncated. |
 | `SWSD_REQUEST_TIMEOUT_MS` | `30000` | Timeout per outbound fetch attempt, 1000–300000 milliseconds. Retries and backoff can make the whole tool call longer. |
 
 ## Other
@@ -53,10 +54,10 @@ Profiles control which tools are registered at startup. The choice is made once 
 
 | Profile | Intent | Tool count |
 |---|---|---|
-| `triage` | Read-heavy first-line support workflow + commenting + read-only task/problem visibility | 21 |
-| `agent` | Full ticket-handler workflow + KB lookups + custom-field introspection + service-catalog + tasks + problems + work logs/attachments (default) | 51 |
+| `triage` | Read-heavy first-line support workflow + commenting + read-only task/problem visibility | 22 |
+| `agent` | Full ticket-handler workflow + KB lookups + custom-field introspection + service-catalog + tasks + problems + work logs/attachments (default) | 52 |
 | `knowledge` | KB-author workflow + incident reads + custom-field introspection | 17 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool | 145 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool | 146 |
 | `custom` | Explicit selection from the tool list or a JSON profile file | Varies |
 
 `operations` includes every tool, including KB authoring and guarded deletes. Existing `SWSD_PROFILE=full` configurations map to `operations` and emit one deprecation notice on stderr per process.
@@ -66,7 +67,7 @@ Profiles control which tools are registered at startup. The choice is made once 
 - **`triage`**: first-line support agents who read tickets and post comments but don't reassign or close. Minimal write surface.
 - **`agent`** (default): full incident-handling: create, update, assign, state-transition, link solutions, plus comment writes, KB lookups, work logs, and attachments. The most common choice.
 - **`knowledge`**: KB authors who need solution search, reads, creation, and updates plus incident reads for context. No incident writes or deletes.
-- **`operations`**: agents who also need ITSM lifecycle and operational context: changes, releases, assets, CMDB records, contracts, purchase orders, vendors, and risks. It includes all 145 tools, including KB authoring and guarded deletes.
+- **`operations`**: agents who also need ITSM lifecycle and operational context: changes, releases, assets, CMDB records, contracts, purchase orders, vendors, and risks. It includes all 146 tools, including KB authoring and guarded deletes.
 
 ### Adding individual tools to a profile
 

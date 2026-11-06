@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `swsd_get_incident_attachment` lists an incident's files, including images
+  pasted into the description or comments, and returns one on request. Images
+  come back as image content the AI can view; other files as an embedded
+  resource. Files over `SWSD_MAX_ATTACHMENT_BYTES` (5 MB by default) are
+  refused. The tool is read-only and is in Triage, Agent and Operations.
+
 ## [3.3.1] - 2026-11-06
 
 ### Added

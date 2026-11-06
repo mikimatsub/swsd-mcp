@@ -5,6 +5,7 @@ import type {
 } from '../../../../src/config/env.js';
 import type {
   SwsdClient,
+  SwsdDownloadResult,
   SwsdGetResult,
   SwsdMutationResult,
   SwsdRawResult,
@@ -76,7 +77,13 @@ export interface CapturedRaw {
   init: SwsdRequestInit;
 }
 
-export type CapturedCall = CapturedGet | CapturedPost | CapturedPut | CapturedDelete | CapturedRaw;
+export interface CapturedDownload {
+  type: 'download';
+  path: string;
+  maxBytes: number;
+}
+
+export type CapturedCall = CapturedGet | CapturedPost | CapturedPut | CapturedDelete | CapturedRaw | CapturedDownload;
 
 export interface FakeClient extends SwsdClient {
   /** Every captured call, in order. */
@@ -98,6 +105,11 @@ export interface FakeClient extends SwsdClient {
   setDeleteResponse: (body: unknown) => void;
   /** Set the response body/status for any rawRequest call. */
   setRawResponse: (body: unknown, status?: number) => void;
+  /**
+   * Configure `download` for paths matching `matcher`: a result to return, or an
+   * Error to throw. Unmatched paths throw, so tests notice unexpected downloads.
+   */
+  setDownload: (matcher: (path: string) => boolean, result: SwsdDownloadResult | Error) => void;
 }
 
 /**
@@ -173,6 +185,15 @@ export function makeFakeClient(): FakeClient {
     return { body: deleteResponse as T, headers: new Headers(), status: 200 };
   };
 
+  const downloads: Array<{ matcher: (p: string) => boolean; result: SwsdDownloadResult | Error }> = [];
+  const download = async (path: string, maxBytes: number): Promise<SwsdDownloadResult> => {
+    calls.push({ type: 'download', path, maxBytes });
+    const match = downloads.find((d) => d.matcher(path));
+    if (!match) throw new Error(`Unexpected download: ${path}`);
+    if (match.result instanceof Error) throw match.result;
+    return match.result;
+  };
+
   const rawRequest = async (
     path: string,
     init: SwsdRequestInit,
@@ -206,11 +227,15 @@ export function makeFakeClient(): FakeClient {
       rawResponse = body;
       rawStatus = status;
     },
+    setDownload: (matcher, result) => {
+      downloads.unshift({ matcher, result });
+    },
     get,
     post,
     put,
     delete: deleteRecord,
     rawRequest,
+    download,
   } as unknown as FakeClient;
 }
 

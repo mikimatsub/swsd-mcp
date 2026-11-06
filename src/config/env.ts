@@ -113,6 +113,13 @@ export const EnvSchema = z.object({
     .max(300_000)
     .default(30_000)
     .describe('Per-request timeout for outbound SWSD calls. 30s default.'),
+  SWSD_MAX_ATTACHMENT_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100 * 1024 * 1024)
+    .default(5 * 1024 * 1024)
+    .describe('Largest attachment swsd_get_incident_attachment returns, in bytes. 5 MB default; larger files are refused.'),
   SWSD_TRUST_PROXY: z.string().max(4_096).optional().transform(trustProxyTransform),
   SWSD_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
   SWSD_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(100_000).default(100),

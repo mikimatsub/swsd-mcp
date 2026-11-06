@@ -222,7 +222,27 @@ export const UpdateIncidentStateInput = z.object({
 });
 
 export type ListIncidentsInput = z.infer<typeof ListIncidentsInput>;
+export const GetIncidentAttachmentInput = z.object({
+  id: z
+    .number()
+    .int()
+    .positive()
+    .describe(
+      'SWSD incident reference. Accepts either the internal id (>=7 digits, e.g. 180457930) or the human-facing number (<=6 digits, e.g. 60310). The handler auto-detects via digit count.',
+    ),
+  attachment: z
+    .string()
+    .trim()
+    .min(1)
+    .max(2_000)
+    .optional()
+    .describe(
+      'Omit to list the incident\'s attachments and inline images. Pass a `ref` from that list to return that file.',
+    ),
+});
+
 export type GetIncidentInput = z.infer<typeof GetIncidentInput>;
+export type GetIncidentAttachmentInput = z.infer<typeof GetIncidentAttachmentInput>;
 export type CreateIncidentInput = z.infer<typeof CreateIncidentInput>;
 export type UpdateIncidentInput = z.infer<typeof UpdateIncidentInput>;
 export type AssignIncidentInput = z.infer<typeof AssignIncidentInput>;

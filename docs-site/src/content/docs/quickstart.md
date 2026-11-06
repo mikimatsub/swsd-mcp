@@ -131,7 +131,7 @@ The Windows `swsd` plugin includes a setup app. After installing the plugin, sta
 
 On **Home**, install or repair the tools, choose **United States** or **Europe**, paste your **JSON Web Token**, and select **Test** to verify the connection and save the token in Windows Credential Manager. The **?** beside the token field shows the User detail page and the Generate action; generate only when no token is shown.
 
-The profile picker offers **Triage** (21 tools), **Agent** (51), **Knowledge** (17), **Operations** (145), and any custom profiles you save. The **Tools** tab browses all 145 tools by area, with search (**Ctrl+F**), Read/Edit/Delete badges, example prompts, and locks for tools outside the selected profile. Changing the profile updates the saved selection; restart the desktop app and start a new chat to apply it. On Tools, build a custom profile, then save, rename, delete, import, or export it; saved customs appear in the Home and Tools pickers. Other MCP clients still use [server configuration](/configuration/#custom-profiles) (`SWSD_PROFILE=custom` with `SWSD_TOOLS` and/or `SWSD_PROFILE_FILE`).
+The profile picker offers **Triage** (22 tools), **Agent** (52), **Knowledge** (17), **Operations** (146), and any custom profiles you save. The **Tools** tab browses all 146 tools by area, with search (**Ctrl+F**), Read/Edit/Delete badges, example prompts, and locks for tools outside the selected profile. Changing the profile updates the saved selection; restart the desktop app and start a new chat to apply it. On Tools, build a custom profile, then save, rename, delete, import, or export it; saved customs appear in the Home and Tools pickers. Other MCP clients still use [server configuration](/configuration/#custom-profiles) (`SWSD_PROFILE=custom` with `SWSD_TOOLS` and/or `SWSD_PROFILE_FILE`).
 
 **Appearance** offers **Match Windows**, **Light**, **Dark**, and named themes such as Dracula, Catppuccin, Nord, Gruvbox, and Tokyo Night, saved on this PC. Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`; the token stays in Windows Credential Manager rather than the settings file.
 
@@ -161,7 +161,7 @@ Claude Desktop and Cursor use this JSON shape. Add the `swsd` entry inside the `
 Replace `your-jwt-here` with the token from the previous step. **EU tenants** use `https://apieu.samanage.com` instead.
 
 :::tip[Customize behavior]
-Any variable from the [Configuration](/configuration/) page goes into this same `env` block. The most common one to add is `SWSD_PROFILE` to switch from the default `agent` profile (51 tools) to `triage` (21), `knowledge` (17), `operations` (145), or `custom` (your selection):
+Any variable from the [Configuration](/configuration/) page goes into this same `env` block. The most common one to add is `SWSD_PROFILE` to switch from the default `agent` profile (52 tools) to `triage` (22), `knowledge` (17), `operations` (146), or `custom` (your selection):
 
 ```json
 "env": {

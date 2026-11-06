@@ -25,7 +25,7 @@ The server holds **zero credentials at rest**. HTTP tokens are supplied per requ
 2. Start a new local chat and ask to set up SWSD on this computer.
 3. On **Set up**, select **Install tools**. This setup needs Node.js 24.15 or newer within version 24, or Node.js 26 or newer, with npm. Node 25 is not supported. If Node.js is missing or outside those versions, setup can install the current Node.js LTS through winget after you confirm. Windows may ask for administrator approval. Reopen the app when installation finishes.
 4. Choose **United States** or **Europe**, paste your JSON Web Token, and select **Test**. The field stays masked. **?** and **Where do I find my token?** show where to copy it in SWSD. Generate a JSON Web Token only when none is shown.
-5. Choose **Triage** (21 tools), **Agent** (51), **Knowledge** (17), **Operations** (145), or a saved custom profile. The choice is saved immediately. Quit and reopen the AI app, then start a new chat so the server loads that profile.
+5. Choose **Triage** (22 tools), **Agent** (52), **Knowledge** (17), **Operations** (146), or a saved custom profile. The choice is saved immediately. Quit and reopen the AI app, then start a new chat so the server loads that profile.
 6. Open it again from **SWSD Setup** on the Start menu.
 
 <img src="./docs-site/public/windows/setup.png" alt="Set up SWSD for AI apps after the tools are installed, ready for a JSON Web Token." width="1000">
@@ -38,7 +38,7 @@ The server holds **zero credentials at rest**. HTTP tokens are supplied per requ
 
 ### Tool guide
 
-**Tools** is a searchable catalog of all 145 tools for the profile you select. **Ctrl+F** focuses search, which matches the friendly name, the tool id, and the description. Each tool is marked **Read**, **Edit**, or **Delete**. Read looks up a record, Edit creates or changes one, and Delete always previews the record first. Tools outside the profile stay grouped apart until you search. A match can point you to a profile that includes it, and you can switch to that profile from the detail. Select a tool to see where it is available and copy an example prompt.
+**Tools** is a searchable catalog of all 146 tools for the profile you select. **Ctrl+F** focuses search, which matches the friendly name, the tool id, and the description. Each tool is marked **Read**, **Edit**, or **Delete**. Read looks up a record, Edit creates or changes one, and Delete always previews the record first. Tools outside the profile stay grouped apart until you search. A match can point you to a profile that includes it, and you can switch to that profile from the detail. Select a tool to see where it is available and copy an example prompt.
 
 <img src="./docs-site/public/windows/tools.png" alt="Tool guide for the Agent profile, with an example prompt." width="1000">
 
@@ -160,7 +160,7 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 
 ---
 
-## Tools (145 across 15 categories)
+## Tools (146 across 15 categories)
 
 | Category | Tools |
 |---|---|
@@ -173,7 +173,7 @@ The agent should call `swsd_health_check` and report success. If it does, you're
 | **Assets & CMDB** | `swsd_list_hardware_assets`, `swsd_get_hardware_asset`, `swsd_list_hardware_warranties`, `swsd_create_hardware_asset`, `swsd_update_hardware_asset`, `swsd_add_hardware_warranty`, `swsd_update_hardware_warranty`, `swsd_delete_hardware_warranty`, `swsd_delete_hardware_asset`, `swsd_list_mobile_devices`, `swsd_get_mobile_device`, `swsd_create_mobile_device`, `swsd_update_mobile_device`, `swsd_delete_mobile_device`, `swsd_list_printers`, `swsd_get_printer`, `swsd_update_printer`, `swsd_list_software_assets`, `swsd_get_software_asset`, `swsd_list_other_assets`, `swsd_get_other_asset`, `swsd_create_other_asset`, `swsd_update_other_asset`, `swsd_delete_other_asset`, `swsd_list_configuration_items`, `swsd_get_configuration_item`, `swsd_create_configuration_item`, `swsd_update_configuration_item`, `swsd_delete_configuration_item` |
 | **Procurement & Risk** | `swsd_list_contracts`, `swsd_get_contract`, `swsd_create_contract`, `swsd_update_contract`, `swsd_add_contract_item`, `swsd_delete_contract`, `swsd_list_purchase_orders`, `swsd_get_purchase_order`, `swsd_create_purchase_order`, `swsd_update_purchase_order`, `swsd_delete_purchase_order`, `swsd_list_vendors`, `swsd_get_vendor`, `swsd_create_vendor`, `swsd_update_vendor`, `swsd_delete_vendor`, `swsd_list_change_catalogs`, `swsd_get_change_catalog`, `swsd_create_change_catalog`, `swsd_update_change_catalog`, `swsd_delete_change_catalog`, `swsd_list_risks` |
 | **Time tracking** | `swsd_list_time_tracks`, `swsd_log_time`, `swsd_update_time_track`, `swsd_delete_time_track` |
-| **Attachments** | `swsd_upload_attachment` |
+| **Attachments** | `swsd_get_incident_attachment`, `swsd_upload_attachment` |
 | **Solutions / KB** | `swsd_search_solutions`, `swsd_get_solution`, `swsd_create_solution`, `swsd_update_solution`, `swsd_delete_solution` |
 | **Service Catalog** | `swsd_list_catalog_items`, `swsd_get_catalog_item`, `swsd_create_catalog_item`, `swsd_update_catalog_item`, `swsd_delete_catalog_item`, `swsd_create_service_request` |
 | **Lookups** | `swsd_list_categories`, `swsd_get_category`, `swsd_create_category`, `swsd_update_category`, `swsd_delete_category`, `swsd_list_sites`, `swsd_get_site`, `swsd_create_site`, `swsd_update_site`, `swsd_delete_site`, `swsd_list_departments`, `swsd_get_department`, `swsd_create_department`, `swsd_update_department`, `swsd_delete_department`, `swsd_list_users`, `swsd_get_user`, `swsd_create_user`, `swsd_update_user`, `swsd_delete_user`, `swsd_list_groups`, `swsd_get_group`, `swsd_create_group`, `swsd_update_group`, `swsd_delete_group`, `swsd_add_group_member`, `swsd_remove_group_member`, `swsd_list_roles`, `swsd_get_role`, `swsd_create_role`, `swsd_update_role`, `swsd_delete_role` |
@@ -243,10 +243,10 @@ Profiles control which tools are registered at startup. Cannot be changed mid-se
 
 | Profile | Intent | Tool count |
 |---|---|---|
-| `triage` | Read-heavy first-line support + commenting | 21 |
-| `agent` | Full ticket-handler workflow (default) | 51 |
+| `triage` | Read-heavy first-line support + commenting | 22 |
+| `agent` | Full ticket-handler workflow (default) | 52 |
 | `knowledge` | KB-author workflow + incident reads | 17 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool | 145 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool | 146 |
 | `custom` | Explicit selection from the tool list or a JSON profile file | Varies |
 
 `operations` includes every tool, including KB authoring and guarded deletes. The legacy `SWSD_PROFILE=full` value is accepted as an alias for `operations` and emits one deprecation notice on stderr per process.

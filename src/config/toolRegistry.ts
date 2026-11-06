@@ -155,6 +155,7 @@ import {
   registerDeleteTimeTrack,
 } from '../tools/timeTracks/timeTrackTools.js';
 import { registerUploadAttachment } from '../tools/attachments/uploadAttachment.js';
+import { registerGetIncidentAttachment } from '../tools/attachments/getIncidentAttachment.js';
 import { registerDeleteIncident } from '../tools/incidents/deleteIncident.js';
 import { registerDeleteProblem } from '../tools/problems/deleteProblem.js';
 import { registerDeleteChange } from '../tools/records/deleteChange.js';
@@ -191,6 +192,7 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_ticket_stats: registerTicketStats,
   swsd_my_queue: registerMyQueue,
   swsd_get_incident: registerGetIncident,
+  swsd_get_incident_attachment: registerGetIncidentAttachment,
   swsd_create_incident: registerCreateIncident,
   swsd_delete_incident: registerDeleteIncident,
   swsd_update_incident: registerUpdateIncident,

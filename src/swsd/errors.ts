@@ -35,8 +35,32 @@ export class SwsdDecodeError extends Error {
   }
 }
 
+/** A download was refused or stopped because it exceeds the configured byte limit. */
+export class SwsdTooLargeError extends Error {
+  constructor(
+    public readonly limitBytes: number,
+    public readonly sizeBytes?: number,
+  ) {
+    super(
+      sizeBytes === undefined
+        ? `The file is larger than the ${formatBytes(limitBytes)} limit.`
+        : `The file is ${formatBytes(sizeBytes)}, over the ${formatBytes(limitBytes)} limit.`,
+    );
+    this.name = 'SwsdTooLargeError';
+  }
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${String(bytes)} bytes`;
+}
+
 export function mapSwsdError(err: unknown): CallToolResult {
   if (err instanceof SwsdHttpError) return mapHttpError(err);
+  if (err instanceof SwsdTooLargeError) {
+    return toolError(err.message, 'The limit is set with SWSD_MAX_ATTACHMENT_BYTES.');
+  }
   if (err instanceof SwsdDecodeError) {
     return toolError(
       err.message,

@@ -1,9 +1,9 @@
 ---
 title: Tools reference
-description: All 145 MCP tools swsd-mcp registers, organized by category with per-profile availability.
+description: All 146 MCP tools swsd-mcp registers, organized by category with per-profile availability.
 ---
 
-swsd-mcp registers **145 tools** across 15 categories. Each tool's input schema and full description are discovered by your MCP client at runtime; calls return structured results. Ask your agent _"what swsd tools are available?"_ for the live list.
+swsd-mcp registers **146 tools** across 15 categories. Each tool's input schema and full description are discovered by your MCP client at runtime; calls return structured results. Ask your agent _"what swsd tools are available?"_ for the live list.
 
 `operations` exposes every tool in these tables. With [`custom`](/configuration/#custom-profiles), availability follows the explicit CSV/file selection; prompts and widgets also require all tools they use. The catalog form requires the service-request write tool as well as the catalog lookup.
 
@@ -175,12 +175,14 @@ Time entries are scoped to a parent `incident`, `problem`, `change`, or `release
 
 ---
 
-## Attachments (1)
+## Attachments (2)
 
 | Tool | Type | triage | agent | knowledge | operations |
 |---|---|---|---|---|---|
+| `swsd_get_incident_attachment` | R | ✓ | ✓ |   | ✓ |
 | `swsd_upload_attachment` | W |   | ✓ |   | ✓ |
 
+- **`swsd_get_incident_attachment`**: list or fetch an incident's files, including images pasted into the description or comments. Call with only `id` (the incident's id or number) to list them with a `ref`, filename, type, size, and source. Call with `id` and `attachment: <ref>` to return the file: `image/*` files come back as MCP image content the model can view, any other type as an embedded resource. Files over `SWSD_MAX_ATTACHMENT_BYTES` (5 MB by default) are refused. Inline images redirect to pre-signed storage URLs; the server follows that redirect without SWSD credentials.
 - **`swsd_upload_attachment`**: upload evidence to incidents, problems, changes, releases, solutions, hardware assets, other assets, or configuration items. Use `content_base64` for HTTP/hosted clients; `file_path` is allowed only in stdio mode. Files are limited to [SWSD's 25 MB per-file maximum](https://documentation.solarwinds.com/en/success_center/swsd/content/completeguidetoswsd/globalsettings-attachmentsettings.htm). For local clients, set `SWSD_ATTACHMENT_ROOT` to restrict resolved file paths to one directory.
 
 ---
