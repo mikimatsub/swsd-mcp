@@ -27,6 +27,21 @@ Do not change that assertion or the installer to make a documentation picture. A
 
 Demo account built into the preview: **Alex Rivera · Acme IT**, masked token. Captions should describe that demo window. They should not say a real SWSD tenant was contacted or that **Test** / **Install tools** was run for the picture.
 
+## Approved GM1 captures
+
+Parent inspected six dark Dracula captures from `f6639bf` (`ValidateWindow`, `-PreviewTheme dracula`, isolated `LOCALAPPDATA`). Title chip is **3.3.0**. Account is Alex Rivera · Acme IT. No tenant contact. Do not use `custom-selected.png` (footer text is cut off) or `jwt-help.png` (it shows a 3.3.1 update and a cropped popup).
+
+| File | Publish |
+|---|---|
+| `firstrun.png` | README and guide. Set up, tools marked done, token field empty, **Up to date**, **Check now**, **What's new**, **Copy report**, **Report a bug**, **Request a feature**. |
+| `tools.png` | README and guide. Agent catalog, selected tool, **Copy prompt**, profile badges. |
+| `profile-builder.png` | README and guide. Incident follow-up, three tools checked, **Export JSON** and **Import JSON** visible. The picker still shows Agent until **Save profile**. |
+| `tool-detail.png` | Guide only. Search `delete incident`, Operations lock, destructive notice, **Switch to Operations**. |
+| `import-error.png` | Guide only, not a README hero. Schema error banner. |
+| `whats-new.png` | Guide only. Upcoming Node.js note, then **3.3.0 - 2026-11-05**. |
+
+The agent workspace did not contain `/workspace/dev-lead/swsd-docs-223/*.png` when this note was written, so those bytes are not in the published docs yet. Copy the six files there and into `docs-site/public/windows/` without redrawing them.
+
 ## Posted sequence
 
 Documentation screenshots are **neutral dark** (`-PreviewTheme dark`). Post one picture per function, in this order, in both the README companion section and the docs guide. Do not add a light twin. Do not add a Dracula twin. The existing Dracula files show the 3.3.1 update row, so they are not a clean substitute.
