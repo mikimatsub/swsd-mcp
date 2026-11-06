@@ -40,7 +40,7 @@ Parent inspected six dark Dracula captures from `f6639bf` (`ValidateWindow`, `-P
 | `import-error.png` | Guide only, not a README hero. Schema error banner. |
 | `whats-new.png` | Guide only. Upcoming Node.js note, then **3.3.0 - 2026-11-05**. |
 
-The agent workspace did not contain `/workspace/dev-lead/swsd-docs-223/*.png` when this note was written, so those bytes are not in the published docs yet. Copy the six files there and into `docs-site/public/windows/` without redrawing them.
+The six approved files are published from the byte-for-byte uploads: `docs-site/public/windows/setup.png`, `tools.png`, and `profile-builder.png` are in the README and the guide. `tool-search.png`, `import-error.png`, and `whats-new.png` are in the guide only.
 
 ## Posted sequence
 

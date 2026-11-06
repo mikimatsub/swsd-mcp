@@ -181,8 +181,21 @@ describe('README documentation contract', () => {
       expect(section).toContain('Report a bug');
       expect(section).toContain('Request a feature');
       expect(section).toContain("What's new");
-      expect(section).not.toMatch(/API token|Service Desk|Reset JSON Web Token|3\.3\.1|home-appearance/i);
+      expect(section).toContain('./docs-site/public/windows/setup.png');
+      expect(section).toContain('./docs-site/public/windows/tools.png');
+      expect(section).toContain('./docs-site/public/windows/profile-builder.png');
+      expect(section).not.toMatch(/API token|Service Desk|Reset JSON Web Token|3\.3\.1|home-appearance|tool-search|import-error|whats-new\.png/i);
       expect(README).toContain('**Windows plugin setup:**');
+      for (const image of [
+        'docs-site/public/windows/setup.png',
+        'docs-site/public/windows/tools.png',
+        'docs-site/public/windows/profile-builder.png',
+        'docs-site/public/windows/tool-search.png',
+        'docs-site/public/windows/import-error.png',
+        'docs-site/public/windows/whats-new.png',
+      ]) {
+        expect(readFileSync(resolve(image)).byteLength).toBeGreaterThan(10000);
+      }
     });
 
     it('README links to the canonical docs-site configuration page', () => {

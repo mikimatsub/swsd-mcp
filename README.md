@@ -28,6 +28,10 @@ The Windows `swsd` plugin includes a settings window for installing swsd-mcp on 
 5. Choose **Triage** (21 tools), **Agent** (51), **Knowledge** (17), **Operations** (145), or a saved custom profile. The choice is saved immediately. Quit and reopen the AI app, then start a new chat so the server loads that profile.
 6. Open the window again from **SWSD Setup** on the Start menu.
 
+<img src="./docs-site/public/windows/setup.png" alt="SWSD for AI apps Set up window in the Dracula appearance. Tools are marked done, the JSON Web Token field is empty, and Updates reads Up to date." width="1000">
+
+*Demo Set up window, Dracula appearance. Tools and Node.js are marked done. The JSON Web Token field is empty. Updates reads Up to date, with What's new, Copy report, Report a bug, and Request a feature on the page.*
+
 ### Connection and status
 
 After tools are installed, **Home** is titled **Overview**. It reports Node.js, the installed `swsd-mcp` version, the JSON Web Token, region, profile, and updates. A saved token is masked. **Verified** appears after **Test**. Changing **United States** or **Europe** clears that verified state until you select **Test** again. **Repair** reinstalls the tools. **Remove saved JSON Web Token** deletes the credential stored on this PC. Quit the AI app afterwards. Removing it here does not revoke the token in SWSD.
@@ -36,11 +40,19 @@ After tools are installed, **Home** is titled **Overview**. It reports Node.js, 
 
 **Tools** lists the catalog for the profile selected in the page. The heading shows how many of the 145 tools that profile enables. **Ctrl+F** focuses **Search tools**. Search matches the friendly name, the tool id, and the description. Area chips limit the list to tools in that profile. Each row has a **Read**, **Edit**, or **Delete** badge: Read looks up a record, Edit creates or changes one, and Delete is always previewed. Tools outside the profile stay under **Not in** that profile until you search. A result outside the profile shows which profile includes it, and the detail can switch to that profile. Selecting a tool shows its profiles and an example prompt. **Copy prompt** copies the example.
 
+<img src="./docs-site/public/windows/tools.png" alt="Tools page for the Agent profile. List my incidents is selected, with a Read badge, example prompt, and Copy prompt. The account line reads Alex Rivera, Acme IT." width="1000">
+
+*Demo Tools page for Agent: 51 of 145 tools. List my incidents is selected, with its example prompt and Copy prompt. The account line reads Alex Rivera · Acme IT.*
+
 ### Custom profiles
 
 Open **Custom profiles** on Tools to build a named set. Enter a name and an optional description, check the tools, and select **Save profile**. The saved name appears in the Home and Tools pickers and becomes the active profile. **Rename** saves the new name. **Delete** removes it, and deleting the active custom profile returns the selection to **Agent**. **New** clears the form.
 
 **Export JSON** writes the profile to a file you choose. **Import JSON** reads a file into the builder. Import does not switch the active profile until you select **Save profile**. The file is the version-1 profile in [Custom profiles](https://mcp-swsd.pages.dev/configuration/#custom-profiles): `name`, `version`, `tools`, and an optional `description`. Extra fields are rejected with **Profile JSON: Only name, version, tools, and optional description are allowed.** A name that matches Triage, Agent, Knowledge, Operations, or Full is rejected.
+
+<img src="./docs-site/public/windows/profile-builder.png" alt="Custom profiles builder named Incident follow-up, with three tools checked and Export JSON and Import JSON visible. The profile picker still shows Agent." width="1000">
+
+*Demo builder for a profile named Incident follow-up, with three tools checked. Export JSON and Import JSON are visible. The picker still shows Agent.*
 
 ### Appearance
 

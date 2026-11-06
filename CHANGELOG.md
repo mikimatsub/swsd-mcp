@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Windows companion app: the README and docs site now include setup, connection status, the tool guide, custom profiles, Appearance, updates, diagnostics, What's new, and the Report a bug and Request a feature links.
+- Windows companion app: the README and docs site now include setup, connection status, the tool guide, custom profiles, Appearance, updates, diagnostics, What's new, and the Report a bug and Request a feature links. Dark window examples show Set up, the tool guide, search, the profile builder, an import error, and What's new.
 
 ### Changed
 
