@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.4.0] - 2026-11-06
 
-### Changed
-
-- Document the maintainer-led contribution policy for future implementation PRs. Bug reports and feature suggestions remain welcome.
-
 ### Added
 
 - Read incident files and screenshots with `swsd_get_incident_attachment`,
@@ -20,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   opaque references, a configurable byte limit, and credential-free S3 redirects.
 - Use `role: "requester"` with `swsd_list_my_incidents` to list tickets requested
   by the authenticated user. The default remains assigned-to-me.
+
+### Changed
+
+- Document the maintainer-led contribution policy for future implementation PRs. Bug reports and feature suggestions remain welcome.
 
 ### Fixed
 
