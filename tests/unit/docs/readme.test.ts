@@ -162,6 +162,23 @@ describe('README documentation contract', () => {
       }
     });
 
+    it('documents the Windows app with the release-valid Home screenshot', () => {
+      const windows = README.match(/^## Windows app[\s\S]*?(?=^## Quick start)/m);
+      expect(windows, 'Windows app section should precede Quick start').not.toBeNull();
+      const section = windows![0];
+      expect(section).toContain('SWSD Setup');
+      expect(section).toContain('JSON Web Token');
+      expect(section).toContain('./docs-site/public/windows/home-appearance-light.png');
+      expect(section).not.toMatch(/API token|Service Desk|Reset JSON Web Token|WPF/i);
+      for (const image of [
+        'docs-site/public/windows/home-appearance-light.png',
+        'docs-site/public/windows/home-appearance-dracula.png',
+      ]) {
+        const bytes = readFileSync(resolve(image));
+        expect(bytes.byteLength).toBeGreaterThan(10000);
+      }
+    });
+
     it('README links to the canonical docs-site configuration page', () => {
       // Defensive: if someone later removes the link out, the contract that
       // README intentionally trims to essentials breaks silently.

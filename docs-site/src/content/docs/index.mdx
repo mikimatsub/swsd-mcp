@@ -9,6 +9,10 @@ hero:
       link: /quickstart/
       icon: right-arrow
       variant: primary
+    - text: Windows app
+      link: /windows/
+      icon: star
+      variant: secondary
     - text: View on GitHub
       link: https://github.com/mikimatsub/swsd-mcp
       icon: external
@@ -18,6 +22,9 @@ hero:
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
+  <Card title="Windows app" icon="star">
+    SWSD for AI apps installs the tools, verifies your JSON Web Token, and chooses the profile. [Open the Windows guide →](/windows/)
+  </Card>
   <Card title="Any MCP client" icon="puzzle">
     Standard Model Context Protocol over stdio or Streamable HTTP. [See the compatibility matrix →](/compatibility/)
   </Card>
@@ -46,6 +53,15 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
     Published as `io.github.mikimatsub/swsd` on [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.mikimatsub/swsd).
   </Card>
 </CardGrid>
+
+## Windows app
+
+SWSD for AI apps is the companion for the Windows `swsd` plugin. Home shows the connection, the active profile, updates, and diagnostics. Appearance applies Match Windows, Light, Dark, or a named theme on this PC.
+
+<figure class="win-figure">
+  <img class="win-shot" src="/windows/home-appearance-light.png" alt="SWSD for AI apps Home on Windows. Acme IT is connected, the JSON Web Token is verified, Agent is active, an update is available, and the Appearance menu is open." width="1000" height="1350" />
+  <figcaption>Verified Home for an Acme IT account, with the Appearance menu open. <a href="/windows/">Install, tool search, and custom profiles →</a></figcaption>
+</figure>
 
 ## See it in action
 

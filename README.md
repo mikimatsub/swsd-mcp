@@ -15,6 +15,29 @@ The server holds **zero credentials at rest**. HTTP tokens are supplied per requ
 
 ---
 
+## Windows app
+
+**SWSD for AI apps** is the companion for the Windows `swsd` plugin. It installs the local tools, verifies your JSON Web Token, and chooses the profile those tools use.
+
+### Install and open
+
+1. Install the Windows `swsd` plugin.
+2. Start a new local chat and ask to set up SWSD on this computer.
+3. In **Set up**, select **Install tools**. The PC needs Node.js 24.15+ or Node.js 26+, with npm. Node 25 is not supported. When Node.js is missing, setup can install the current supported LTS through winget after you confirm. Reopen **SWSD Setup** when that installation finishes.
+4. Choose **United States** or **Europe**, paste your JSON Web Token, and select **Test**. The field stays masked. **?** shows where to copy the token in SWSD. Generate a token only when none is shown.
+5. Choose **Triage** (21 tools), **Agent** (51), **Knowledge** (17), **Operations** (145), or a saved custom profile. The choice is saved immediately. Quit and reopen the AI app, then start a new chat so the server loads that profile.
+6. Open the app again from **SWSD Setup** on the Start menu.
+
+<img src="./docs-site/public/windows/home-appearance-light.png" alt="SWSD for AI apps on Windows, with Acme IT connected, a verified JSON Web Token, the Agent profile, an available update, and the Appearance menu open" width="1000">
+
+*Home after a successful Test. Status shows Node.js, the installed tools, a masked JSON Web Token, region, profile, and updates. Appearance lists Match Windows, Light, Dark, and named themes.*
+
+**What's new** opens the bundled release notes in the app. **Copy report** places a diagnostics report on the clipboard with credential presence only and a redacted log tail. **Update** installs a newer published release after checking it, and keeps the installed tools if that install does not finish. **Repair** reinstalls the tools.
+
+**Tools** searches all 145 tools with **Ctrl+F** and shows which tools belong to the selected profile, with Read, Edit, and Delete badges. **Custom profiles** saves a named tool list, then exports or imports it as the version-1 JSON file used by `SWSD_PROFILE_FILE`. The [Windows app guide](https://mcp-swsd.pages.dev/windows/) covers themes, tool search, custom profiles, updates, and diagnostics.
+
+---
+
 ## Quick start
 
 You need:
@@ -75,13 +98,7 @@ Replace `your-jwt-here` with your token. EU tenants use `https://apieu.samanage.
 
 Create the file if it doesn't exist. Then restart your client.
 
-**Windows plugin setup:** after installing the Windows `swsd` plugin, start a new local chat and ask to set up SWSD on this computer. Reopen setup from the Windows Start menu. The WPF settings window has Home and Tools tabs.
-Appearance offers **Match Windows**, **Light**, **Dark**, and named themes such as Dracula, Catppuccin, Nord, Gruvbox, and Tokyo Night, saved on this PC.
-Browse tools by area, search with **Ctrl+F**, inspect Read/Edit/Delete badges and
-example prompts, and select a profile to change the available tool set. The **?**
-beside **JSON Web Token** shows the SWSD User detail screen and **Actions →
-Generate JSON Web Token**, used only when no token is shown. Test verifies the
-connection and stores the JSON Web Token in Windows Credential Manager. Home also provides tool installation/repair, update checks, and US/EU region selection. The picker offers Triage, Agent, Knowledge, Operations, and saved custom profiles. On the Tools page, build a custom profile, then save, rename, delete, import, or export it. Other MCP clients still use the server configuration below (`SWSD_PROFILE=custom`). Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`. Restart the desktop app and start a new chat after a profile change.
+**Windows:** install and open [SWSD for AI apps](#windows-app) from the section above. Other clients use the configuration below.
 
 **Claude Code shortcut**: skip editing the file by hand. This saves a private entry for the current project in `~/.claude.json`:
 

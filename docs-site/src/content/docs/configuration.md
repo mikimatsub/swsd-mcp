@@ -83,7 +83,7 @@ Delete tools require `operations` or explicit inclusion in a custom profile's CS
 
 ### Custom profiles
 
-Choose `custom` when the built-in sets do not match the deployment. Supply either source, or both to union their tool names:
+Choose `custom` when the built-in sets do not match the deployment. On Windows, [SWSD for AI apps](/windows/#custom-profiles) writes this file when you save or export a custom profile. Supply either source, or both to union their tool names:
 
 ```bash
 SWSD_PROFILE=custom

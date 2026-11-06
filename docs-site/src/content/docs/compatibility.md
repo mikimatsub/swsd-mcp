@@ -16,7 +16,7 @@ The ten [UI widgets](/widgets/) ship over the [MCP Apps extension](https://model
 | **Claude Web** (claude.ai) | No | ✅ | Connect to a hosted HTTP endpoint. |
 | **VS Code Copilot Chat** | ✅ | ✅ | Enable MCP Apps in a supporting build; see the [VS Code configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration). |
 | **ChatGPT (web)** | No | ✅ | Connect through a hosted HTTP integration that supports the required token header. |
-| **ChatGPT Work / Codex (Windows plugin)** | ✅ | Check host | The Windows plugin launches a local stdio server with the saved profile and JSON Web Token. |
+| **ChatGPT Work / Codex (Windows plugin)** | ✅ | Check host | The Windows plugin launches a local stdio server with the saved profile and JSON Web Token. See the [Windows app](/windows/). |
 | **Cursor** | ✅ | Check host | Configure local stdio; consult the host's current widget support. |
 | **Continue** | ✅ | Check host | Agent-mode MCP; use the client's configuration format. |
 | **Cline** | ✅ | Check host | Configure local stdio; consult the host's current widget support. |
