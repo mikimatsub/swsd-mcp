@@ -20,10 +20,9 @@ export default defineConfig({
         { icon: 'github', label: 'GitHub', href: 'https://github.com/mikimatsub/swsd-mcp' },
         { icon: 'npm', label: 'npm', href: 'https://www.npmjs.com/package/swsd-mcp' },
       ],
-      customCss: ['./src/styles/custom.css'],
       sidebar: [
         { label: 'Quick start', link: '/quickstart/' },
-        { label: 'Windows app', link: '/windows/' },
+        { label: 'Windows companion', link: '/windows/' },
         { label: 'Compatibility', link: '/compatibility/' },
         { label: 'Architecture', link: '/architecture/' },
         { label: 'Configuration', link: '/configuration/' },

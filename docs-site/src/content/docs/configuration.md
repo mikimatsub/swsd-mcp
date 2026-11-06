@@ -83,7 +83,7 @@ Delete tools require `operations` or explicit inclusion in a custom profile's CS
 
 ### Custom profiles
 
-Choose `custom` when the built-in sets do not match the deployment. On Windows, [SWSD for AI apps](/windows/#custom-profiles) writes this file when you save or export a custom profile. Supply either source, or both to union their tool names:
+Choose `custom` when the built-in sets do not match the deployment. Supply either source, or both to union their tool names:
 
 ```bash
 SWSD_PROFILE=custom
@@ -99,6 +99,8 @@ SWSD_PROFILE_FILE=./profiles/desk.json
   "tools": ["swsd_get_incident", "swsd_sla_risk"]
 }
 ```
+
+On Windows, the [companion app](/windows/#custom-profiles) saves and exports this same file.
 
 CSV whitespace is trimmed and duplicate names collapse into one registration. Unknown names from either source are listed in a stderr warning and skipped. No tools are automatically added; an empty valid union fails startup, even if extras are set. `SWSD_TOOLS` and `SWSD_PROFILE_FILE` only select tools in `custom` mode.
 

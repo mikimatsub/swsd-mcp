@@ -162,21 +162,27 @@ describe('README documentation contract', () => {
       }
     });
 
-    it('documents the Windows app with the release-valid Home screenshot', () => {
-      const windows = README.match(/^## Windows app[\s\S]*?(?=^## Quick start)/m);
-      expect(windows, 'Windows app section should precede Quick start').not.toBeNull();
+    it('documents the Windows companion app before Quick start', () => {
+      const windows = README.match(/^## Windows companion app[\s\S]*?(?=^## Quick start)/m);
+      expect(windows, 'Windows companion app section should precede Quick start').not.toBeNull();
       const section = windows![0];
-      expect(section).toContain('SWSD Setup');
-      expect(section).toContain('JSON Web Token');
-      expect(section).toContain('./docs-site/public/windows/home-appearance-light.png');
-      expect(section).not.toMatch(/API token|Service Desk|Reset JSON Web Token|WPF/i);
-      for (const image of [
-        'docs-site/public/windows/home-appearance-light.png',
-        'docs-site/public/windows/home-appearance-dracula.png',
+      for (const heading of [
+        '### Set up this PC',
+        '### Connection and status',
+        '### Tool guide',
+        '### Custom profiles',
+        '### Appearance',
+        '### Updates, diagnostics, and release notes',
+        '### Help and issue links',
       ]) {
-        const bytes = readFileSync(resolve(image));
-        expect(bytes.byteLength).toBeGreaterThan(10000);
+        expect(section).toContain(heading);
       }
+      expect(section).toContain('SWSD Setup');
+      expect(section).toContain('Report a bug');
+      expect(section).toContain('Request a feature');
+      expect(section).toContain("What's new");
+      expect(section).not.toMatch(/API token|Service Desk|Reset JSON Web Token|3\.3\.1|home-appearance/i);
+      expect(README).toContain('**Windows plugin setup:**');
     });
 
     it('README links to the canonical docs-site configuration page', () => {

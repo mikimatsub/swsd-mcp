@@ -9,7 +9,7 @@ hero:
       link: /quickstart/
       icon: right-arrow
       variant: primary
-    - text: Windows app
+    - text: Windows companion
       link: /windows/
       icon: star
       variant: secondary
@@ -22,8 +22,8 @@ hero:
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
-  <Card title="Windows app" icon="star">
-    SWSD for AI apps installs the tools, verifies your JSON Web Token, and chooses the profile. [Open the Windows guide →](/windows/)
+  <Card title="Windows companion" icon="star">
+    Install swsd-mcp on a Windows PC, then change the profile, tools, and appearance later. [Open the guide →](/windows/)
   </Card>
   <Card title="Any MCP client" icon="puzzle">
     Standard Model Context Protocol over stdio or Streamable HTTP. [See the compatibility matrix →](/compatibility/)
@@ -54,14 +54,19 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
   </Card>
 </CardGrid>
 
-## Windows app
+## Windows companion app
 
-SWSD for AI apps is the companion for the Windows `swsd` plugin. Home shows the connection, the active profile, updates, and diagnostics. Appearance applies Match Windows, Light, Dark, or a named theme on this PC.
+The Windows `swsd` plugin includes a settings window for the first install on this PC and for later changes. The window is titled **SWSD for AI apps**. **Set up** installs the tools, takes a region and JSON Web Token, and saves a profile. **SWSD Setup** on the Start menu opens the same window after that.
 
-<figure class="win-figure">
-  <img class="win-shot" src="/windows/home-appearance-light.png" alt="SWSD for AI apps Home on Windows. Acme IT is connected, the JSON Web Token is verified, Agent is active, an update is available, and the Appearance menu is open." width="1000" height="1350" />
-  <figcaption>Verified Home for an Acme IT account, with the Appearance menu open. <a href="/windows/">Install, tool search, and custom profiles →</a></figcaption>
-</figure>
+**Home** shows the connection, profile, and updates. **Tools** searches the catalog and shows which profile includes each tool. **Custom profiles** saves a named tool list and can export or import it as JSON. **Appearance** offers **Match Windows**, **Light**, **Dark**, and named themes. **What's new**, **Check now**, **Copy report**, **Report a bug**, and **Request a feature** are on Home.
+
+- [Set up this PC](/windows/#set-up-this-pc)
+- [Connection and status](/windows/#connection-and-status)
+- [Tool guide](/windows/#tool-guide)
+- [Custom profiles](/windows/#custom-profiles)
+- [Appearance](/windows/#appearance)
+- [Updates, diagnostics, and release notes](/windows/#updates-diagnostics-and-release-notes)
+- [Help and issue links](/windows/#help-and-issue-links)
 
 ## See it in action
 

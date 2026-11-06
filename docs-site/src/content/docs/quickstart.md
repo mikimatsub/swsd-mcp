@@ -125,20 +125,17 @@ For a Global install, run **MCP: Open User Configuration**. For a Workspace inst
 
 EU tenants should use `https://apieu.samanage.com` for `SWSD_BASE_URL`. A Workspace file containing this placeholder is safe to commit because the JWT itself is not in the JSON.
 
-## Windows app
+## Windows companion app
 
-The Windows `swsd` plugin includes **SWSD for AI apps**.
+The Windows `swsd` plugin includes a setup app. After installing the plugin, start a new local chat and ask to set up SWSD on this computer. You can reopen setup from the Windows Start menu.
 
-1. Install the plugin, then start a new local chat and ask to set up SWSD on this computer.
-2. In **Set up**, select **Install tools**. Node.js 24.15+ or Node.js 26+ is required, with npm. Node 25 is not supported.
-3. Choose **United States** or **Europe**, paste your JSON Web Token, and select **Test**. Generate a token only when none is shown.
-4. Choose a profile. Quit and reopen the AI app, then start a new chat.
-5. Open the app again from **SWSD Setup** on the Start menu.
+On **Home**, install or repair the tools, choose **United States** or **Europe**, paste your **JSON Web Token**, and select **Test** to verify the connection and save the token in Windows Credential Manager. The **?** beside the token field shows the User detail page and the Generate action; generate only when no token is shown.
 
-<figure class="win-figure">
-  <img class="win-shot" src="/windows/home-appearance-light.png" alt="SWSD for AI apps Home on Windows. Acme IT is connected, the JSON Web Token is verified, Agent is active, an update is available, and the Appearance menu is open." width="1000" height="1350" />
-  <figcaption>Home after Test, with Appearance open. The <a href="/windows/">Windows app guide</a> covers tool search, custom profile export and import, themes, updates, and diagnostics.</figcaption>
-</figure>
+The profile picker offers **Triage** (21 tools), **Agent** (51), **Knowledge** (17), **Operations** (145), and any custom profiles you save. The **Tools** tab browses all 145 tools by area, with search (**Ctrl+F**), Read/Edit/Delete badges, example prompts, and locks for tools outside the selected profile. Changing the profile updates the saved selection; restart the desktop app and start a new chat to apply it. On Tools, build a custom profile, then save, rename, delete, import, or export it; saved customs appear in the Home and Tools pickers. Other MCP clients still use [server configuration](/configuration/#custom-profiles) (`SWSD_PROFILE=custom` with `SWSD_TOOLS` and/or `SWSD_PROFILE_FILE`).
+
+**Appearance** offers **Match Windows**, **Light**, **Dark**, and named themes such as Dracula, Catppuccin, Nord, Gruvbox, and Tokyo Night, saved on this PC. Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`; the token stays in Windows Credential Manager rather than the settings file.
+
+The [Windows companion app](/windows/) page is the full guide: setup, connection status, the searchable tool guide, custom profile export and import, Appearance, updates, diagnostics, What's new, and **Report a bug** / **Request a feature**.
 
 ## Other MCP clients
 

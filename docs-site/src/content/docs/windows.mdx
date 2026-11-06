@@ -1,54 +1,49 @@
 ---
-title: Windows app
-description: Install SWSD for AI apps, verify a JSON Web Token, and choose the tools your AI apps can use.
+title: Windows companion app
+description: Set up swsd-mcp on Windows, then manage the connection, profile, tools, and appearance on this PC.
 ---
 
-**SWSD for AI apps** is the Windows companion for the `swsd` plugin. It installs the local tools, verifies your JSON Web Token, and saves the profile those tools use.
+The Windows `swsd` plugin includes a settings window for installing swsd-mcp on this PC and for changing that setup later. The window is titled **SWSD for AI apps**. It installs the local tools, saves your JSON Web Token in Windows Credential Manager, and chooses the profile those tools use.
 
-<figure class="win-figure">
-  <img class="win-shot" src="/windows/home-appearance-light.png" alt="SWSD for AI apps Home on Windows. Acme IT is connected, the JSON Web Token is verified, Agent is active, an update is available, and the Appearance menu is open." width="1000" height="1350" />
-  <figcaption>Home after Test. Status shows Node.js, the installed tools, a masked JSON Web Token, region, profile, and updates. Appearance lists Match Windows, Light, and Dark, then the named themes.</figcaption>
-</figure>
-
-## Install and open
+## Set up this PC
 
 1. Install the Windows `swsd` plugin.
 2. Start a new local chat and ask to set up SWSD on this computer.
-3. In **Set up**, select **Install tools**. This PC needs Node.js 24.15+ or Node.js 26+, with npm. Node 25 is not supported. When Node.js is missing or unsupported, setup can install the current supported LTS through winget after you confirm. Reopen **SWSD Setup** when that installation finishes.
-4. Choose **United States** (`https://api.samanage.com`) or **Europe** (`https://apieu.samanage.com`), paste your JSON Web Token, and select **Test**. The field stays masked. A successful test stores the token in Windows Credential Manager and shows the connected account.
+3. On **Set up**, select **Install tools**. Windows setup accepts Node.js 24.15 or newer within version 24, or Node.js 26 or newer, with npm. The window rejects other versions, and its message says Node 25 is not supported. When Node.js is missing, setup can install the current Node.js LTS through winget after you confirm. Windows may ask for administrator approval. Reopen the window when that installation finishes.
+4. Choose **United States** (`https://api.samanage.com`) or **Europe** (`https://apieu.samanage.com`), paste your JSON Web Token, and select **Test**. The field stays masked.
 5. Choose a profile. The choice is saved immediately. Quit and reopen the AI app, then start a new chat so the server loads that tool set.
-6. Open the app again from **SWSD Setup** on the Start menu.
+6. Open the window again from **SWSD Setup** on the Start menu.
 
-Changing the region clears the verified state until you select **Test** again. **?** beside **JSON Web Token**, and **Where do I find my token?**, show the SWSD User detail page. Generate a JSON Web Token only when none is shown.
+**?** beside **JSON Web Token**, and **Where do I find my token?**, open **Get your JSON Web Token in SWSD**. That help shows the User detail page. Use **Actions → Generate JSON Web Token** only when no token is shown.
 
 Settings, custom profiles, and the installed tools live under `%LOCALAPPDATA%\swsd-mcp`. The token stays in Windows Credential Manager. See [Security](/security/#zero-credentials-at-rest).
 
 ## Connection and status
 
-After tools are installed and **Test** succeeds, Home replaces **Set up** with **Overview**:
+After the tools are installed, **Home** is titled **Overview**. The status row reports:
 
 | Status | What it reports |
 |---|---|
-| Node.js | Installed version, and whether it is a supported release |
+| Node.js | Installed version, and whether Windows setup accepts it |
 | SWSD tools | Installed `swsd-mcp` version |
-| JSON Web Token | Masked value and **Verified** after a successful test |
-| Region | United States or Europe |
+| JSON Web Token | Masked value, and **Verified** after **Test** |
+| Region | **United States** or **Europe** |
 | Profile | Active profile and its tool count |
-| Updates | **Up to date**, or a newer published version |
+| Updates | **Up to date**, or that a newer published release is available |
 
-**Repair** reinstalls the pinned tools. **Remove saved JSON Web Token** deletes the credential stored on this PC. Quit the AI app afterwards so a running server stops using its in-memory copy. Removing the saved credential leaves the token active in SWSD until an administrator revokes it there.
+Changing the region clears the verified state until you select **Test** again. **Repair** reinstalls the tools. **Remove saved JSON Web Token** deletes the credential stored on this PC. Quit the AI app afterwards so a running server stops using its in-memory copy. Removing the saved credential leaves the token active in SWSD until it is revoked there.
 
 ## Tool guide
 
-**Tools** lists every tool in the catalog, with the count enabled by the current profile. **Ctrl+F** focuses the search box. Search matches the friendly name, the tool id, and the description. Area chips limit the list to the tools that profile includes, such as Incidents or Knowledge.
+**Tools** lists every tool in the catalog. The heading shows how many of the 145 tools the current profile enables. **Ctrl+F** focuses **Search tools**. Search matches the friendly name, the tool id, and the description. An empty search says **No tools found. Try a friendly name, tool ID, or area.**
 
-Each row has a **Read**, **Edit**, or **Delete** badge. Read looks up records, Edit creates or changes them, and Delete is always previewed. Tools outside the profile stay under **Not in** that profile until you search. A search result for a tool outside the profile shows a lock with a profile that includes it, and the detail can switch to that profile.
+Area chips limit the list to tools that profile includes, such as Incidents or Knowledge. Each row has a **Read**, **Edit**, or **Delete** badge. Read looks up records, Edit creates or changes them, and Delete is always previewed. A delete tool also says it is destructive, available in Operations, and previews the record before a confirmed delete.
 
-Selecting a tool shows the profiles that include it and an example prompt. **Copy prompt** copies that example. Delete tools include the notice that they are destructive, available in Operations, and preview the record before a confirmed delete.
+Tools outside the profile stay under **Not in** that profile until you search. A search result outside the profile shows a lock with a profile that includes it, and the detail can switch to that profile. Selecting a tool shows the profiles that include it and an example prompt. **Copy prompt** copies that example.
 
 ## Custom profiles
 
-Open **Custom profiles** on Tools to build a named set:
+Open **Custom profiles** on Tools:
 
 1. Enter a name and an optional description.
 2. Check the tools your AI apps may use.
@@ -58,8 +53,6 @@ Open **Custom profiles** on Tools to build a named set:
 
 **Export JSON** writes the profile to a file you choose. **Import JSON** reads a file into the builder. Import does not switch the active profile until you select **Save profile**. The file is the same version-1 profile documented in [Custom profiles](/configuration/#custom-profiles): `name`, `version`, `tools`, and an optional `description`. Extra fields are rejected with **Profile JSON: Only name, version, tools, and optional description are allowed.** Unknown tool names are skipped and listed. A name that matches Triage, Agent, Knowledge, Operations, or Full is rejected.
 
-Other MCP clients still select the file with `SWSD_PROFILE=custom` and `SWSD_PROFILE_FILE`.
-
 | Profile | Tools | Use |
 |---|---:|---|
 | Triage | 21 | Incident review, catalog context, task and problem visibility, and comments |
@@ -68,7 +61,7 @@ Other MCP clients still select the file with `SWSD_PROFILE=custom` and `SWSD_PRO
 | Operations | 145 | Every tool. SWSD account permissions still apply |
 | Custom | Your list | The tools checked in the builder |
 
-Older settings saved as Full open as Operations.
+Older settings saved as Full open as Operations. Other MCP clients still select an exported file with `SWSD_PROFILE=custom` and `SWSD_PROFILE_FILE`.
 
 ## Appearance
 
@@ -76,17 +69,14 @@ Older settings saved as Full open as Operations.
 
 Dracula, Catppuccin Mocha, Catppuccin Macchiato, Catppuccin Frappe, Catppuccin Latte, Nord, Gruvbox Dark, Gruvbox Light, Tokyo Night, Tokyo Night Storm, Tokyo Night Day, One Dark, One Light, Solarized Dark, Solarized Light, Rosé Pine, Rosé Pine Moon, Rosé Pine Dawn, Monokai, Material Ocean, GitHub Dark, and GitHub Light.
 
-<figure class="win-figure">
-  <img class="win-shot" src="/windows/home-appearance-dracula.png" alt="SWSD for AI apps Home using the Dracula appearance, with Dracula selected in the open Appearance menu." width="1000" height="1350" />
-  <figcaption>Choosing Dracula restyles Home, including the status chips, account rows, and Update button. Match Windows follows the Windows theme.</figcaption>
-</figure>
-
 ## Updates, diagnostics, and release notes
 
-**Check now** looks up the newest published `swsd-mcp` release. When one is newer, the row reads that a version is available and the button becomes **Update**. Update installs that release only after the package checks out, and keeps the current tools if the install does not finish.
+**Check now** looks up the newest published `swsd-mcp` release. When one is newer than the installed tools, the row says a version is available and the button becomes **Update**. Update installs that release only after the package checks out, and keeps the current tools if the install does not finish.
 
-**What's new** opens the bundled release notes inside the app. Notes that are not in a published release are labeled **Upcoming**. Opening the page does not use the network.
+**What's new** opens the bundled release notes inside the window. Notes that are not in a published release are labeled **Upcoming**. Opening the page does not use the network.
 
 **Copy report** copies a plain-text diagnostics report: app and package versions, Windows and PowerShell versions, Node.js, whether tools are installed, the profile, the region URL, credential presence, display scale, and the last 20 log lines. The report records whether a credential is present. It does not include the token. Log lines are redacted.
+
+## Help and issue links
 
 **Report a bug** and **Request a feature** open the GitHub form with the app version, server version, Windows version, and profile filled in.
