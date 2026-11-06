@@ -74,14 +74,14 @@ and tests are excluded from the published MCP server package.
 With an existing SWSD token already in the process environment, run
 `node scripts/smoke-readonly.mjs` from the repository root after building. It
 uses disabled write mode, checks all four built-in profiles, reads a minimal incident
-sample and knowledge metadata, and reads all seven widget resources. It emits
+sample and knowledge metadata, and reads all ten widget resources. It emits
 counts and check names, never token values, JWT claims, or tenant records.
 
 ## Publish and verify
 
 1. Update package and lock versions, `SERVER_VERSION`, `server.json`, and
    `CHANGELOG.md`; regenerate Copilot connectors with `npm run generate:swagger`.
-   Verify the packed package includes the CLI and all seven self-contained UI
+   Verify the packed package includes the CLI and all ten self-contained UI
    bundles and excludes source, test, plugin, and credential files.
 2. Merge the green release PR using the current expected head. Wait for CI and
    Security on the resulting main commit, including successful GHCR publication.
@@ -111,7 +111,7 @@ the latest `swsd-mcp` version on npm and is not ahead of the root version. The
 registry check is skipped (with a warning) when npm is unreachable or
 `SWSD_OFFLINE=1` is set; the offline checks still run.
 
-1. In the release PR, bump the root version as usual. The runtime pin stays on
+1. In the release PR, bump the root version as usual. Windows candidate checks temporarily align the recipe and script with the packed root version, then restore their original bytes. Do not run them concurrently with tests that read the recipe. The runtime pin stays on
    the latest published version, so the test keeps passing.
 2. After the tag's npm publish is verified, update `plugins/swsd/runtime/package.json`
    and `SwsdPackageVersion`, then regenerate the lock with

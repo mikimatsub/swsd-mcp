@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-06
+
+### Changed
+
+- Document the maintainer-led contribution policy for future implementation PRs. Bug reports and feature suggestions remain welcome.
+
 ### Added
 
 - Read incident files and screenshots with `swsd_get_incident_attachment`,
@@ -17,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Windows candidate checks now test the packed release version when the published plugin runtime pin is older, restore the original recipe afterward, and clean up long dependency paths reliably.
 - Requester email filters now find matching incidents across pages using
   requester IDs. Unknown requesters return zero matches; lookup failures no
   longer produce an incomplete page.
@@ -1059,7 +1066,8 @@ Detailed history available via `git log`.
 * **2026-05-03**: `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.1...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.1...v3.4.0
 [3.3.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.1.1...v3.2.0

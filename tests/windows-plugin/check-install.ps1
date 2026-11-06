@@ -97,5 +97,9 @@ try {
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
     if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
         [IO.Path]::GetFileName($resolved) -notmatch '^swsd-install-test-[a-f0-9]{32}$') { throw 'Unsafe temporary cleanup path.' }
-    if (Test-Path -LiteralPath $resolved) { Remove-Item -LiteralPath $resolved -Recurse -Force }
+    # npm dependencies can exceed Windows PowerShell 5.1's path limit. Node is
+    # already required by this test and its native filesystem API handles them.
+    # This only removes the unique fixture created by this invocation.
+    & node --input-type=module -e "import { rmSync } from 'node:fs'; import { resolve, dirname, basename } from 'node:path'; import { tmpdir } from 'node:os'; const target = resolve(process.argv[1]); if (dirname(target).toLowerCase() !== resolve(tmpdir()).toLowerCase() || !/^swsd-install-test-[a-f0-9]{32}$/.test(basename(target))) throw new Error('Unsafe temporary cleanup path'); rmSync(target, { recursive: true, force: true });" $resolved
+    if ($LASTEXITCODE -ne 0 -or (Test-Path -LiteralPath $resolved)) { throw "Temporary fixture cleanup failed: $resolved" }
 }
