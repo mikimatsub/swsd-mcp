@@ -24,7 +24,7 @@ Never ask the user to paste a token into chat, a tool argument, a command line, 
 
 ## Switch profiles without editing files
 
-Open **SWSD Setup**. The **Profile** picker on Home and Tools offers Triage, Agent, Knowledge, Operations, and saved custom profiles. Selecting a profile saves it immediately. Operations includes all 145 tools; legacy Full selections map to Operations. The token and saved region are preserved. Never ask for a token just to change a profile.
+Open **SWSD Setup**. The **Profile** picker on Home and Tools offers Triage, Agent, Knowledge, Operations, and saved custom profiles. Selecting a profile saves it immediately. Operations includes all 146 tools; legacy Full selections map to Operations. The token and saved region are preserved. Never ask for a token just to change a profile.
 
 On **Tools**, search the tool guide and inspect Read, Edit, and Delete badges and profile availability. Use the custom profile builder to select tools, name the profile, and choose **Save profile**. Saved custom profiles can be renamed, deleted, imported, or exported as JSON. Do not expand the active tool selection unless the user requests it. Delete tools still require record preview and confirmation.
 
