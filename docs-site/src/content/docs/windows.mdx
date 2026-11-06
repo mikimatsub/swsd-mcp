@@ -1,57 +1,57 @@
 ---
 title: Windows companion app
-description: Set up swsd-mcp on Windows, then manage the connection, profile, tools, and appearance on this PC.
+description: Install swsd-mcp on Windows, choose a profile, and manage the connection on this PC.
 ---
 
-The Windows `swsd` plugin includes a settings window for installing swsd-mcp on this PC and for changing that setup later. The window is titled **SWSD for AI apps**. It installs the local tools, saves your JSON Web Token in Windows Credential Manager, and chooses the profile those tools use.
+**SWSD for AI apps** installs swsd-mcp on this PC and chooses which tools your AI apps can use. Your JSON Web Token is saved in Windows Credential Manager. Pictures use example data.
 
 ## Set up this PC
 
 1. Install the Windows `swsd` plugin.
 2. Start a new local chat and ask to set up SWSD on this computer.
-3. On **Set up**, select **Install tools**. Windows setup accepts Node.js 24.15 or newer within version 24, or Node.js 26 or newer, with npm. The window rejects other versions, and its message says Node 25 is not supported. When Node.js is missing or not a version this window accepts, setup can install the current Node.js LTS through winget after you confirm. The confirmation says Windows may ask for administrator approval. Reopen the window when that installation finishes.
+3. On **Set up**, select **Install tools**. This setup needs Node.js 24.15 or newer within version 24, or Node.js 26 or newer, with npm. Node 25 is not supported. If Node.js is missing or outside those versions, setup can install the current Node.js LTS through winget after you confirm. Windows may ask for administrator approval. Reopen the app when installation finishes.
 4. Choose **United States** (`https://api.samanage.com`) or **Europe** (`https://apieu.samanage.com`), paste your JSON Web Token, and select **Test**. The field stays masked.
 5. Choose a profile. The choice is saved immediately. Quit and reopen the AI app, then start a new chat so the server loads that tool set.
-6. Open the window again from **SWSD Setup** on the Start menu.
+6. Open it again from **SWSD Setup** on the Start menu.
 
-![Set up window in the Dracula appearance. Tools are marked done, the JSON Web Token field is empty, and Updates reads Up to date.](/windows/setup.png)
+![Set up SWSD for AI apps after the tools are installed, ready for a JSON Web Token.](/windows/setup.png)
 
-*Demo Set up window, Dracula appearance. Tools and Node.js are marked done. The JSON Web Token field is empty. Updates reads Up to date, with What's new, Copy report, Report a bug, and Request a feature on the page.*
+*Install the tools, then add your JSON Web Token.*
 
-**?** beside **JSON Web Token**, and **Where do I find my token?**, open **Get your JSON Web Token in SWSD**. That help shows the User detail page. Use **Actions → Generate JSON Web Token** only when no token is shown.
+**?** beside **JSON Web Token**, and **Where do I find my token?**, show where to copy it in SWSD. Generate a JSON Web Token only when none is shown.
 
 Settings, custom profiles, and the installed tools live under `%LOCALAPPDATA%\swsd-mcp`. The token stays in Windows Credential Manager. See [Security](/security/#zero-credentials-at-rest).
 
 ## Connection and status
 
-After the tools are installed, **Home** is titled **Overview**. The status row reports:
+**Home** shows whether you are ready to work:
 
 | Status | What it reports |
 |---|---|
-| Node.js | Installed version, and whether Windows setup accepts it |
+| Node.js | Installed version, and whether this setup accepts it |
 | SWSD tools | Installed `swsd-mcp` version |
 | JSON Web Token | Masked value, and **Verified** after **Test** |
 | Region | **United States** or **Europe** |
 | Profile | Active profile and its tool count |
 | Updates | **Up to date**, or that a newer published release is available |
 
-Changing the region clears the verified state until you select **Test** again. **Repair** reinstalls the tools. **Remove saved JSON Web Token** deletes the credential stored on this PC. Quit the AI app afterwards so a running server stops using its in-memory copy. Removing the saved credential leaves the token active in SWSD until it is revoked there.
+Changing the region clears the verified state until you select **Test** again. **Repair** reinstalls the tools. **Remove saved JSON Web Token** deletes the credential on this PC. Quit the AI app afterwards so a running server stops using its in-memory copy. The token remains valid in SWSD until it is revoked there.
 
 ## Tool guide
 
-**Tools** lists every tool in the catalog. The heading shows how many of the 145 tools the current profile enables. **Ctrl+F** focuses **Search tools**. Search matches the friendly name, the tool id, and the description. An empty search says **No tools found. Try a friendly name, tool ID, or area.**
+**Tools** is a searchable catalog of all 145 tools for the profile you select. **Ctrl+F** focuses search, which matches the friendly name, the tool id, and the description. If nothing matches, try another name, id, or area.
 
-Area chips limit the list to tools that profile includes, such as Incidents or Knowledge. Each row has a **Read**, **Edit**, or **Delete** badge. Read looks up records, Edit creates or changes them, and Delete is always previewed. A delete tool also says it is destructive, available in Operations, and previews the record before a confirmed delete.
+Area chips limit the list to tools that profile includes, such as Incidents or Knowledge. Each tool is marked **Read**, **Edit**, or **Delete**. Read looks up a record, Edit creates or changes one, and Delete always previews the record first. A delete tool is available in Operations, or in a custom profile that includes it, and asks you to confirm the record before removing it.
 
-Tools outside the profile stay under **Not in** that profile until you search. A search result outside the profile shows a lock with a profile that includes it, and the detail can switch to that profile. Selecting a tool shows the profiles that include it and an example prompt. **Copy prompt** copies that example.
+Tools outside the profile stay grouped apart until you search. A match can point you to a profile that includes it, and you can switch to that profile from the detail. Select a tool to see where it is available and copy an example prompt.
 
-![Tools page for the Agent profile. List my incidents is selected, with a Read badge, example prompt, and Copy prompt.](/windows/tools.png)
+![Tool guide for the Agent profile, with an example prompt.](/windows/tools.png)
 
-*Demo Tools page for Agent: 51 of 145 tools. List my incidents is selected. The account line reads Alex Rivera · Acme IT.*
+*See which tools a profile includes, and copy an example prompt.*
 
-![Search results for delete incident. The tool is locked to Operations, with a destructive notice and Switch to Operations.](/windows/tool-search.png)
+![Search for a delete tool that belongs to another profile.](/windows/tool-search.png)
 
-*Demo search for delete incident. One match, locked to Operations, with the destructive notice and Switch to Operations.*
+*Find a tool outside the current profile and switch to one that includes it.*
 
 ## Custom profiles
 
@@ -63,15 +63,15 @@ Open **Custom profiles** on Tools:
 
 **Rename** saves the profile under the new name. **Delete** removes it. Deleting the active custom profile returns the selection to **Agent**. **New** clears the form.
 
-**Export JSON** writes the profile to a file you choose. **Import JSON** reads a file into the builder. Import does not switch the active profile until you select **Save profile**. The file is the same version-1 profile documented in [Custom profiles](/configuration/#custom-profiles): `name`, `version`, `tools`, and an optional `description`. Extra fields are rejected with **Profile JSON: Only name, version, tools, and optional description are allowed.** Unknown tool names are skipped and listed. A name that matches Triage, Agent, Knowledge, Operations, or Full is rejected.
+**Export JSON** saves the profile as a file you can share. **Import JSON** loads a file into the builder. Select **Save profile** to start using an import. The file is the same version-1 profile documented in [Custom profiles](/configuration/#custom-profiles): `name`, `version`, `tools`, and an optional `description`. Extra fields are rejected. Unknown tool names are skipped and listed. Names that match Triage, Agent, Knowledge, Operations, or Full are reserved.
 
-![Custom profile builder named Incident follow-up, with three tools checked and Export JSON and Import JSON visible.](/windows/profile-builder.png)
+![Custom profile builder with save, export, and import.](/windows/profile-builder.png)
 
-*Demo builder for Incident follow-up, with three tools checked. Export JSON and Import JSON are visible. The picker still shows Agent.*
+*Choose the tools in a named profile, then save or share it as JSON.*
 
-![Import error banner: Profile JSON only allows name, version, tools, and an optional description.](/windows/import-error.png)
+![A profile file that does not match the supported format.](/windows/import-error.png)
 
-*Demo import of a profile file that includes an extra field. The window shows the allowed-fields message.*
+*An import has to use the supported profile file.*
 
 | Profile | Tools | Use |
 |---|---:|---|
@@ -85,22 +85,22 @@ Older settings saved as Full open as Operations. Other MCP clients still select 
 
 ## Appearance
 
-**Appearance** applies immediately and is saved on this PC. The menu starts with **Match Windows**, **Light**, and **Dark**, then a divider and the named themes:
+**Appearance** follows **Match Windows**, or you can choose **Light**, **Dark**, or a named theme. The choice is saved on this PC and applies as soon as you select it.
 
 Dracula, Catppuccin Mocha, Catppuccin Macchiato, Catppuccin Frappe, Catppuccin Latte, Nord, Gruvbox Dark, Gruvbox Light, Tokyo Night, Tokyo Night Storm, Tokyo Night Day, One Dark, One Light, Solarized Dark, Solarized Light, Rosé Pine, Rosé Pine Moon, Rosé Pine Dawn, Monokai, Material Ocean, GitHub Dark, and GitHub Light.
 
 ## Updates, diagnostics, and release notes
 
-**Check now** looks up the newest published `swsd-mcp` release. When one is newer than the installed tools, the row says a version is available and the button becomes **Update**. Update installs that release only after the package checks out, and keeps the current tools if the install does not finish.
+**Check now** looks for a newer published release. When one is available, **Update** installs it after checking the package, and keeps your current tools if the install does not finish.
 
-**What's new** opens the bundled release notes inside the window. Notes that are not in a published release are labeled **Upcoming**. Opening the page does not use the network.
+**What's new** opens the release notes on this PC, including changes that are not published yet.
 
-![What's new page. Upcoming shows the Node.js note, followed by the 3.3.0 notes. The account line reads Alex Rivera, Acme IT.](/windows/whats-new.png)
+![Release notes inside SWSD for AI apps.](/windows/whats-new.png)
 
-*Demo What's new page. Upcoming shows the Node.js note, then the 3.3.0 notes. The account line reads Alex Rivera · Acme IT.*
+*Read what changed, including notes that are not in a published release yet.*
 
-**Copy report** copies a plain-text diagnostics report: app and package versions, Windows and PowerShell versions, Node.js, whether tools are installed, the profile, the region URL, credential presence, display scale, and the last 20 log lines. The report records whether a credential is present. It does not include the token. Log lines are redacted.
+**Copy report** copies a diagnostics summary for support: app and package versions, Windows and PowerShell versions, Node.js, whether tools are installed, the profile, the region, whether a credential is saved, display scale, and a short redacted log. The report does not include your token.
 
 ## Help and issue links
 
-**Report a bug** and **Request a feature** open the GitHub form with the app version, server version, Windows version, and profile filled in.
+**Report a bug** and **Request a feature** open GitHub with the app version, server version, Windows version, and profile filled in.
