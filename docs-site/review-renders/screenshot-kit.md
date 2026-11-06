@@ -27,38 +27,53 @@ Do not change that assertion or the installer to make a documentation picture. A
 
 Demo account built into the preview: **Alex Rivera · Acme IT**, masked token. Captions should describe that demo window. They should not say a real SWSD tenant was contacted or that **Test** / **Install tools** was run for the picture.
 
+## Posted sequence
+
+Documentation screenshots are **neutral dark** (`-PreviewTheme dark`). Post one picture per function, in this order, in both the README companion section and the docs guide. Do not add a light twin. Do not add a Dracula twin. The existing Dracula files show the 3.3.1 update row, so they are not a clean substitute.
+
+Theme contrast is already checked in the app for every Appearance entry. That check does not need a second posted image.
+
+| Order | File | State | What the picture adds |
+|---|---|---|---|
+| 1 | `setup-firstrun.png` | `firstrun` | **Set up** and **Install tools** |
+| 2 | `home-custom-current.png` | `custom-selected` | Home at the current version, custom profile selected |
+| 3 | `tools-guide.png` | `tools` | Tool guide and profile membership |
+| 4 | `tools-search-delete-incident.png` | `tool-detail` | Search for `delete incident` |
+| 5 | `profile-builder.png` | `profile-builder` | Named profile builder |
+| 6 | `import-error.png` | `import-error` | Rejected import |
+| 7 | `whats-new.png` | `whats-new` | Release notes |
+| 8 | `jwt-help.png` | `jwt-help` | Token help. The Home status row still shows 3.3.1; do not describe that number as a release |
+| 9 | `appearance-menu.png` | `appearance` | Open Appearance menu, once. Same 3.3.1 status limit as `jwt-help` |
+
+Skip `ready`. It repeats Home and forces the 3.3.1 update row.
+
 ## Commands
 
-Run on Windows from the repository root. This does not install tools, write Credential Manager, or call SWSD. PowerShell closes the window after it writes the PNG.
+Run on Windows from the repository root. This does not install tools, write Credential Manager, or call SWSD. PowerShell closes the window after it writes the PNG. Every shot uses neutral dark.
 
 ```powershell
 $out = Join-Path $env:TEMP 'swsd-doc-shots'
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 $script = 'plugins\swsd\scripts\Manage-Swsd.ps1'
 
-function Shot([string]$State, [string]$Name, [string]$Theme) {
+function Shot([string]$State, [string]$Name) {
   $shot = Join-Path $out $Name
-  $argList = @(
-    '-NoProfile', '-NonInteractive', '-STA', '-File', $script,
-    '-ValidateWindow', '-PreviewState', $State, '-ScreenshotPath', $shot
-  )
-  if ($Theme) { $argList += @('-PreviewTheme', $Theme) }
-  & powershell.exe @argList
+  & powershell.exe -NoProfile -NonInteractive -STA -File $script `
+    -ValidateWindow -PreviewState $State -PreviewTheme dark -ScreenshotPath $shot
 }
 
-Shot 'custom-selected' 'home-custom-current.png' 'light'
-Shot 'firstrun' 'setup-firstrun.png' 'light'
-Shot 'tools' 'tools-guide.png' 'light'
-Shot 'tool-detail' 'tools-search-delete-incident.png' 'light'
-Shot 'profile-builder' 'profile-builder.png' 'light'
-Shot 'import-error' 'import-error.png' 'light'
-Shot 'whats-new' 'whats-new.png' 'light'
-Shot 'jwt-help' 'jwt-help.png' 'light'
-Shot 'appearance' 'appearance-one-light.png' 'one-light'
-Shot 'appearance' 'appearance-dracula.png' 'dracula'
+Shot 'firstrun' 'setup-firstrun.png'
+Shot 'custom-selected' 'home-custom-current.png'
+Shot 'tools' 'tools-guide.png'
+Shot 'tool-detail' 'tools-search-delete-incident.png'
+Shot 'profile-builder' 'profile-builder.png'
+Shot 'import-error' 'import-error.png'
+Shot 'whats-new' 'whats-new.png'
+Shot 'jwt-help' 'jwt-help.png'
+Shot 'appearance' 'appearance-menu.png'
 ```
 
-`-PreviewTheme` values include `system`, `light`, `dark`, `dracula`, `one-light`, and the other ids in `$script:SwsdThemes` in `Common.ps1`. `appearance` is the state that opens the menu. The other states still accept `-PreviewTheme` and keep the menu closed.
+`-PreviewTheme dark` is the neutral Dark entry. `appearance` is the only state that opens the menu. The other states keep the menu closed. Do not pass `light`, `one-light`, or `dracula` for this set.
 
 ## If a clean Agent overview is required
 
