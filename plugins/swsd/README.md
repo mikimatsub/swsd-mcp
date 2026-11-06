@@ -1,6 +1,6 @@
 # SolarWinds Service Desk for Windows
 
-Plugin and companion version **3.3.1** bundles the published **swsd-mcp 3.3.1** runtime. The published runtime exposes 145 tools. This source candidate adds incident attachment reads (146 tools) and must be released before refreshing the pinned runtime recipe. Ten MCP Apps widgets provide incident, knowledge, comments, audit, catalog, custom-field, SLA, statistics, and change-calendar views in compatible hosts.
+Plugin and companion version **3.4.0** bundles the published **swsd-mcp 3.4.0** runtime. The published runtime exposes 146 tools, including incident attachment reads and requester-aware incident queries. Ten MCP Apps widgets provide incident, knowledge, comments, audit, catalog, custom-field, SLA, statistics, and change-calendar views in compatible hosts.
 
 ## First use or upgrade
 
@@ -48,7 +48,7 @@ The token is a per-user Windows Credential Manager entry named `swsd-mcp/api-tok
 - Windows, Windows PowerShell 5.1, and a local agent with shell access.
 - Node.js 24.15+ within major 24 or Node.js 26+, including npm. Node 25 is unsupported. Setup can install the current supported LTS through winget when organizational policy permits.
 - Access to the npm registry and your selected SWSD API region, and a personal SWSD token with appropriate account permissions.
-- Local files under `%LOCALAPPDATA%\swsd-mcp`; launcher and companion files under `client\3.3.1`.
+- Local files under `%LOCALAPPDATA%\swsd-mcp`; launcher and companion files under `client\3.4.0`.
 - Corporate script-signing, AppLocker, and WDAC policies still apply. This is a Windows desktop integration; installation does not create a web/mobile connection or hosted service.
 
 See [SWSD MCP documentation](https://mcp-swsd.pages.dev/) and `ADMIN.md` for deployment and acceptance checks.
