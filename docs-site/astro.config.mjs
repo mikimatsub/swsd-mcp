@@ -22,6 +22,7 @@ export default defineConfig({
       ],
       sidebar: [
         { label: 'Quick start', link: '/quickstart/' },
+        { label: 'Windows companion', link: '/windows/' },
         { label: 'Compatibility', link: '/compatibility/' },
         { label: 'Architecture', link: '/architecture/' },
         { label: 'Configuration', link: '/configuration/' },

@@ -162,6 +162,42 @@ describe('README documentation contract', () => {
       }
     });
 
+    it('documents the Windows companion app before Quick start', () => {
+      const windows = README.match(/^## Windows companion app[\s\S]*?(?=^## Quick start)/m);
+      expect(windows, 'Windows companion app section should precede Quick start').not.toBeNull();
+      const section = windows![0];
+      for (const heading of [
+        '### Set up this PC',
+        '### Connection and status',
+        '### Tool guide',
+        '### Custom profiles',
+        '### Appearance',
+        '### Updates, diagnostics, and release notes',
+        '### Help and issue links',
+      ]) {
+        expect(section).toContain(heading);
+      }
+      expect(section).toContain('SWSD Setup');
+      expect(section).toContain('Report a bug');
+      expect(section).toContain('Request a feature');
+      expect(section).toContain("What's new");
+      expect(section).toContain('./docs-site/public/windows/setup.png');
+      expect(section).toContain('./docs-site/public/windows/tools.png');
+      expect(section).toContain('./docs-site/public/windows/profile-builder.png');
+      expect(section).not.toMatch(/API token|Service Desk|Reset JSON Web Token|3\.3\.1|home-appearance|tool-search|import-error|whats-new\.png/i);
+      expect(README).toContain('**Windows plugin setup:**');
+      for (const image of [
+        'docs-site/public/windows/setup.png',
+        'docs-site/public/windows/tools.png',
+        'docs-site/public/windows/profile-builder.png',
+        'docs-site/public/windows/tool-search.png',
+        'docs-site/public/windows/import-error.png',
+        'docs-site/public/windows/whats-new.png',
+      ]) {
+        expect(readFileSync(resolve(image)).byteLength).toBeGreaterThan(10000);
+      }
+    });
+
     it('README links to the canonical docs-site configuration page', () => {
       // Defensive: if someone later removes the link out, the contract that
       // README intentionally trims to essentials breaks silently.

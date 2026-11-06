@@ -9,6 +9,10 @@ hero:
       link: /quickstart/
       icon: right-arrow
       variant: primary
+    - text: Windows companion
+      link: /windows/
+      icon: star
+      variant: secondary
     - text: View on GitHub
       link: https://github.com/mikimatsub/swsd-mcp
       icon: external
@@ -18,6 +22,9 @@ hero:
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
+  <Card title="Windows companion" icon="star">
+    Install swsd-mcp on a Windows PC, then change the profile, tools, and appearance later. [Open the guide →](/windows/)
+  </Card>
   <Card title="Any MCP client" icon="puzzle">
     Standard Model Context Protocol over stdio or Streamable HTTP. [See the compatibility matrix →](/compatibility/)
   </Card>
@@ -46,6 +53,22 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
     Published as `io.github.mikimatsub/swsd` on [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.mikimatsub/swsd).
   </Card>
 </CardGrid>
+
+## Windows companion app
+
+Install swsd-mcp on this PC, save your JSON Web Token, and choose the tools your AI apps can use. Open **SWSD for AI apps** again from **SWSD Setup** on the Start menu. Home shows the connection and updates. Tools lets you search the catalog and build a custom profile you can share.
+
+![Set up SWSD for AI apps after the tools are installed, ready for a JSON Web Token.](/windows/setup.png)
+
+*Install the tools, then add your JSON Web Token. [Open the guide →](/windows/)*
+
+- [Set up this PC](/windows/#set-up-this-pc)
+- [Connection and status](/windows/#connection-and-status)
+- [Tool guide](/windows/#tool-guide)
+- [Custom profiles](/windows/#custom-profiles)
+- [Appearance](/windows/#appearance)
+- [Updates, diagnostics, and release notes](/windows/#updates-diagnostics-and-release-notes)
+- [Help and issue links](/windows/#help-and-issue-links)
 
 ## See it in action
 

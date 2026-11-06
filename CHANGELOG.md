@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Windows companion app: the README and docs site now include setup, connection status, the tool guide, custom profiles, Appearance, updates, diagnostics, What's new, and the Report a bug and Request a feature links. Dark window examples show Set up, the tool guide, search, the profile builder, an import error, and What's new.
+
 ### Changed
 
 - Node.js: require 24.15 or newer; Node 26 is supported. Node 25 is not. CI tests Node 24 and 26. The Docker image uses `node:26-alpine` (digest-pinned). Windows setup accepts Node 24.15+ or Node 26+, and installs the current Node.js LTS via winget when needed.

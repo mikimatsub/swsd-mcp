@@ -15,6 +15,59 @@ The server holds **zero credentials at rest**. HTTP tokens are supplied per requ
 
 ---
 
+## Windows companion app
+
+**SWSD for AI apps** installs swsd-mcp on this PC and chooses which tools your AI apps can use. Your JSON Web Token is saved in Windows Credential Manager. The [Windows companion app](https://mcp-swsd.pages.dev/windows/) page has the full guide. Pictures use example data.
+
+### Set up this PC
+
+1. Install the Windows `swsd` plugin.
+2. Start a new local chat and ask to set up SWSD on this computer.
+3. On **Set up**, select **Install tools**. This setup needs Node.js 24.15 or newer within version 24, or Node.js 26 or newer, with npm. Node 25 is not supported. If Node.js is missing or outside those versions, setup can install the current Node.js LTS through winget after you confirm. Windows may ask for administrator approval. Reopen the app when installation finishes.
+4. Choose **United States** or **Europe**, paste your JSON Web Token, and select **Test**. The field stays masked. **?** and **Where do I find my token?** show where to copy it in SWSD. Generate a JSON Web Token only when none is shown.
+5. Choose **Triage** (21 tools), **Agent** (51), **Knowledge** (17), **Operations** (145), or a saved custom profile. The choice is saved immediately. Quit and reopen the AI app, then start a new chat so the server loads that profile.
+6. Open it again from **SWSD Setup** on the Start menu.
+
+<img src="./docs-site/public/windows/setup.png" alt="Set up SWSD for AI apps after the tools are installed, ready for a JSON Web Token." width="1000">
+
+*Install the tools, then add your JSON Web Token.*
+
+### Connection and status
+
+**Home** shows Node.js, the installed tools, your JSON Web Token, region, profile, and updates. The token stays masked. **Test** checks the connection and marks it **Verified**. Changing **United States** or **Europe** clears that check until you select **Test** again. **Repair** reinstalls the tools. **Remove saved JSON Web Token** deletes the credential on this PC. Quit the AI app afterwards. The token remains valid in SWSD until it is revoked there.
+
+### Tool guide
+
+**Tools** is a searchable catalog of all 145 tools for the profile you select. **Ctrl+F** focuses search, which matches the friendly name, the tool id, and the description. Each tool is marked **Read**, **Edit**, or **Delete**. Read looks up a record, Edit creates or changes one, and Delete always previews the record first. Tools outside the profile stay grouped apart until you search. A match can point you to a profile that includes it, and you can switch to that profile from the detail. Select a tool to see where it is available and copy an example prompt.
+
+<img src="./docs-site/public/windows/tools.png" alt="Tool guide for the Agent profile, with an example prompt." width="1000">
+
+*See which tools a profile includes, and copy an example prompt.*
+
+### Custom profiles
+
+On **Tools**, open **Custom profiles** to name a set and check the tools your AI apps may use. **Save profile** makes that set active and adds it to the Home and Tools pickers. **Rename**, **Delete**, and **New** manage the set. Deleting the active custom profile returns you to **Agent**.
+
+**Export JSON** saves the profile as a file you can share. **Import JSON** loads a file into the builder. Select **Save profile** to start using an import. The file is the version-1 profile in [Custom profiles](https://mcp-swsd.pages.dev/configuration/#custom-profiles): `name`, `version`, `tools`, and an optional `description`. Extra fields are rejected. Names that match Triage, Agent, Knowledge, Operations, or Full are reserved.
+
+<img src="./docs-site/public/windows/profile-builder.png" alt="Custom profile builder with save, export, and import." width="1000">
+
+*Choose the tools in a named profile, then save or share it as JSON.*
+
+### Appearance
+
+**Appearance** follows **Match Windows**, or you can choose **Light**, **Dark**, or a named theme. The choice is saved on this PC. Named themes are Dracula, Catppuccin Mocha, Catppuccin Macchiato, Catppuccin Frappe, Catppuccin Latte, Nord, Gruvbox Dark, Gruvbox Light, Tokyo Night, Tokyo Night Storm, Tokyo Night Day, One Dark, One Light, Solarized Dark, Solarized Light, Rosé Pine, Rosé Pine Moon, Rosé Pine Dawn, Monokai, Material Ocean, GitHub Dark, and GitHub Light.
+
+### Updates, diagnostics, and release notes
+
+**Check now** looks for a newer published release. When one is available, **Update** installs it after checking the package, and keeps your current tools if the install does not finish. **What's new** opens the release notes on this PC, including changes that are not published yet. **Copy report** copies a diagnostics summary for support: versions, whether tools are installed, the profile, the region, whether a credential is saved, display scale, and a short redacted log. The report does not include your token.
+
+### Help and issue links
+
+**Report a bug** and **Request a feature** open the GitHub forms with the app version, server version, Windows version, and profile filled in.
+
+---
+
 ## Quick start
 
 You need:
@@ -82,6 +135,8 @@ example prompts, and select a profile to change the available tool set. The **?*
 beside **JSON Web Token** shows the SWSD User detail screen and **Actions →
 Generate JSON Web Token**, used only when no token is shown. Test verifies the
 connection and stores the JSON Web Token in Windows Credential Manager. Home also provides tool installation/repair, update checks, and US/EU region selection. The picker offers Triage, Agent, Knowledge, Operations, and saved custom profiles. On the Tools page, build a custom profile, then save, rename, delete, import, or export it. Other MCP clients still use the server configuration below (`SWSD_PROFILE=custom`). Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`. Restart the desktop app and start a new chat after a profile change.
+
+The [Windows companion app](#windows-companion-app) section above is the setup and day-to-day guide, with the [full page](https://mcp-swsd.pages.dev/windows/) on the docs site.
 
 **Claude Code shortcut**: skip editing the file by hand. This saves a private entry for the current project in `~/.claude.json`:
 

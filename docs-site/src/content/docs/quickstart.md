@@ -135,6 +135,8 @@ The profile picker offers **Triage** (21 tools), **Agent** (51), **Knowledge** (
 
 **Appearance** offers **Match Windows**, **Light**, **Dark**, and named themes such as Dracula, Catppuccin, Nord, Gruvbox, and Tokyo Night, saved on this PC. Tools and settings live under `%LOCALAPPDATA%\swsd-mcp`; the token stays in Windows Credential Manager rather than the settings file.
 
+The [Windows companion app](/windows/) page is the full guide: setup, connection status, the searchable tool guide, custom profile export and import, Appearance, updates, diagnostics, What's new, and **Report a bug** / **Request a feature**.
+
 ## Other MCP clients
 
 ### Add the MCP config

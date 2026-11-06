@@ -100,6 +100,8 @@ SWSD_PROFILE_FILE=./profiles/desk.json
 }
 ```
 
+On Windows, the [companion app](/windows/#custom-profiles) saves and exports this same file.
+
 CSV whitespace is trimmed and duplicate names collapse into one registration. Unknown names from either source are listed in a stderr warning and skipped. No tools are automatically added; an empty valid union fails startup, even if extras are set. `SWSD_TOOLS` and `SWSD_PROFILE_FILE` only select tools in `custom` mode.
 
 The file is read once at startup as JSON, never imported or evaluated. Paths resolve relative to the startup working directory (absolute paths also work), symlinks are resolved, and only regular files of at most 256 KiB are accepted. Missing or unreadable files, malformed JSON, unsupported versions, and invalid fields fail startup before HTTP begins listening.
