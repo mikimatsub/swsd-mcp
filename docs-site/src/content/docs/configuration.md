@@ -42,6 +42,7 @@ Server configuration uses environment variables; `--transport=stdio|http` can ov
 |---|---|---|
 | `SWSD_API_VERSION` | `v2.1` | API version used in the SWSD `Accept` header; a nonempty string of at most 32 characters |
 | `SWSD_WRITE_MODE` | `live` | Write safety mode: `live` calls SWSD normally, `dry-run` returns the request payload without sending the write, and `disabled` rejects write tools. Read-only tools are unaffected. |
+| `SWSD_MAX_ATTACHMENT_BYTES` | `5242880` | Download byte limit, 1–26214400. Checked before and during streaming; base64 adds about one third to response size. |
 | `SWSD_ATTACHMENT_ROOT` | _(empty)_ | Optional real-path boundary for `swsd_upload_attachment` when using `file_path` in stdio mode. Symlinks are resolved before containment is checked. Empty preserves unrestricted local stdio file uploads. It has no effect on base64 or HTTP uploads. |
 | `SWSD_ENABLE_EXTRAS` | _(empty)_ | Comma-separated extra tool names to enable on top of the profile. Unknown names cause a startup error (loud-fail by design). |
 
@@ -53,10 +54,10 @@ Profiles control which tools are registered at startup. The choice is made once 
 
 | Profile | Intent | Tool count |
 |---|---|---|
-| `triage` | Read-heavy first-line support workflow + commenting + read-only task/problem visibility | 21 |
-| `agent` | Full ticket-handler workflow + KB lookups + custom-field introspection + service-catalog + tasks + problems + work logs/attachments (default) | 51 |
+| `triage` | Read-heavy first-line support workflow + commenting + read-only task/problem visibility | 22 |
+| `agent` | Full ticket-handler workflow + KB lookups + custom-field introspection + service-catalog + tasks + problems + work logs/attachments (default) | 52 |
 | `knowledge` | KB-author workflow + incident reads + custom-field introspection | 17 |
-| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool | 145 |
+| `operations` | Agent workflow plus change/release, ITAM, CMDB, procurement, and risk context, plus every KB authoring tool | 146 |
 | `custom` | Explicit selection from the tool list or a JSON profile file | Varies |
 
 `operations` includes every tool, including KB authoring and guarded deletes. Existing `SWSD_PROFILE=full` configurations map to `operations` and emit one deprecation notice on stderr per process.
@@ -66,7 +67,7 @@ Profiles control which tools are registered at startup. The choice is made once 
 - **`triage`**: first-line support agents who read tickets and post comments but don't reassign or close. Minimal write surface.
 - **`agent`** (default): full incident-handling: create, update, assign, state-transition, link solutions, plus comment writes, KB lookups, work logs, and attachments. The most common choice.
 - **`knowledge`**: KB authors who need solution search, reads, creation, and updates plus incident reads for context. No incident writes or deletes.
-- **`operations`**: agents who also need ITSM lifecycle and operational context: changes, releases, assets, CMDB records, contracts, purchase orders, vendors, and risks. It includes all 145 tools, including KB authoring and guarded deletes.
+- **`operations`**: agents who also need ITSM lifecycle and operational context: changes, releases, assets, CMDB records, contracts, purchase orders, vendors, and risks. It includes all 146 tools, including KB authoring and guarded deletes.
 
 ### Adding individual tools to a profile
 

@@ -1221,8 +1221,8 @@ function Test-SwsdUiControls {
     Assert-Swsd ($tokenBox -is [Windows.Controls.PasswordBox]) 'JSON Web Token field must use PasswordBox.'
     Assert-Swsd ($profile.Items.Count -eq $script:SwsdPickerProfiles.Count -and $profile.Items.Count -ge 4 -and $profile.SelectedItem -eq 'Agent' -and -not ($profile.Items -contains 'Full')) 'Visible profiles (no Full) and Agent default are required.'
     Assert-Swsd ([object]::ReferenceEquals($profile.ItemsSource,$toolsProfile.ItemsSource)) 'Profile pickers must share their data source.'
-    Assert-Swsd ($script:SwsdCatalog.Count -eq 145) 'The reviewed catalog must contain 145 tools.'
-    Assert-Swsd (@(Get-SwsdProfileTools 'agent').Count -eq 51) 'Agent must expose 51 tools.'
+    Assert-Swsd ($script:SwsdCatalog.Count -eq 146) 'The reviewed catalog must contain 146 tools.'
+    Assert-Swsd (@(Get-SwsdProfileTools 'agent').Count -eq 52) 'Agent must expose 52 tools.'
     Assert-Swsd (@(Get-SwsdCatalogNotInProfile 'agent').Count -eq 94) 'Agent must have 94 tools outside the profile.'
     Assert-Swsd (-not $otherTools.IsExpanded) 'Not-in-profile tools must be collapsed by default.'
     Assert-Swsd ($appearance.SelectedIndex -eq 0) 'Appearance must default to Match Windows.'
@@ -1241,7 +1241,7 @@ function Test-SwsdUiControls {
         Assert-Swsd ($areaFilters.Children[0].Content -eq ("In " + $script:SwsdPickerProfiles[$index].name + '  ' + $expected.Count)) 'In-profile chip count must match visible membership.'
         Assert-Swsd ($lockedTools.Children.Count -eq @(Get-SwsdCatalogNotInProfile $id).Count) 'Locked rows must cover the full catalog.'
         if ($id -eq 'operations') {
-            Assert-Swsd ($expected.Count -eq 145 -and $otherTools.Visibility -eq 'Collapsed') 'Operations must include its hidden alias tools.'
+            Assert-Swsd ($expected.Count -eq 146 -and $otherTools.Visibility -eq 'Collapsed') 'Operations must include its hidden alias tools.'
         }
         Assert-SwsdProfileLabels
     }
@@ -1255,7 +1255,7 @@ function Test-SwsdUiControls {
     Assert-Swsd ($jwtFlyout.Visibility -eq 'Collapsed') 'JWT help did not close.'
     $toolsNav.IsChecked=$true
     Assert-Swsd ($toolsPage.Visibility -eq 'Visible' -and $homePage.Visibility -eq 'Collapsed') 'Tools navigation failed.'
-    Assert-Swsd ($areaFilters.Children[0].Content -eq 'In Agent  51') 'Agent chip must show 51 tools.'
+    Assert-Swsd ($areaFilters.Children[0].Content -eq 'In Agent  52') 'Agent chip must show 52 tools.'
     Assert-Swsd ($otherTools.Header -eq 'Not in Agent · 94 tools · change profile to use these' -and $lockedTools.Children.Count -eq 94) 'Agent locked section must show all 94 tools.'
     $incidentChip=$areaFilters.Children | Where-Object {$_.Tag -eq 'Incidents'} | Select-Object -First 1
     Assert-Swsd ($incidentChip.Content -eq 'Incidents  15') 'Agent Incidents chip must show 15 tools.'
@@ -1348,7 +1348,7 @@ function Test-SwsdUiControls {
         switch ($state) {
             ready {Assert-Swsd ($tokenPlaceholder.Text -eq '••••••••' -and $tokenDescription.Text -ceq 'Verified just now' -and $reportBug.Content -ceq 'Report a bug' -and $requestFeature.Content -ceq 'Request a feature') 'Ready preview copy is incorrect.'}
             tools {Assert-Swsd ($toolsPage.Visibility -eq 'Visible') 'Tools preview is missing.'}
-            profile-builder {Assert-Swsd ($profileBuilder.IsExpanded -and $customTools.Children.Count -eq 145 -and $customName.Text -eq 'Incident follow-up') 'Builder preview is incomplete.'}
+            profile-builder {Assert-Swsd ($profileBuilder.IsExpanded -and $customTools.Children.Count -eq 146 -and $customName.Text -eq 'Incident follow-up') 'Builder preview is incomplete.'}
             custom-selected {Assert-Swsd ((Get-SwsdSettings).profile -eq 'custom' -and $profile.SelectedItem -eq 'Incident follow-up' -and @(Get-SwsdProfileTools custom).Count -eq 3) 'Custom preview must configure the server selection.'}
             import-error {Assert-Swsd ($toast.Visibility -eq 'Visible' -and $status.Text -like 'Profile JSON:*') 'Import-error preview must show a friendly banner.'}
             whats-new {Assert-Swsd ($whatsNewPage.Visibility -eq 'Visible' -and $releaseNoteContent.Children.Count -gt 5) 'Release notes preview is missing.'}

@@ -1,6 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { EnvSchema } from '../../src/config/env.js';
 
+describe('attachment download limit', () => {
+  it('defaults to 5 MiB and accepts a 25 MiB ceiling', () => {
+    expect(EnvSchema.parse({}).SWSD_MAX_ATTACHMENT_BYTES).toBe(5242880);
+    expect(EnvSchema.parse({ SWSD_MAX_ATTACHMENT_BYTES: '26214400' }).SWSD_MAX_ATTACHMENT_BYTES).toBe(26214400);
+  });
+  it.each(['0', '-1', '26214401', '1.5', 'NaN'])('rejects invalid limit %s', value => {
+    expect(EnvSchema.safeParse({ SWSD_MAX_ATTACHMENT_BYTES: value }).success).toBe(false);
+  });
+});
+
 describe('EnvSchema SWSD_BASE_URL allowlist (SSRF defense)', () => {
   it('accepts the default api.samanage.com', () => {
     const r = EnvSchema.safeParse({});

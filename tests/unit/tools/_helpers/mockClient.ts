@@ -187,6 +187,7 @@ export function makeFakeClient(): FakeClient {
 
   return {
     calls,
+    download: async () => ({ bytes: new Uint8Array(), contentType: 'application/octet-stream' }),
     setBodyForPath: (matcher, body) => {
       responders.push({ matcher, body });
     },

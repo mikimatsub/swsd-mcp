@@ -28,6 +28,7 @@ try {
   })).sort((a, b) => a.name.localeCompare(b.name));
 } finally { await server.close(); }
 const areas = [
+  ['Attachments', /^swsd_get_incident_attachment$/],
   ['Incidents', /incident|sla_risk|ticket_stats|my_queue/], ['Problems', /problem/],
   ['Changes', /change(?!_catalog)|change_calendar/], ['Releases', /release/],
   ['Comments & tasks', /comment|task|time_track|log_time|attachment/], ['Knowledge', /solution/],
@@ -39,11 +40,13 @@ const areas = [
 const special = { sla: 'SLA', cmdb: 'CMDB', swsd: 'SWSD', id: 'ID', jwt: 'JWT' };
 const examples = {
   swsd_list_my_incidents: 'Show my open P1 incidents',
+  swsd_get_incident_attachment: 'Show me the screenshots and files on incident 60310',
   swsd_sla_risk: 'Which tickets are about to breach SLA today?',
   swsd_delete_incident: 'Preview deleting test incident 48213',
 };
 const shortOverrides = {
-  swsd_list_my_incidents: 'Incidents assigned to you',
+  swsd_list_my_incidents: 'Incidents assigned to you or requested by you',
+  swsd_get_incident_attachment: 'View files and screenshots attached to a ticket',
   swsd_get_incident: 'Open one incident by ID',
   swsd_list_incidents: 'Search and browse incidents',
   swsd_list_problems: 'Search and browse problems',

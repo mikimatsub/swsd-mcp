@@ -106,7 +106,7 @@ describe('swsd_list_incidents - client-side party filter', () => {
     );
     const get = client.calls.find((c) => c.type === 'get' && c.path === '/incidents.json');
     const params = get?.type === 'get' ? get.params : {};
-    // Both broken filters MUST stay client-side.
+    // Neither ignored email parameter should be sent directly.
     expect(params).not.toHaveProperty('assignee_email');
     expect(params).not.toHaveProperty('requester_email');
   });
@@ -134,15 +134,10 @@ describe('swsd_list_incidents - client-side party filter', () => {
   });
 
   it('combined assignee_email AND requester_email — both must match', async () => {
-    client.setLookupBody([
-      // Match both
+    client.setBodyForPath(p => p === '/requesters.json', [{ id: 99, description: 'r@x.com' }]);
+    client.setBodyForPath(p => p === '/incidents.json', [
       { id: 1, name: 'both', assignee: { email: 'a@x.com' }, requester: { email: 'r@x.com' } },
-      // Match assignee only
-      { id: 2, name: 'asg-only', assignee: { email: 'a@x.com' }, requester: { email: 'other@x.com' } },
-      // Match requester only
-      { id: 3, name: 'req-only', assignee: { email: 'other@x.com' }, requester: { email: 'r@x.com' } },
-      // Match neither
-      { id: 4, name: 'neither', assignee: { email: 'x@x.com' }, requester: { email: 'y@x.com' } },
+      { id: 3, name: 'requester only', assignee: { email: 'other@x.com' }, requester: { email: 'r@x.com' } },
     ]);
 
     const result = (await tool.handler(

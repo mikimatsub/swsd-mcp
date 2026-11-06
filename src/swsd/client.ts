@@ -1,3 +1,4 @@
+import { downloadAttachment, type AttachmentDownload } from './attachmentDownload.js';
 import type { Env } from '../config/env.js';
 import { buildHeaders } from './headers.js';
 import { serializeQuery } from './query.js';
@@ -31,6 +32,7 @@ export interface SwsdMutationResult<T> {
 }
 
 export interface SwsdClient {
+  download(path: string, maxBytes: number): Promise<AttachmentDownload>;
   get<T = unknown>(path: string, params?: Record<string, unknown>): Promise<SwsdGetResult<T>>;
   post<T = unknown>(path: string, body: unknown): Promise<SwsdMutationResult<T>>;
   put<T = unknown>(path: string, body: unknown): Promise<SwsdMutationResult<T>>;
@@ -138,6 +140,7 @@ export function createSwsdClient({ env, token }: CreateClientOpts): SwsdClient {
 
   return {
     rawRequest,
+    download: (path, maxBytes) => downloadAttachment(env, token, path, maxBytes),
     async get<T>(
       path: string,
       params: Record<string, unknown> = {},

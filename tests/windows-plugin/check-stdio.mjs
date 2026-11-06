@@ -85,7 +85,7 @@ namespace SwsdDesktop {
   assert.ok(listing.result.tools.some(t => t.name === 'swsd_health_check'));
   assert.ok(listing.result.tools.some(t => t.name === 'swsd_get_me'));
   const canonical = profile === 'full' ? 'operations' : profile;
-  const counts = {triage:21, agent:51, knowledge:17, operations:145};
+  const counts = {triage:22, agent:52, knowledge:17, operations:146};
   assert.equal(listing.result.tools.length, counts[canonical]);
   assert.deepEqual(listing.result.tools.map(t => t.name).sort(), [...PROFILE_TOOLS[canonical]].sort());
   await request(3, 'tools/list', {});

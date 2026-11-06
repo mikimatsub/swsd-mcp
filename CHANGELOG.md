@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Read incident files and screenshots with `swsd_get_incident_attachment`,
+  including files and inline images from paginated comments. Downloads have
+  opaque references, a configurable byte limit, and credential-free S3 redirects.
+- Use `role: "requester"` with `swsd_list_my_incidents` to list tickets requested
+  by the authenticated user. The default remains assigned-to-me.
+
 ### Fixed
+
+- Requester email filters now find matching incidents across pages using
+  requester IDs. Unknown requesters return zero matches; lookup failures no
+  longer produce an incomplete page.
 
 - Refresh the Windows workspace plugin and companion package to 3.3.1, with a matching versioned launcher and published server runtime. Update setup instructions for the current Home/Tools interface, custom profiles, automatic profile saving, runtime updates, and companion repair.
 

@@ -1,6 +1,6 @@
 # SolarWinds Service Desk for Windows
 
-Plugin and companion version **3.3.1** bundles the published **swsd-mcp 3.3.1** runtime. Operations exposes all 145 tools. Ten MCP Apps widgets provide incident, knowledge, comments, audit, catalog, custom-field, SLA, statistics, and change-calendar views in compatible hosts.
+Plugin and companion version **3.3.1** bundles the published **swsd-mcp 3.3.1** runtime. The published runtime exposes 145 tools. This source candidate adds incident attachment reads (146 tools) and must be released before refreshing the pinned runtime recipe. Ten MCP Apps widgets provide incident, knowledge, comments, audit, catalog, custom-field, SLA, statistics, and change-calendar views in compatible hosts.
 
 ## First use or upgrade
 
@@ -28,7 +28,7 @@ Reopen **SWSD Setup** from the Windows Start menu to manage the connection witho
 | Triage | Incident review, queue and SLA views, catalog context, tasks, problems, and comments |
 | Agent | Everyday ticket handling, tasks, problems, time entries, attachments, and work views |
 | Knowledge | Knowledge searches and article editing, with incident and catalog context |
-| Operations | All 145 tools, including directory, assets, changes, releases, procurement, and guarded deletes |
+| Operations | All 146 tools, including directory, assets, changes, releases, procurement, and guarded deletes |
 | Custom | Only the tools selected in the saved profile |
 
 Legacy Full selections map to Operations. Profiles select tools, not account permissions. Delete tools require preview and confirmation. After switching profiles, restart the AI desktop app and use a new chat; a saved selection does not change a running server's tool list.
