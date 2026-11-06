@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Refresh the Windows workspace plugin and companion package to 3.3.1, with a matching versioned launcher and published server runtime. Update setup instructions for the current Home/Tools interface, custom profiles, automatic profile saving, runtime updates, and companion repair.
+
 ## [3.3.1] - 2026-11-06
 
 ### Added

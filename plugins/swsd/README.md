@@ -1,70 +1,54 @@
 # SolarWinds Service Desk for Windows
 
-## First use
+Plugin and companion version **3.3.1** bundles the published **swsd-mcp 3.3.1** runtime. Operations exposes all 145 tools. Ten MCP Apps widgets provide incident, knowledge, comments, audit, catalog, custom-field, SLA, statistics, and change-calendar views in compatible hosts.
 
-1. Install SolarWinds Service Desk from your organization's plugin directory.
-2. Open a **new local Work or Codex chat** in the Windows desktop app.
-3. Ask: **Set up SolarWinds Service Desk on this computer.**
-4. In the separate setup window, click **Install / repair tools**. Node.js 24.15+ within version 24 or Node.js 26+ must be installed with npm. Node 25 is not supported. Setup can install the current supported Node.js LTS through winget; ask IT if needed.
-5. Choose your SWSD region and paste your own API token into the masked field. Never paste a token into chat.
-6. Click **Test and save token**. A successful message means SolarWinds accepted the credential and allowed a minimal incident read.
-7. Choose a **Profile** from the dropdown and click **Save profile**. Agent is the default.
-8. Fully quit and reopen the desktop app, then start a new chat and ask: **Check my SolarWinds connection.**
+## First use or upgrade
 
-## Switch profiles
+1. Install or update SolarWinds Service Desk from your organization's plugin directory.
+2. Start a new local Work or Codex chat and ask **Set up SolarWinds Service Desk on this computer.** This opens the companion app from the updated plugin package.
+3. Choose **Install tools** for first use, or **Repair** to install the bundled runtime and refresh the companion app, launcher, assets, and Start menu shortcut.
+4. Choose your region and enter your personal JSON Web Token privately in the masked field only if no token is saved. Select **Test** to verify and save it. With an existing saved token, Test reuses it. Never paste a token into chat.
+5. Choose a **Profile** on Home or Tools. Selection saves immediately; Agent is the default for a new setup.
+6. Fully quit and reopen the AI desktop app, then start a new chat and ask **Check my SolarWinds connection.** Verify the server version and selected profile with `swsd_get_server_info`.
 
-Open **SolarWinds Service Desk Setup** from the Start menu, choose a profile, and click **Save profile**. The selection and description are shown in the window. Saving a profile preserves the saved token and region. Fully quit and reopen the desktop app, then start a new chat: running sessions retain the tools selected at startup.
+An npm global installation alone does not install this plugin's launcher or companion app. Plugin updates are delivered by the marketplace; existing chats may retain an older running server until restarted.
+
+## Home and Tools
+
+Reopen **SWSD Setup** from the Windows Start menu to manage the connection without a chat.
+
+- **Home** shows connection and runtime status, region, profile, Appearance, updates, diagnostics, and repair.
+- **Tools** provides a searchable tool guide with Read, Edit, and Delete badges, profile availability, and example prompts.
+- **Custom profiles** let you select tools, name a profile, and choose **Save profile**. Rename, delete, import, and export controls manage saved profiles. Select the saved profile in the Home or Tools picker to activate it.
+- **Appearance** offers Match Windows, Light, Dark, and named themes such as Dracula, Catppuccin, Nord, and Tokyo Night.
+- **What's new** displays release notes offline. Report a bug and Request a feature open prefilled issue forms for your review.
 
 | Profile | Tools available |
 | --- | --- |
-| Triage | Incident review, catalog context, task/problem visibility, and comments |
-| Agent | Everyday ticket handling, tasks, problems, time entries, and attachments |
-| Knowledge | Knowledge search, article creation and updates, and incident context |
-| Operations | Agent tools plus changes, releases, assets, procurement, and risks |
-| Full | All tools |
+| Triage | Incident review, queue and SLA views, catalog context, tasks, problems, and comments |
+| Agent | Everyday ticket handling, tasks, problems, time entries, attachments, and work views |
+| Knowledge | Knowledge searches and article editing, with incident and catalog context |
+| Operations | All 145 tools, including directory, assets, changes, releases, procurement, and guarded deletes |
+| Custom | Only the tools selected in the saved profile |
 
-Profiles select tools, not account permissions. The selection belongs to the current Windows user on this computer.
+Legacy Full selections map to Operations. Profiles select tools, not account permissions. Delete tools require preview and confirmation. After switching profiles, restart the AI desktop app and use a new chat; a saved selection does not change a running server's tool list.
 
-## Change or remove the connection
+## Updates and diagnostics
 
-Open **SolarWinds Service Desk Setup** from the Windows Start menu, or ask **Manage my SolarWinds connection** in a local chat.
+**Check now** looks for a newer published server; **Update** validates and activates that runtime and retains the previous tools if validation fails. This updates the server, not the companion scripts. To update the companion app, update the plugin and launch its setup skill, then choose **Repair**.
 
-Setup presents its settings window in front once when opened, while keeping the PowerShell console hidden. It does not remain always on top or repeatedly take focus. Windows still controls keyboard-focus permission for background launches. Each launch opens a separate settings window; close unused windows before changing a connection.
+**Copy report** produces redacted diagnostics, including whether a credential exists, never its value. Review the report before sharing. **Repair** reinstalls the runtime pinned by this plugin and refreshes the companion files; it can return a separately updated runtime to the bundled version.
 
-- **Test saved connection** checks the saved credential without revealing it.
-- **Test and save token** validates a replacement before saving it.
-- **Remove saved token** deletes this computer's credential. Fully quit the desktop app afterwards so running servers stop using their in-memory copy. Revoke the token in SolarWinds separately if needed.
-- **Install / repair tools** reinstalls the pinned server and refreshes the launcher.
+## Credentials and requirements
 
-The token is stored as a generic Windows Credential Manager credential named `swsd-mcp/api-token`. It belongs to the current Windows user on this computer. Other processes running as the same user can access it; it is not a boundary against software already running under that account. It is not written to the plugin, repository, settings file, or persistent environment variables. The server receives it only in its process environment at launch.
+The token is a per-user Windows Credential Manager entry named `swsd-mcp/api-token`. It is never stored in the plugin, repository, settings file, or persistent environment variables. The server receives it in its process environment. Other processes running as the same Windows user can access that user's credentials.
 
-This version does not use any old `SWSD_TOKEN` environment variable. If you previously configured that separately, review and remove the obsolete value through your existing setup process after the new connection works.
+**Remove saved JSON Web Token** deletes this computer's credential. Fully quit the AI app afterward to stop running servers using their in-memory copy. Revoke the token in SolarWinds separately if needed. Plugin uninstall does not erase credentials or local runtime files.
 
-## Requirements and limits
+- Windows, Windows PowerShell 5.1, and a local agent with shell access.
+- Node.js 24.15+ within major 24 or Node.js 26+, including npm. Node 25 is unsupported. Setup can install the current supported LTS through winget when organizational policy permits.
+- Access to the npm registry and your selected SWSD API region, and a personal SWSD token with appropriate account permissions.
+- Local files under `%LOCALAPPDATA%\swsd-mcp`; launcher and companion files under `client\3.3.1`.
+- Corporate script-signing, AppLocker, and WDAC policies still apply. This is a Windows desktop integration; installation does not create a web/mobile connection or hosted service.
 
-- Windows with Windows PowerShell 5.1, and a local desktop agent capable of running the setup skill.
-- Node.js 24.15+ within major version 24 or Node.js 26+, including npm. Node 25 is not supported.
-- Network access to the npm registry and the selected SWSD API host.
-- A personal SWSD token authorized for your intended work. Workspace installation does not grant SolarWinds permissions.
-- Corporate script-signing, AppLocker, or WDAC requirements may require IT deployment/signing. The plugin does not bypass them.
-- Server runtime is pinned to `swsd-mcp@3.3.1` (MCP SDK v2), with locked dependency versions. Plugin/client package version is `3.1.0`. Release prep tests the local candidate before publication; refresh its npm integrity in the runtime lockfile after publication. `tests/unit/pluginRuntimeVersion.test.ts` enforces the pending and published recipe states.
-- The default is `agent`. Available profiles are `triage`, `agent`, `knowledge`, `operations` (all 145 tools), and `custom` (explicit selection). Write tools remain subject to the authenticated account's permissions and the host's tool approvals.
-- This is a desktop-only local integration. Uploading it does not create a hosted app, OAuth sign-in button, automatic install-time wizard, or web/mobile connection.
-- Setup data and runtime live under `%LOCALAPPDATA%\swsd-mcp`. Uninstalling the plugin does not automatically erase credentials or these files: remove the saved token first, then quit the app.
-
-## Custom server profiles
-
-For server-side custom selection, set `SWSD_PROFILE=custom` with `SWSD_TOOLS`
-(comma-separated names) and/or `SWSD_PROFILE_FILE` (a version-1 JSON profile).
-See [Custom profiles](https://mcp-swsd.pages.dev/configuration/#custom-profiles)
-for validation and examples. These settings require a server containing this
-feature; the bundled runtime stays pinned to its existing published version.
-The Windows setup dropdown is unchanged. Legacy `full` values map to `operations`
-in the updated server, with one stderr deprecation notice. Delete tools remain
-guarded by preview and confirmation, and require `operations` or explicit custom selection.
-
-## Sources
-
-- [OpenAI plugin packaging](https://developers.openai.com/plugins/build/plugins)
-- [Workspace plugin management](https://learn.chatgpt.com/docs/enterprise/plugin-management)
-- [SWSD MCP source and API-token guidance](https://github.com/mikimatsub/swsd-mcp)
+See [SWSD MCP documentation](https://mcp-swsd.pages.dev/) and `ADMIN.md` for deployment and acceptance checks.

@@ -120,7 +120,7 @@ function Get-SwsdThemePalette([string]$Id) {
 }
 
 $script:SwsdPackageVersion = '3.3.1'
-$script:SwsdClientVersion = '3.1.0'
+$script:SwsdClientVersion = '3.3.1'
 $script:SwsdCredentialTarget = 'swsd-mcp/api-token'
 $script:SwsdHome = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'swsd-mcp'
 
