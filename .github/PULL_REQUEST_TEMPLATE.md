@@ -1,5 +1,7 @@
 <!--
-Thanks for contributing! A few notes before you fill this in:
+This maintainer-led project does not currently accept unsolicited implementation
+PRs. Reports and ideas are welcome through issues. This template is for maintainer
+work and explicitly invited changes; see CONTRIBUTING.md.
 
 - Small, focused PRs are easier to review than big ones. If your change touches multiple
   unrelated areas, consider splitting it.

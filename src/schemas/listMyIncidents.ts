@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 import { ListIncidentsInput } from './incident.js';
 
 /**
@@ -9,6 +9,9 @@ import { ListIncidentsInput } from './incident.js';
  */
 export const ListMyIncidentsInput = ListIncidentsInput.omit({
   assignee_email: true,
+}).extend({
+  role: z.enum(['assignee', 'requester']).default('assignee')
+    .describe('assignee: tickets assigned to you (page-local filter). requester: tickets requested by you (server-side filter).'),
 });
 
 export type ListMyIncidentsInput = z.infer<typeof ListMyIncidentsInput>;

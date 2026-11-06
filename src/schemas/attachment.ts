@@ -111,3 +111,8 @@ export const UploadAttachmentInput = z.object({
 });
 
 export type UploadAttachmentInputT = z.infer<typeof UploadAttachmentInput>;
+
+export const GetIncidentAttachmentInput = z.object({
+  id: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).describe('Incident internal ID or human-facing number.'),
+  ref: z.string().length(64).regex(/^[a-f0-9]{64}$/).optional().describe('Opaque reference from this tool’s attachment list. Omit to list files.'),
+});

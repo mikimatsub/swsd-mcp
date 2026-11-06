@@ -78,6 +78,8 @@ export const EnvSchema = z.object({
     .describe(
       'Write safety mode. live = call SWSD normally; dry-run = return the request that would be sent; disabled = reject all write tools.',
     ),
+  SWSD_MAX_ATTACHMENT_BYTES: z.coerce.number().int().min(1).max(25 * 1024 * 1024).default(5 * 1024 * 1024)
+    .describe('Maximum downloaded attachment bytes (1 to 25 MiB; default 5 MiB).'),
   SWSD_ATTACHMENT_ROOT: z
     .preprocess(
       (value) =>

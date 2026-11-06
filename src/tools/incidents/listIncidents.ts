@@ -9,11 +9,8 @@ import { ListIncidentsInput } from '../../schemas/incident.js';
 import { PaginationWithScopeOutput } from '../../schemas/output.js';
 import { structuredResult } from '../../mcp/output.js';
 import { mapSwsdError } from '../../swsd/errors.js';
-import { requireListArray } from '../../swsd/list-helper.js';
-import { withTotalScope } from '../../swsd/pagination.js';
-import { toIncidentSummary } from '../../swsd/mappers/incident.js';
 import { loadUiResource } from '../../mcp/uiResources.js';
-import { applyDateAlias, passesUpdatedCutoff, planUpdatedFrom } from '../../utils/dateAliases.js';
+import { queryIncidents } from '../../utils/incidentQuery.js';
 import type { ToolContext } from '../../config/toolRegistry.js';
 
 const UI_RESOURCE_URI = 'ui://swsd/incident-list.html';
@@ -44,10 +41,9 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
         'compact summaries (id, name, state, priority, assignee_email, requester_email, ' +
         'category, updated_at) — call swsd_get_incident for the full detail of any one row. ' +
         'Filters use SWSD repeated-key array semantics (multiple values within a filter are OR-ed). ' +
-        'NOTE: assignee_email and requester_email are applied CLIENT-SIDE because SWSD ' +
-        '/incidents.json silently ignores them server-side (verified 2026-05-08 against the ' +
-        'live API). Other filters (state, category, dates, sites, departments, assigned_to_group, ' +
-        'query) DO narrow server-side and are passed through.',
+        'requester_email is resolved through the requester directory and filtered server-side with requested_by. ' +
+        'Unknown requesters return zero matches; lookup failures are errors. assignee_email and exact updated_from ' +
+        'time cutoffs are applied to the fetched page. Counts explicitly identify their scope.',
       inputSchema: ListIncidentsInput,
       outputSchema: z.object({
         incidents: z.array(IncidentSummaryOutput),
@@ -57,7 +53,7 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
           .describe(
             'Echo of the filters applied to this query — empty object if none. ' +
               'Use this to reason about whether the result count reflects your filters or the tenant total. ' +
-              'NOTE: assignee_email / requester_email are applied client-side; everything else is server-side.',
+              'requester_email is filtered server-side; assignee_email and exact time cutoffs are page-local.',
           ),
         scan: z
           .object({
@@ -74,7 +70,7 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
               .describe('True if more candidate pages exist server-side. Increase per_page or paginate to scan more.'),
             client_filter_applied: z
               .boolean()
-              .describe('True iff assignee_email and/or requester_email triggered post-fetch narrowing.'),
+              .describe('True when assignee_email or an exact updated_from time cutoff requires post-fetch narrowing.'),
           })
           .describe('Honest accounting of what was scanned vs matched.'),
       }),
@@ -83,124 +79,12 @@ export function registerListIncidents(server: McpServer, ctx: ToolContext): void
     },
     async (rawInput) => {
       try {
-        // Translate `updated_within` (e.g. "7d", "24h") into a concrete
-        // `updated_from` ISO date before assembling params. Explicit
-        // `updated_from` always wins; the alias is dropped after translation.
-        const input = applyDateAlias(rawInput);
-
-        // Build server-side params. CRITICAL: do NOT send assignee_email or
-        // requester_email — SWSD silently ignores those filters on
-        // /incidents.json (verified live 2026-05-08: a fake email returns the
-        // full tenant of 56,829 records). They are applied client-side after
-        // the response lands. All OTHER filters DO narrow server-side and are
-        // passed through unchanged.
-        const params: Record<string, unknown> = {
-          page: input.page,
-          per_page: input.per_page,
-        };
-        if (input.states?.length) params.state = input.states;
-        if (input.priorities?.length) params.priority = input.priorities;
-        if (input.categories?.length) params.category = input.categories;
-        const updatedPlan = planUpdatedFrom(input.updated_from);
-        if (updatedPlan.upstream) params.updated_at = ['greater_than', updatedPlan.upstream];
-        if (input.updated_to) params.updated_to = input.updated_to;
-        if (input.created_from) params.created_from = input.created_from;
-        if (input.created_to) params.created_to = input.created_to;
-        if (input.sites?.length) params.site = input.sites;
-        if (input.departments?.length) params.department = input.departments;
-        if (input.assigned_to_group !== undefined) params.assigned_to = input.assigned_to_group;
-        if (input.state_is_not?.length) params.state_is_not = input.state_is_not;
-        if (input.sort_by) params.sort_by = input.sort_by;
-        if (input.sort_order) params.sort_order = input.sort_order;
-        if (input.query) params.query = input.query;
-
-        const { body, pagination } = await ctx.client.get<unknown>('/incidents.json', params);
-        const raw = requireListArray(body);
-        const candidates = raw
-          .map(toIncidentSummary)
-          .filter((x): x is NonNullable<typeof x> => x !== null);
-
-        // Client-side party filter — only when caller asked for it.
-        // Case-insensitive exact-match on assignee.email / requester.email.
-        const assigneeLower = input.assignee_email?.toLowerCase();
-        const requesterLower = input.requester_email?.toLowerCase();
-        const clientFilterApplied =
-          assigneeLower !== undefined || requesterLower !== undefined || updatedPlan.cutoffMs !== undefined;
-        const incidents = clientFilterApplied
-          ? candidates.filter((c) => {
-              if (!passesUpdatedCutoff(c.updated_at, updatedPlan.cutoffMs)) return false;
-              if (
-                assigneeLower !== undefined &&
-                (c.assignee_email === undefined ||
-                  c.assignee_email.toLowerCase() !== assigneeLower)
-              ) {
-                return false;
-              }
-              if (
-                requesterLower !== undefined &&
-                (c.requester_email === undefined ||
-                  c.requester_email.toLowerCase() !== requesterLower)
-              ) {
-                return false;
-              }
-              return true;
-            })
-          : candidates;
-
-        // Echo applied filters honestly. Both server-side and client-side
-        // filters are surfaced — the agent's downstream reasoning treats
-        // them identically (both narrowed the result), but the client_filter
-        // section makes the SOURCE of the narrowing inspectable.
-        const applied_filters: Record<string, unknown> = {};
-        if (input.states?.length) applied_filters.states = input.states;
-        if (input.priorities?.length) applied_filters.priorities = input.priorities;
-        if (input.categories?.length) applied_filters.categories = input.categories;
-        if (input.assignee_email) applied_filters.assignee_email = input.assignee_email;
-        if (input.requester_email) applied_filters.requester_email = input.requester_email;
-        if (input.updated_from) applied_filters.updated_from = input.updated_from;
-        if (input.updated_to) applied_filters.updated_to = input.updated_to;
-        if (input.created_from) applied_filters.created_from = input.created_from;
-        if (input.created_to) applied_filters.created_to = input.created_to;
-        if (input.sites?.length) applied_filters.sites = input.sites;
-        if (input.departments?.length) applied_filters.departments = input.departments;
-        if (input.assigned_to_group !== undefined) applied_filters.assigned_to_group = input.assigned_to_group;
-        if (input.state_is_not?.length) applied_filters.state_is_not = input.state_is_not;
-        if (input.query) applied_filters.query = input.query;
-
-        const hasAnyFilter = Object.keys(applied_filters).length > 0;
-
-        const filterDescription = hasAnyFilter
-          ? `matching your filters (${Object.entries(applied_filters)
-              .slice(0, 3)
-              .map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(',') : String(v)}`)
-              .join(', ')}${Object.keys(applied_filters).length > 3 ? ', ...' : ''})`
-          : 'tenant-wide';
-        const clientFilterNote = clientFilterApplied
-          ? ` (assignee_email/requester_email applied client-side after fetch — SWSD ignores them server-side)`
-          : '';
-        const matchesCount = String(incidents.length);
-        const candidatesCount = String(candidates.length);
-        const totalNote =
-          pagination.total !== undefined ? ` of ${String(pagination.total)} server-side` : '';
-        const moreNote = pagination.has_more ? ', more available' : '';
-        const summary = clientFilterApplied
-          ? `Returned ${matchesCount} matches from ${candidatesCount} ${filterDescription} candidates (page ${String(pagination.page)}${totalNote}${moreNote})${clientFilterNote}.`
-          : `Returned ${candidatesCount}${totalNote} ${filterDescription} incidents (page ${String(pagination.page)}${moreNote}).`;
-
-        return structuredResult(
-          {
-            incidents,
-            pagination: withTotalScope(pagination, clientFilterApplied, hasAnyFilter, incidents.length),
-            applied_filters,
-            scan: {
-              candidates_scanned: candidates.length,
-              matches_in_page: incidents.length,
-              unscanned_candidates_remain: pagination.has_more,
-              client_filter_applied: clientFilterApplied,
-            },
-          },
-          summary,
-        );
+        const result = await queryIncidents(ctx.client, rawInput);
+        const scope = result.pagination.total_scope;
+        return structuredResult(result,
+          `Returned ${result.incidents.length} incidents on page ${result.pagination.page}. ` +
+          `Total: ${result.pagination.total ?? 'unknown'} (${scope}); ` +
+          `matched total: ${result.pagination.matched_total ?? 'unknown'}.`);
       } catch (err) {
         return mapSwsdError(err);
       }

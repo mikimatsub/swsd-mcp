@@ -220,3 +220,29 @@ describe('swsd_list_my_incidents - client-side filter', () => {
     expect(text).toContain('assigned_to');
   });
 });
+
+
+describe('swsd_list_my_incidents - requester role', () => {
+  it('uses the authenticated requester, not their user ID or assignee email', async () => {
+    const client = makeFakeClient();
+    client.setBodyForPath(p => p === '/users/42.json', { id: 42, email: 'me@example.com' });
+    client.setBodyForPath(p => p === '/requesters.json', [{ id: 99, description: 'me@example.com' }]);
+    client.setBodyForPath(p => p === '/incidents.json', [{ id: 123, name: 'mine', requester: { email: 'me@example.com' }, assignee: { email: 'someone@example.com' } }]);
+    const server = new McpServer({ name: 'test', version: '0' });
+    registerListMyIncidents(server, makeCtxWithJwt(client));
+    const result = await getRegisteredTool(server, 'swsd_list_my_incidents').handler({ page: 1, per_page: 25, role: 'requester' }, {}) as StructuredToolResult;
+    expect(result.structuredContent).toMatchObject({ role: 'requester', requester_email: 'me@example.com', incidents: [{ id: 123 }], scan: { client_filter_applied: false } });
+    const call = client.calls.find(c => c.path === '/incidents.json');
+    expect(call).toMatchObject({ params: { requested_by: [99] } });
+    expect(result.structuredContent).not.toHaveProperty('assignee_email');
+  });
+  it('rejects a conflicting requester instead of silently changing who my refers to', async () => {
+    const client = makeFakeClient();
+    client.setBodyForPath(p => p === '/users/42.json', { id: 42, email: 'me@example.com' });
+    const server = new McpServer({ name: 'test', version: '0' });
+    registerListMyIncidents(server, makeCtxWithJwt(client));
+    const result = await getRegisteredTool(server, 'swsd_list_my_incidents').handler({ page: 1, per_page: 25, role: 'requester', requester_email: 'other@example.com' }, {});
+    expect(result).toMatchObject({ isError: true });
+    expect(client.calls).toHaveLength(1);
+  });
+});

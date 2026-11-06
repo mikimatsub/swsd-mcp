@@ -10,6 +10,7 @@ const READ_BASE = [
   'swsd_ticket_stats',
   'swsd_my_queue',
   'swsd_get_incident',
+  'swsd_get_incident_attachment',
   'swsd_list_incident_comments',
   'swsd_list_categories',
   'swsd_list_users',

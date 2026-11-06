@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.mikimatsub/swsd",
   "description": "MCP server for SolarWinds Service Desk tickets, catalog, knowledge, ITSM operations, and workflows.",
-  "version": "3.3.1",
+  "version": "3.4.0",
   "websiteUrl": "https://mcp-swsd.pages.dev",
   "repository": {
     "url": "https://github.com/mikimatsub/swsd-mcp",
@@ -12,7 +12,7 @@
     {
       "registryType": "npm",
       "identifier": "swsd-mcp",
-      "version": "3.3.1",
+      "version": "3.4.0",
       "transport": {
         "type": "stdio"
       },
@@ -33,7 +33,7 @@
         },
         {
           "name": "SWSD_PROFILE",
-          "description": "Tool registration profile: 'triage' (21 read-heavy tools), 'agent' (51 default), 'knowledge' (17 KB-author), 'operations' (145 every tool), 'custom' (explicit SWSD_TOOLS and/or SWSD_PROFILE_FILE selection).",
+          "description": "Tool registration profile: 'triage' (22 read-heavy tools), 'agent' (52 default), 'knowledge' (17 KB-author), 'operations' (146 every tool), 'custom' (explicit SWSD_TOOLS and/or SWSD_PROFILE_FILE selection).",
           "isRequired": false,
           "format": "string",
           "default": "agent",
@@ -74,6 +74,13 @@
           "description": "With SWSD_PROFILE=custom, absolute or startup-cwd-relative path to a JSON profile (version 1). At most 256 KiB; unioned with SWSD_TOOLS. See schemas/swsd-profile.schema.json.",
           "isRequired": false,
           "format": "string"
+        },
+        {
+          "name": "SWSD_MAX_ATTACHMENT_BYTES",
+          "description": "Maximum downloaded attachment size in bytes (1–26214400); default 5 MiB. Applies to read-only attachment retrieval.",
+          "isRequired": false,
+          "format": "number",
+          "default": "5242880"
         }
       ]
     }

@@ -44,7 +44,7 @@ Two categories, distinguished by where the swsd-mcp process actually runs:
 
 ### swsd-mcp
 
-The middle box. Single Node.js process, TypeScript, 11 direct production dependencies (`@hono/node-server`, `@modelcontextprotocol/client`, `@modelcontextprotocol/core`, `@modelcontextprotocol/node`, `@modelcontextprotocol/server`, `@modelcontextprotocol/ext-apps`, `dompurify`, `express`, `express-rate-limit`, `helmet`, `zod`). Exposes [145 tools](/tools/) organized into [profiles](/configuration/#profiles).
+The middle box. Single Node.js process, TypeScript, 11 direct production dependencies (`@hono/node-server`, `@modelcontextprotocol/client`, `@modelcontextprotocol/core`, `@modelcontextprotocol/node`, `@modelcontextprotocol/server`, `@modelcontextprotocol/ext-apps`, `dompurify`, `express`, `express-rate-limit`, `helmet`, `zod`). Exposes [146 tools](/tools/) organized into [profiles](/configuration/#profiles).
 
 The server itself has no SWSD identity: every API call is made using the *caller's* token. HTTP creates a server and SWSD client per request without a session store. Stdio keeps the configured token for the process lifetime. The MCP server has no credential store; the Windows companion saves the user's JSON Web Token in Windows Credential Manager and supplies it to the local process. See [Security → Zero credentials at rest](/security/#zero-credentials-at-rest).
 

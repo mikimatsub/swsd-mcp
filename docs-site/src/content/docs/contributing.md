@@ -1,9 +1,9 @@
 ---
 title: Contributing
-description: How to file issues, propose features, and submit pull requests for swsd-mcp.
+description: How to report bugs, suggest features, and understand the maintainer-led contribution policy.
 ---
 
-Contributions are welcome. This page covers what to expect when filing issues or pull requests.
+Bug reports, reproducible examples, and feature suggestions are welcome. This is a maintainer-led project and is not currently accepting unsolicited implementation pull requests. Accepted changes are implemented and maintained by the project maintainer. Unsolicited implementation PRs may be closed without merge.
 
 ## Reporting bugs
 
@@ -30,7 +30,7 @@ Include:
 
 ## Pull requests
 
-PRs are welcome. Before submitting:
+The following checks apply to maintainer work and any explicitly invited PR. Opening an issue does not constitute an invitation to submit an implementation.
 
 1. **Open an issue first** for non-trivial changes so we can discuss the approach.
 2. **Run the full local check:**

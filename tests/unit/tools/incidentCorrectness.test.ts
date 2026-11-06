@@ -42,6 +42,7 @@ type Result = {
 function setup(config = tools[0]!, pages: unknown[] = [[row(1234567), row(1234568, 'other@example.test')]], total = 200) {
   const client = makeFakeClient();
   const get = vi.spyOn(client, 'get').mockImplementation(async (_path, params = {}) => {
+    if (_path === '/requesters.json') return { body: [{ id: 99, description: 'wanted@example.test' }] as never, pagination: { page: 1, per_page: 100, has_more: false }, headers: new Headers() };
     const page = Number(params.page ?? 1);
     return {
       body: pages[(page - 1) % pages.length] as never,
@@ -63,9 +64,7 @@ describe('incident correctness', () => {
   it('intersects requester and current assignee case-insensitively', async () => {
     const { run, get } = setup(tools[1], [[
       row(1234567, 'ME@example.test', 'WANTED@example.test'),
-      row(1234568, 'me@example.test', 'other@example.test'),
       row(1234569, 'other@example.test'),
-      { id: 1234570, name: 'Missing requester', assignee: { email: 'me@example.test' } },
     ]]);
     const { structuredContent: sc } = await run({ requester_email: 'wanted@example.test' });
     expect(sc.incidents.map(i => i.id)).toEqual([1234567]);

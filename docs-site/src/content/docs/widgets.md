@@ -79,7 +79,7 @@ Bound to `swsd_get_solution`. Card layout: article name, number, state, category
 
 *Light theme: [`incident-list-light.png`](/widgets/incident-list-light.png)*
 
-Bound to `swsd_list_incidents`, `swsd_list_my_incidents`, and `swsd_my_queue` (`swsd_list_my_incidents` auto-resolves the JWT user's email as `assignee_email`). Table columns: incident number (falling back to id), name, state, priority, assignee, updated date. Sortable headers (click to toggle, ▲/▼ indicator + `aria-sort` on the active column). Wrapped in an `overflow-x: auto` container so the 6-column table scrolls instead of clipping at narrow viewports (<560px).
+Bound to `swsd_list_incidents`, `swsd_list_my_incidents`, and `swsd_my_queue` (`swsd_list_my_incidents` resolves the authenticated user for its selected assignee or requester role). Table columns: incident number (falling back to id), name, state, priority, assignee, updated date. Sortable headers (click to toggle, ▲/▼ indicator + `aria-sort` on the active column). Wrapped in an `overflow-x: auto` container so the 6-column table scrolls instead of clipping at narrow viewports (<560px).
 
 The title shows `Incidents (N of M)`, where M is `pagination.matched_total` when present, otherwise `pagination.total` when `pagination.total_scope` is `"filtered"` or `"tenant"`. When no reliable total exists (for example `total_scope === "upstream"` with client-side filters and unscanned pages, where `matched_total` is `null`), it shows `Incidents (N shown)`.
 

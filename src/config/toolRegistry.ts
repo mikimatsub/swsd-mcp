@@ -154,6 +154,7 @@ import {
   registerUpdateTimeTrack,
   registerDeleteTimeTrack,
 } from '../tools/timeTracks/timeTrackTools.js';
+import { registerGetIncidentAttachment } from '../tools/attachments/getIncidentAttachment.js';
 import { registerUploadAttachment } from '../tools/attachments/uploadAttachment.js';
 import { registerDeleteIncident } from '../tools/incidents/deleteIncident.js';
 import { registerDeleteProblem } from '../tools/problems/deleteProblem.js';
@@ -339,6 +340,7 @@ const REGISTRARS: Record<string, Registrar> = {
   swsd_log_time: registerLogTime,
   swsd_update_time_track: registerUpdateTimeTrack,
   swsd_delete_time_track: registerDeleteTimeTrack,
+  swsd_get_incident_attachment: registerGetIncidentAttachment,
   swsd_upload_attachment: registerUploadAttachment,
 };
 
