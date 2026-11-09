@@ -7,9 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-11-09
+
+### Changed
+
+- Refresh eligible runtime, development, documentation, Docker, and GitHub
+  Actions dependencies after publication-age, engine, peer, provenance, and
+  immutable-source review.
+- Harden the HTTP adapter with `@hono/node-server` 2.1.6 request-target,
+  WebSocket, and socket-reset fixes.
+- Update the test DOM to jsdom 31 and make CSS percentage assertions independent
+  of engine-specific decimal serialization.
+
 ### Fixed
 
 - Refresh the Windows plugin and companion to 3.4.0 with the published 3.4.0 runtime, matching launcher path, 146-tool guide, and bundled release notes.
+- Restore weekly full-history secret scans by ignoring only the two exact
+  historical fingerprints produced by the synthetic credential-redaction
+  fixture.
 
 ## [3.4.0] - 2026-11-06
 
@@ -1070,7 +1085,8 @@ Detailed history available via `git log`.
 * **2026-05-03**: `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.4.0...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.4.1...HEAD
+[3.4.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.4.0...v3.4.1
 [3.4.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.1...v3.4.0
 [3.3.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.2.0...v3.3.0
