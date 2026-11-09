@@ -28,9 +28,10 @@ prove that today's advisory databases are clean.
 The MCP SDK v2 migration uses its separate `client`, `core`, and `server`
 packages at 2.4.0, the Node HTTP adapter at 2.1.2, and MCP Apps at 2.0.4.
 These packages are compatible peers and passed the three-day publication gate.
-Keep `@hono/node-server` 2.1.5 as an exact public dependency until a separately
-reviewed adapter release clears the gate; npm package overrides do not propagate
-to consumers.
+Keep `@hono/node-server` 2.1.6 as an exact public dependency. Its official tag,
+npm provenance, HTTP/WebSocket hardening changes, Node engine and Hono peer were
+reviewed after the three-day gate; npm package overrides do not propagate to
+consumers.
 Keep the SDK client/core/server versions aligned because they share the same
 core schema graph. SDK 2.4 requires one server and stateless transport per HTTP
 request; `src/transports/http.ts` already creates both inside the request handler.
