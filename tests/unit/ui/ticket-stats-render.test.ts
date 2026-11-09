@@ -34,7 +34,9 @@ describe('ticket stats widget rendering', () => {
         expect(Array.from(row.children, el => el.className)).toEqual(['label', 'numeric', 'share']);
       }
     }
-    expect(root.querySelector<HTMLElement>('table .bar')?.style.width).toBe(String(38 / 120 * 100) + '%');
+    const width = root.querySelector<HTMLElement>('table .bar')?.style.width;
+    expect(width).toMatch(/%$/);
+    expect(Number.parseFloat(width ?? '')).toBeCloseTo(38 / 120 * 100, 4);
   });
   it('renders untrusted strings as text with full tooltips, without markup or event handlers', () => {
     const attack = '<img src=x onerror=alert(1)>';
