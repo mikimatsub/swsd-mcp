@@ -2,9 +2,9 @@
 
 ## Package capabilities
 
-Version 3.4.0 delivers the Windows companion app, searchable guide to 146 tools, built-in and custom profiles, appearance themes, runtime updates, redacted diagnostics, offline release notes, ten MCP Apps widgets, and a Credential Manager-backed launcher. It keeps the existing plugin identity, starter prompts, and native compatibility manifest. No hosted service is required.
+Version 3.4.1 delivers the Windows companion app, searchable guide to 146 tools, built-in and custom profiles, appearance themes, runtime updates, redacted diagnostics, offline release notes, ten MCP Apps widgets, and a Credential Manager-backed launcher. It keeps the existing plugin identity, starter prompts, and native compatibility manifest. No hosted service is required.
 
-The plugin/client package and server runtime have separate versions. The runtime is pinned to `swsd-mcp@3.4.0` on the MCP SDK v2 packages (`@modelcontextprotocol/server`/`core`/`node` 2.x); the former SDK 1.31.0 override is removed. Server 3.x's documented wire changes (protocol error behavior) apply to the plugin; Windows launcher and credential-backed live access must be re-verified on a clean user before promotion. Installation rejects a recipe that disagrees with the setup script and checks the installed server version.
+The plugin/client package and server runtime have separate versions. The runtime is pinned to `swsd-mcp@3.4.1` on the MCP SDK v2 packages (`@modelcontextprotocol/server`/`core`/`node` 2.x); the former SDK 1.31.0 override is removed. Server 3.x's documented wire changes (protocol error behavior) apply to the plugin; Windows launcher and credential-backed live access must be re-verified on a clean user before promotion. Installation rejects a recipe that disagrees with the setup script and checks the installed server version.
 
 ## Optional workspace deployment through GitHub
 
@@ -18,7 +18,7 @@ In **Admin > Plugins > Add > Import marketplace** use:
 - Path: leave empty.
 - Branch: the reviewed branch containing these files. Start with `codex/windows-plugin-setup`; use a release branch or main after your review/merge process.
 
-Use the administrator's supported GitHub connection flow if required. Review the result and confirm plugin version 3.4.0 and the setup skill. Preserve an existing deployment's availability and sharing policy; start a new pilot with **Available**.
+Use the administrator's supported GitHub connection flow if required. Review the result and confirm plugin version 3.4.1 and the setup skill. Preserve an existing deployment's availability and sharing policy; start a new pilot with **Available**.
 
 For later updates, commit reviewed plugin changes to the selected branch and use **Admin > Plugins > Marketplaces > Sync now**, or wait for the daily sync. Review import errors; an invalid update should leave the last working version in place. Do not delete the marketplace to repair access; OpenAI documents that deleting a marketplace deletes its imported plugins.
 
