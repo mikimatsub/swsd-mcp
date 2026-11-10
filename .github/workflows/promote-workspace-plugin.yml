@@ -1,0 +1,68 @@
+name: Promote workspace plugin
+
+on:
+  workflow_run:
+    workflows: [CI, Security]
+    types: [completed]
+    branches: [main]
+  schedule:
+    # Recheck after the age gate matures, without depending on another merge.
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: promote-workspace-plugin
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: >-
+      github.repository == 'mikimatsub/swsd-mcp' &&
+      ((github.event_name != 'workflow_run' && github.ref == 'refs/heads/main') ||
+       (github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout trusted main commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Test promotion policy
+        run: node --test tests/release/plugin-promotion.test.mjs
+
+      - name: Verify release, acceptance and exact-commit checks
+        id: policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/promote-workspace-plugin.mjs --check
+
+      - name: Verify published runtime dependencies and signatures
+        if: steps.policy.outputs.eligible == 'true'
+        working-directory: plugins/swsd/runtime
+        run: |
+          npm ci --ignore-scripts --strict-peer-deps
+          npm audit --audit-level=low
+          npm audit signatures
+
+      - name: Recheck gates and fast-forward deployment branch
+        if: steps.policy.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/promote-workspace-plugin.mjs --apply
