@@ -135,3 +135,57 @@ Renovate-only manifest/lock prompt cannot complete runtime, Docker, source,
 workflow, draft rollout, or release tasks. Inspect its actual prompt and status
 when diagnosing missed work. Use the existing job's supported configuration
 interface; do not create a duplicate schedule or expand its permissions.
+## Automatic workspace promotion
+
+The workspace currently follows `codex/windows-plugin-setup`, not `main`.
+`Promote workspace plugin` closes that gap after a reviewed plugin release.
+It runs after CI/Security on main, every six hours to retry the age gate, or
+by manual dispatch. It never creates a release, merges a PR, or changes the
+workspace's identity, sharing, authentication, or sync schedule.
+
+Before merging a plugin release, complete the clean-Windows-user acceptance
+in `plugins/swsd/ADMIN.md`. Copy
+`.github/plugin-promotion.example.json` to `.github/plugin-promotion.json`
+and record the actual results, UTC completion time, and a non-sensitive
+evidence reference. Do not mark a check passed without performing it. Include
+that record in the reviewed release PR. After the final plugin edits, obtain:
+
+```sh
+git rev-parse HEAD:plugins/swsd
+git rev-parse HEAD:.agents/plugins/marketplace.json
+```
+
+Use those values for `pluginTree` and `marketplaceBlob`. For staged changes,
+commit the plugin files first, then add the acceptance record in a second
+commit. Any later plugin or marketplace edit invalidates the record.
+Client and runtime versions are recorded separately. Changed plugin files
+require a higher client version than the deployed plugin. No initial acceptance
+has been fabricated: the example is deliberately incomplete.
+
+Promotion requires all named CI and Security jobs to succeed on the exact
+current main commit, including Windows checks, both Node versions, docs,
+Docker, GHCR, CodeQL, OSV and gitleaks. It verifies the stable npm latest
+runtime, lock integrity, release tag ancestry and npm `gitHead`, waits at
+least three days after npm publication, and audits the published runtime
+dependencies and signatures. Existing dependency-review and age requirements
+still apply before merging; this workflow does not replace those reviews.
+Missing checks, metadata, acceptance, registry outages or branch divergence
+fail closed. An older successful run cannot override a newer failed run.
+
+Only a fast-forward update is permitted. A concurrent branch change stops
+the update; no force push, new token, repository secret, or app installation
+is needed. The job uses GitHub's short-lived built-in token with contents
+write and actions read permissions; checkout does not persist it. Branch
+protection can reject promotion and is never bypassed. The promotion workflow
+runs only trusted main commits, never pull-request artifacts or code.
+
+Commits that leave the plugin tree and marketplace unchanged do nothing.
+After promotion, OpenAI still performs its daily marketplace sync (or an
+administrator can use Sync now). Verify the downloaded version, restart the
+desktop app, and check health as described in the admin guide. The workflow
+does not claim to verify delivery to the workspace or local desktop.
+
+To diagnose a blocked update, inspect the promotion run's failed gate. Finish
+the missing check or acceptance record through the normal reviewed PR flow,
+then dispatch the workflow again or allow the next scheduled check. Never
+force the deployment ref or weaken a check to clear the failure.

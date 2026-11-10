@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pluginTree": "REPLACE_WITH_GIT_TREE_SHA",
+  "marketplaceBlob": "REPLACE_WITH_MARKETPLACE_BLOB_SHA",
+  "clientVersion": "X.Y.Z",
+  "runtimeVersion": "X.Y.Z",
+  "checkedAt": "REPLACE_WITH_POST_PUBLICATION_UTC_TIMESTAMP",
+  "evidence": "Reference a non-sensitive maintainer pilot record; never include tokens or tenant records.",
+  "checks": {
+    "freshUserInstall": false,
+    "setupWithoutToken": false,
+    "installAndShortcut": false,
+    "privateTokenAndConnection": false,
+    "restartAndHealth": false,
+    "identityAndRead": false,
+    "profilesAndSavedToken": false,
+    "replacementAndRemoval": false,
+    "workspacePolicy": false
+  }
+}

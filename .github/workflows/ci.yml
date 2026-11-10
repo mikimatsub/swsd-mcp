@@ -65,6 +65,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Test workspace promotion safety gates
+        run: node --test tests/release/plugin-promotion.test.mjs
+
       - name: Check changelog format
         run: npm run check:changelog
 
