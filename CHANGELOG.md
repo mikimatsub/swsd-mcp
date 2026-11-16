@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-11-16
+
 ### Added
 
 - Opt in to SWSD notification callbacks with `notify: true` on
@@ -1096,7 +1098,8 @@ Detailed history available via `git log`.
 * **2026-05-03**: `0.1.0`: initial dual-transport foundation +
   incident reads (4 tools)
 
-[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.4.1...HEAD
+[Unreleased]: https://github.com/mikimatsub/swsd-mcp/compare/v3.5.0...HEAD
+[3.5.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.4.1...v3.5.0
 [3.4.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.4.0...v3.4.1
 [3.4.0]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.1...v3.4.0
 [3.3.1]: https://github.com/mikimatsub/swsd-mcp/compare/v3.3.0...v3.3.1
