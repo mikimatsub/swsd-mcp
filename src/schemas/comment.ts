@@ -41,6 +41,12 @@ export const AddIncidentCommentInput = z.object({
     .boolean()
     .default(false)
     .describe('If true, the comment is internal-only (not visible to the requester). Default false.'),
+  notify: z
+    .boolean()
+    .default(false)
+    .describe(
+      'Request SWSD notification callbacks (add_callbacks=true). Default false. Set true only when the user explicitly asks to notify; delivery depends on SWSD settings.',
+    ),
 });
 
 export const UpdateCommentInput = z.object({

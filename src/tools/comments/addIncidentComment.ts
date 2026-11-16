@@ -14,24 +14,29 @@ export function registerAddIncidentComment(server: McpServer, ctx: ToolContext):
     {
       description:
         'Add a comment to a SWSD incident. Set `is_private: true` to make the comment ' +
-        'internal-only (default false = visible to the requester). To edit a comment ' +
+        'internal-only (default false = visible to the requester). Notification callbacks are off by default; ' +
+        'set `notify: true` only when the user explicitly asks to notify. SWSD settings control delivery. To edit a comment ' +
         'after posting, use `swsd_update_comment`. WRITE — does not retry on transient failure.',
       inputSchema: AddIncidentCommentInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
     },
-    async ({ incident_id, body, is_private }) => {
+    async ({ incident_id, body, is_private, notify }) => {
       try {
         const { id: resolvedIncidentId } = await resolveIncidentRef(incident_id, ctx.client);
         const payload = { comment: { body, is_private } };
         const path = `/incidents/${String(resolvedIncidentId)}/comments.json`;
         const gated = checkWriteMode(ctx, {
           method: 'POST',
-          path,
+          path: notify ? `${path}?add_callbacks=true` : path,
           body: payload,
           action: `add comment to incident ${String(resolvedIncidentId)}`,
         });
         if (gated) return gated;
-        const { body: respBody } = await ctx.client.post<unknown>(path, payload);
+        const { body: respBody } = notify
+          ? await ctx.client.rawRequest(path, {
+            method: 'POST', query: { add_callbacks: true }, body: payload,
+          })
+          : await ctx.client.post<unknown>(path, payload);
         const comment = toCommentSummary(respBody);
         if (!comment) {
           return toolError('Could not parse new-comment response from SWSD.');
@@ -39,7 +44,8 @@ export function registerAddIncidentComment(server: McpServer, ctx: ToolContext):
         const visibility = comment.is_private ? 'private' : 'public';
         return structuredResult(
           { comment },
-          `Added ${visibility} comment ${String(comment.id)} on incident ${String(resolvedIncidentId)}.`,
+          `Added ${visibility} comment ${String(comment.id)} on incident ${String(resolvedIncidentId)}.` +
+          (notify ? ' SWSD notification callbacks requested.' : ''),
         );
       } catch (err) {
         return mapSwsdError(err);

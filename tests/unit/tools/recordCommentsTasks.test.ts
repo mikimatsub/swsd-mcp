@@ -117,6 +117,40 @@ describe.each(RECORD_TYPES)('comments and tasks on %s', (record_type) => {
     });
   });
 
+  it.each([false, true])('requests comment callbacks without changing is_private=%s', async (is_private) => {
+    const { client, invoke } = setup('swsd_add_record_comment');
+    client.setRawResponse({ id: '10', body: BODY, is_private, commenter: { email: EMAIL } });
+
+    const result = await invoke({ ...ref, body: BODY, is_private, notify: true });
+
+    expect(client.calls).toEqual([{
+      type: 'raw', path: basePath + '/comments.json',
+      init: { method: 'POST', query: { add_callbacks: true }, body: { comment: { body: BODY, is_private } } },
+    }]);
+    expect(result.structuredContent).toMatchObject({
+      comment: { id: 10, body: BODY, is_private, author_email: EMAIL },
+    });
+    expect(result.content).toEqual([{
+      type: 'text',
+      text: `Added ${is_private ? 'private' : 'public'} comment 10 on ${record_type} record 42. SWSD notification callbacks requested.`,
+    }]);
+  });
+
+  it('previews comment callbacks without sending an API request in dry-run', async () => {
+    const { client, invoke } = setup('swsd_add_record_comment', 'dry-run');
+
+    const result = await invoke({ ...ref, body: BODY, is_private: true, notify: true });
+
+    expect(result.structuredContent).toEqual({
+      dry_run: true,
+      request: {
+        method: 'POST', path: basePath + '/comments.json?add_callbacks=true',
+        body: { comment: { body: BODY, is_private: true } },
+      },
+    });
+    expect(client.calls).toEqual([]);
+  });
+
   it('posts a task with the task envelope and nested assignee', async () => {
     const { client, invoke } = setup('swsd_create_record_task');
     client.setPostResponse({ id: '11', name: NAME, state: 'New', assignee: { email: EMAIL }, due_at: DUE_AT });
@@ -173,6 +207,38 @@ describe('record comment/task defaults and errors', () => {
     expect(client.calls).toEqual([{
       type: 'post', path: '/problems/42/comments.json', body: { comment: { body: BODY, is_private: false } },
     }]);
+  });
+
+  it('does not request comment callbacks for an explicit false opt-in', async () => {
+    const { client, invoke } = setup('swsd_add_record_comment');
+    client.setPostResponse({ id: 10, body: BODY, is_private: true });
+
+    await invoke({ ...ref, body: BODY, is_private: true, notify: false });
+
+    expect(client.calls).toEqual([{
+      type: 'post', path: '/problems/42/comments.json', body: { comment: { body: BODY, is_private: true } },
+    }]);
+  });
+
+  it('blocks comment callback requests when writes are disabled', async () => {
+    const { client, invoke } = setup('swsd_add_record_comment', 'disabled');
+
+    const result = await invoke({ ...ref, body: BODY, notify: true });
+
+    expect(result.isError).toBe(true);
+    expect(result.content).toEqual(expect.arrayContaining([
+      expect.objectContaining({ text: expect.stringContaining('SWSD_WRITE_MODE=disabled') }),
+    ]));
+    expect(client.calls).toEqual([]);
+  });
+
+  it('defaults record comment notify to false and rejects non-boolean opt-ins', () => {
+    const { schema } = setup('swsd_add_record_comment');
+    const input = { ...ref, body: BODY };
+    expect(schema.parse(input)).toMatchObject({ notify: false });
+    for (const notify of ['true', 'false', 1, 0, null]) {
+      expect(schema.safeParse({ ...input, notify }).success).toBe(false);
+    }
   });
 
   it('omits optional task fields', async () => {
