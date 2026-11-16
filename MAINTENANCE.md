@@ -169,8 +169,22 @@ runtime, lock integrity, release tag ancestry and npm `gitHead`, waits at
 least three days after npm publication, and audits the published runtime
 dependencies and signatures. Existing dependency-review and age requirements
 still apply before merging; this workflow does not replace those reviews.
-Missing checks, metadata, acceptance, registry outages or branch divergence
-fail closed. An older successful run cannot override a newer failed run.
+An exact-commit trusted workflow that has not started or is still running is
+reported as **waiting**, with `eligible=false`; an older successful run cannot
+authorize promotion in its place. Both required workflows are inspected, so
+a completed failure is still an error when the other workflow is pending.
+An absent `.github/plugin-promotion.json` also reports **waiting** for actual
+clean-Windows-user and workspace-policy acceptance, after the release checks
+pass. The job summary states why it is waiting and that no deployment branch
+update was made. Waiting skips the runtime-audit and apply steps; it is not
+approval or evidence of workspace delivery.
+
+Malformed or unreadable metadata, a present but mismatched or incomplete
+acceptance record, failed/cancelled/skipped completed checks, registry outages,
+release age/integrity failures and branch divergence remain errors. Only a
+missing acceptance file (`ENOENT`) is treated as an expected absence; invalid
+JSON and permission or other I/O errors are never suppressed. An older
+successful run cannot override a newer failed run.
 
 Only a fast-forward update is permitted. A concurrent branch change stops
 the update; no force push, new token, repository secret, or app installation
@@ -185,7 +199,8 @@ administrator can use Sync now). Verify the downloaded version, restart the
 desktop app, and check health as described in the admin guide. The workflow
 does not claim to verify delivery to the workspace or local desktop.
 
-To diagnose a blocked update, inspect the promotion run's failed gate. Finish
-the missing check or acceptance record through the normal reviewed PR flow,
-then dispatch the workflow again or allow the next scheduled check. Never
-force the deployment ref or weaken a check to clear the failure.
+To diagnose a blocked update, inspect the promotion run's summary and any
+failed gate. Wait for current checks, or finish actual acceptance through the
+normal reviewed PR flow, then dispatch the workflow again or allow the next
+scheduled check. Never force the deployment ref, fabricate acceptance, or
+weaken a check to clear the failure.
