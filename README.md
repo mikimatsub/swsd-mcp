@@ -13,6 +13,12 @@
 
 The server holds **zero credentials at rest**. HTTP tokens are supplied per request; stdio keeps the configured token for the process lifetime. The Windows companion saves the user's JSON Web Token in Windows Credential Manager, and the MCP server does not save it to disk.
 
+<p align="center">
+  <a href="https://mcprush.com/to/swsd-mcp?ref=badge">
+    <img src="https://mcprush.com/badge/swsd-mcp/card.svg" alt="SWSD MCP on MCPRUSH" width="380" height="200">
+  </a>
+</p>
+
 ---
 
 ## Windows companion app
