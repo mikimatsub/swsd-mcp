@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Refresh the Windows plugin and companion source candidate to 3.4.3 with the
+  published 3.5.0 runtime, matching launcher path and bundled release notes.
+
 ## [3.5.0] - 2026-11-16
 
 ### Added
