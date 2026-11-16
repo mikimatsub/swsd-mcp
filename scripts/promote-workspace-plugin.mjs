@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,9 +30,8 @@ const requireThat = (condition, message) => {
 const shaPattern = /^[a-f0-9]{40}$/;
 const versionPattern = /^\d+\.\d+\.\d+$/;
 
-// Pure policy function: no API calls, installations or writes.
-export function validateRelease({ root, plugin, recipe, lock, common, mcp, acceptance,
-  pluginTree, marketplaceBlob, registry, releaseCommit, now }) {
+function validateRuntimeRelease({ root, plugin, recipe, lock, common, mcp,
+  registry, releaseCommit, now }) {
   const pin = recipe.dependencies?.['swsd-mcp'];
   requireThat(versionPattern.test(pin), 'Runtime must have an exact stable version.');
   requireThat(root.version === pin && recipe.version === pin, 'Root and recipe must match the published release.');
@@ -57,7 +56,13 @@ export function validateRelease({ root, plugin, recipe, lock, common, mcp, accep
   const publishedAt = Date.parse(registry.time?.[pin]);
   requireThat(Number.isFinite(publishedAt) && now - publishedAt >= minimumAgeMs,
     'Published runtime has not passed the three-day minimum age gate.');
+  return { pin, publishedAt };
+}
 
+// Pure policy function: no API calls, installations or writes.
+export function validateRelease(input) {
+  const { pin, publishedAt } = validateRuntimeRelease(input);
+  const { acceptance, plugin, pluginTree, marketplaceBlob, now } = input;
   requireThat(acceptance?.schemaVersion === 1 && acceptance.pluginTree === pluginTree &&
     acceptance.marketplaceBlob === marketplaceBlob && acceptance.clientVersion === plugin.version &&
     acceptance.runtimeVersion === pin, 'Missing acceptance record for this exact plugin and marketplace.');
@@ -73,21 +78,35 @@ export function validateRelease({ root, plugin, recipe, lock, common, mcp, accep
 export async function verifyWorkflow(api, workflow, sha) {
   const result = await api('/actions/workflows/' + workflow +
     '/runs?branch=main&head_sha=' + sha + '&per_page=100');
+  requireThat(Array.isArray(result?.workflow_runs) && result.workflow_runs.every(run =>
+    run && Number.isSafeInteger(run.id) && run.id > 0 && shaPattern.test(run.head_sha) &&
+    (typeof run.head_branch === 'string' || run.head_branch === null) &&
+    typeof run.event === 'string' && typeof run.status === 'string' &&
+    (typeof run.conclusion === 'string' || run.conclusion === null)),
+  workflow + ' returned malformed workflow runs.');
   // A newer failed, queued or rerunning run must not be hidden by an older success.
   const runs = result.workflow_runs.filter(run => run.head_sha === sha && run.head_branch === 'main' &&
     ['push', 'schedule'].includes(run.event)).sort((a, b) => b.id - a.id);
   const latest = runs[0];
-  requireThat(latest?.status === 'completed' && latest.conclusion === 'success',
+  if (!latest) return { status: 'waiting', reason: 'Awaiting ' + workflow +
+    ' for the exact main commit: no trusted push or scheduled run exists.' };
+  if (['queued', 'in_progress', 'requested', 'waiting', 'pending'].includes(latest.status) &&
+    latest.conclusion === null) {
+    return { status: 'waiting', reason: 'Awaiting ' + workflow +
+      ' for the exact main commit: the latest trusted run is ' + latest.status + '.' };
+  }
+  requireThat(latest.status === 'completed' && latest.conclusion === 'success',
     workflow + ' has no successful latest run for the exact main commit.');
   const jobs = [];
   for (let page = 1; ; page++) {
     const result = await api('/actions/runs/' + latest.id +
       '/jobs?filter=latest&per_page=100&page=' + page);
+    requireThat(Array.isArray(result?.jobs), workflow + ' returned malformed workflow jobs.');
     jobs.push(...result.jobs);
     if (result.jobs.length < 100) break;
   }
   for (const name of requiredJobs[workflow]) {
-    requireThat(jobs.some(job => job.name === name && job.conclusion === 'success'),
+    requireThat(jobs.some(job => job.name === name && job.status === 'completed' && job.conclusion === 'success'),
       workflow + ': missing or unsuccessful required job: ' + name);
   }
 }
@@ -110,7 +129,12 @@ export async function promote({ api, git, read, npmRegistry, now = Date.now(), a
   }
   requireThat(git('merge-base', deployed.object.sha, sha) === deployed.object.sha,
     'Deployment branch diverged; refusing a non-fast-forward update.');
-  for (const workflow of Object.keys(requiredJobs)) await verifyWorkflow(api, workflow, sha);
+  const waiting = [];
+  for (const workflow of Object.keys(requiredJobs)) {
+    const readiness = await verifyWorkflow(api, workflow, sha);
+    if (readiness?.status === 'waiting') waiting.push(readiness.reason);
+  }
+  if (waiting.length) return { status: 'waiting', reason: waiting.join(' ') };
   const json = path => JSON.parse(read(path));
   const plugin = json('plugins/swsd/.codex-plugin/plugin.json');
   if (tree(deployed.object.sha) !== pluginTree) {
@@ -129,13 +153,23 @@ export async function promote({ api, git, read, npmRegistry, now = Date.now(), a
   const releaseCommit = git('rev-parse', 'refs/tags/v' + version + '^{commit}');
   requireThat(git('merge-base', releaseCommit, sha) === releaseCommit,
     'Release tag is not an ancestor of the candidate.');
-  const pin = validateRelease({
+  const releaseInput = {
     root: json('package.json'), plugin,
     recipe, lock: json('plugins/swsd/runtime/package-lock.json'),
     common: read('plugins/swsd/scripts/Common.ps1'), mcp: read('plugins/swsd/.mcp.json'),
-    acceptance: json('.github/plugin-promotion.json'),
     pluginTree, marketplaceBlob, registry: await npmRegistry(), releaseCommit, now,
-  });
+  };
+  // Missing acceptance must not conceal a release, integrity or age failure.
+  validateRuntimeRelease(releaseInput);
+  let acceptanceText;
+  try {
+    acceptanceText = read('.github/plugin-promotion.json');
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+    return { status: 'waiting', reason: 'Awaiting actual clean-Windows-user and workspace-policy ' +
+      'acceptance in .github/plugin-promotion.json. No acceptance has been recorded for this source candidate.' };
+  }
+  const pin = validateRelease({ ...releaseInput, acceptance: JSON.parse(acceptanceText) });
   if (!apply) return { status: 'eligible', sha, version: pin };
   // Recheck both refs after the network checks. GitHub independently rejects non-FF writes.
   const currentMain = await api('/git/ref/heads/main');
@@ -146,6 +180,25 @@ export async function promote({ api, git, read, npmRegistry, now = Date.now(), a
   const confirmed = await api('/git/ref/heads/' + deploymentBranch);
   requireThat(confirmed.object.sha === sha, 'Promotion write was not confirmed; inspect the branch before retrying.');
   return { status: 'promoted', sha, version: pin };
+}
+
+export function writePromotionOutputs(result, {
+  outputPath = process.env.GITHUB_OUTPUT,
+  summaryPath = process.env.GITHUB_STEP_SUMMARY,
+} = {}) {
+  if (outputPath) appendFileSync(outputPath,
+    'eligible=' + (result.status === 'eligible') + '\nstatus=' + result.status + '\n', 'utf8');
+  if (summaryPath) {
+    const details = result.status === 'waiting'
+      ? result.reason + '\n\nNo deployment branch update was made.'
+      : result.status === 'eligible'
+        ? 'All release, exact-commit check and actual acceptance gates passed. This check did not update the deployment branch.'
+        : result.status === 'promoted'
+          ? 'The deployment source branch advanced to the verified commit.'
+          : 'The deployment source branch was unchanged.';
+    appendFileSync(summaryPath, '## Workspace plugin promotion\n\nStatus: **' + result.status +
+      '**\n\n' + details + '\n\nWorkspace sync and delivery to a local desktop have not been verified.\n', 'utf8');
+  }
 }
 
 async function main() {
@@ -176,10 +229,7 @@ async function main() {
     apply: process.argv.includes('--apply'),
   });
   console.log(JSON.stringify(result));
-  if (process.env.GITHUB_OUTPUT) {
-    const { appendFileSync } = await import('node:fs');
-    appendFileSync(process.env.GITHUB_OUTPUT, 'eligible=' + (result.status === 'eligible') + '\n');
-  }
+  writePromotionOutputs(result);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
