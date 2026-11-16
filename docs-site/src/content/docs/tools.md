@@ -134,7 +134,10 @@ Use the catalog flow instead of `swsd_create_incident` when the user asks to **r
 
 - **`swsd_list_incident_comments`**: paginated comment thread for an incident, including private/internal comments if your token has permission. Accepts the incident's `id` or human-facing `number`. Renders the `comment-thread` widget in MCP Apps-capable hosts (vertical conversation with author chips, timestamps, private badges, sanitized HTML bodies).
 - **`swsd_add_incident_comment`**: post a new comment. Set `is_private: true` for internal-only comments (default `false` = visible to the requester). Accepts the incident's `id` or human-facing `number`. To edit later, use `swsd_update_comment`.
+- **`swsd_add_record_comment`**: post a new comment to a problem, change, or release using its internal `record_id`. The same privacy and notification options apply.
 - **`swsd_update_comment`**: edit an existing comment's body or visibility. Accepts the parent incident's `id` or human-facing `number`.
+
+New comments do not request notification callbacks by default. On either add-comment tool, set `notify: true` only when the user explicitly asks to notify. This sends the documented [`add_callbacks=true` query parameter](https://apidoc.samanage.com/#tag/Comment/operation/createComment), allowing SWSD's configured notification callbacks to run. Notification recipients and delivery depend on the tenant's settings; a successful comment response does not confirm email delivery. `is_private` still controls comment visibility independently. In `SWSD_WRITE_MODE=dry-run`, the preview includes `?add_callbacks=true` and no comment or notification request is sent. `SWSD_WRITE_MODE=disabled` blocks the write as usual.
 
 ---
 

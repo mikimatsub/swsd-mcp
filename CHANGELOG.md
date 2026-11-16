@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Opt in to SWSD notification callbacks with `notify: true` on
+  `swsd_add_incident_comment` and `swsd_add_record_comment`. The default remains
+  off, and dry-run previews show the `add_callbacks=true` query parameter.
+
 ### Fixed
 
 - Refresh the Windows plugin and companion to 3.4.1 with the published 3.4.1
