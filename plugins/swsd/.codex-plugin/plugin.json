@@ -1,6 +1,6 @@
 {
   "name": "swsd",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "description": "SolarWinds Service Desk tools and Windows companion app for connection setup, custom profiles, updates, and diagnostics.",
   "author": {
     "name": "mikimatsub",
