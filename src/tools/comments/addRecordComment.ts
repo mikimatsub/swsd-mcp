@@ -14,8 +14,6 @@ export function registerAddRecordComment(server: McpServer, ctx: ToolContext): v
       description:
         'Add a comment to a SWSD problem, change, or release. Set `is_private: true` to make the comment ' +
         'internal-only (default false = visible to the requester). ' +
-        'Notification callbacks are off by default; set `notify: true` only when the user explicitly asks to notify. ' +
-        'SWSD settings control delivery. ' +
         'WRITE — does not retry on transient failure.',
       inputSchema: AddRecordCommentInput,
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
